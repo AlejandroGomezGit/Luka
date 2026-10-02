@@ -30,6 +30,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
       - run: pnpm turbo run lint typecheck test build --cache-dir=.turbo/cache
+      # build de @luka/mobile empaqueta iOS con Metro (valida R-06); expo-doctor revisa versiones del SDK.
+      - run: pnpm dlx expo-doctor
+        working-directory: apps/mobile
 
   infra:
     name: Arranque limpio de Docker Compose

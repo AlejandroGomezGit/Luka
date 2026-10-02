@@ -67,7 +67,7 @@ luka/
 - **Dirección de las dependencias.** Las apps dependen de los paquetes; los paquetes nunca dependen de las apps, y `domain` no depende de ningún otro paquete.
 - **Qué vive en `domain`.** Todo lo que debe comportarse igual en ambos lados: conversión de dinero, invariantes INV-01 a INV-07, reloj lógico híbrido, fusión de operaciones y categorizador. Así se prueba una sola vez, con pruebas de propiedades.
 - **Qué queda fuera.** Nada de acceso a bases de datos, red o pantalla dentro de `domain`: esas piezas entran por interfaces que implementan las apps.
-- **A validar en el primer sprint.** La configuración de Metro con pnpm y la resolución de los paquetes del monorepo dentro de Expo.
+- **Metro con pnpm (R-06), validado en T-007.** Expo SDK 57 soporta las instalaciones aisladas de pnpm y configura Metro solo; no hace falta `metro.config.js` ni `node-linker=hoisted`. El CI empaqueta la app para iOS en cada pull request, así que una regresión se detecta ahí.
 
 ## Categorizador propio
 
