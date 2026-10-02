@@ -76,6 +76,7 @@ Algunos campos solo tienen sentido juntos, y fusionarlos por separado producirí
 | Se restaura un registro eliminado | Es un cambio de `deleted_at` a nulo con un reloj nuevo | Gana si su reloj supera el de la eliminación |
 | El mismo registro se crea dos veces con el mismo id | Se trata como un `upsert` y se fusiona campo a campo | Reintentos tras un fallo parcial no duplican |
 | Una categoría predefinida se crea en dos dispositivos | Tiene el mismo UUID v5, así que es el mismo registro | Se fusiona sin duplicar |
+| Dos dispositivos sin conexión crean «la misma» categoría propia (mismo nombre y principal) | Hoy no hay regla: cada una tiene su propio UUID v7, así que después de sincronizar aparecen dos con el mismo nombre | **Pendiente para H3:** decidir si se fusionan (y qué pasa con sus movimientos) o se avisa a la persona |
 | Un movimiento apunta a una cuenta o categoría que aún no llegó | Las operaciones de un lote se aplican en orden de creación y la referencia se valida contra el estado actual más el propio lote | Si falta, `rejected` con `reference_missing`, y se reintenta tras la próxima descarga |
 | Un movimiento nuevo cae en una cuenta archivada en otro dispositivo (INV-06) | Se compara el reloj de la operación con el del archivado | Se acepta si se creó antes del archivado; si no, `rejected` con `invariant_violated` |
 | La fusión deja un registro que viola un invariante | El servidor valida el registro resultante | La operación se rechaza entera y no se aplica a medias |

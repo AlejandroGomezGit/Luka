@@ -14,6 +14,8 @@ export default tseslint.config(
     rules: {
       // Permite descartar campos con desestructuración: const { a: _, ...resto } = objeto.
       '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true }],
+      // Manejadores de React como onPress={() => setX(v)}: devuelven void y es claro.
+      '@typescript-eslint/no-confusing-void-expression': ['error', { ignoreArrowShorthand: true }],
     },
   },
   {
