@@ -143,7 +143,7 @@ El paso de una etapa a la siguiente lo decide una métrica, no una fecha: latenc
 
 ## Registro de decisiones (ADRs)
 
-Son 14 decisiones de arquitectura: todas aceptadas por el dueño del proyecto. Esta tabla es el índice; cada ADR se escribirá como archivo en `docs/adr/` con contexto, decisión y consecuencias.
+Son 14 decisiones de arquitectura, todas aceptadas por el dueño del proyecto. Esta tabla las resume; cada una tiene su archivo en [`docs/adr/`](adr/) con contexto, decisión, alternativas y consecuencias.
 
 | ID | Decisión | Alternativas descartadas | Motivo principal | Estado |
 | --- | --- | --- | --- | --- |
