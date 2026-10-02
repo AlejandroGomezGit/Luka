@@ -2,6 +2,7 @@ import {
   type AccountInputError,
   type AccountType,
   type CurrencyCode,
+  formatAmountInput,
   formatMoney,
   MAX_ACCOUNT_NAME,
   MINOR_UNITS,
@@ -52,7 +53,9 @@ export function AccountForm({ ref, initial, errors, onSubmit, archived, onToggle
   const amountLabel = isCard ? 'Deuda actual' : 'Saldo inicial';
 
   const submit = () => {
-    const minor = parseAmount(amount.trim() === '' ? '0' : amount, values.currency);
+    // Una coma final (decimales empezados pero vacíos) no impide guardar.
+    const text = amount.replace(/,$/, '');
+    const minor = parseAmount(text === '' ? '0' : text, values.currency);
     setAmountError(minor === null);
     if (minor !== null) onSubmit({ ...values, openingAmountMinor: minor });
   };
@@ -138,9 +141,10 @@ export function AccountForm({ ref, initial, errors, onSubmit, archived, onToggle
       </Text>
       <View accessibilityRole="radiogroup" style={[styles.wrap, { gap: spacing.sm }]}>
         {(Object.keys(MINOR_UNITS) as CurrencyCode[]).map((currency) =>
-          chip(currency, CURRENCY_LABELS[currency], values.currency === currency, () =>
-            setValues({ ...values, currency }),
-          ),
+          chip(currency, CURRENCY_LABELS[currency], values.currency === currency, () => {
+            setValues({ ...values, currency });
+            setAmount(formatAmountInput(amount, currency));
+          }),
         )}
       </View>
       {errorsFor('currency')}
@@ -149,7 +153,7 @@ export function AccountForm({ ref, initial, errors, onSubmit, archived, onToggle
       <TextInput
         accessibilityLabel={amountLabel}
         value={amount}
-        onChangeText={setAmount}
+        onChangeText={(text) => setAmount(formatAmountInput(text, values.currency))}
         keyboardType={values.currency === 'COP' ? 'number-pad' : 'decimal-pad'}
         style={[styles.input, { color: colors.text, borderColor: colors.muted }]}
       />
