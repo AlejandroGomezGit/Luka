@@ -30,6 +30,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
       - run: pnpm turbo run lint typecheck test build --cache-dir=.turbo/cache
+      # Integración de la API contra PostgreSQL y Redis reales con Testcontainers.
+      - run: pnpm test:api
       # build de @luka/mobile empaqueta iOS con Metro (valida R-06); expo-doctor revisa versiones del SDK.
       - run: pnpm dlx expo-doctor
         working-directory: apps/mobile
