@@ -15,22 +15,49 @@ export function isCurrencyCode(code: string): code is CurrencyCode {
   return Object.hasOwn(MINOR_UNITS, code);
 }
 
-// Miles con punto y decimales con coma, como se escribe en Colombia: "12.500", "1.234,56", "12500".
-const AMOUNT = /^\$?\s*(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d+))?$/;
+/**
+ * Decimales que la persona escribe y ve: COP en pesos enteros (aunque la unidad menor tenga centavos);
+ * USD y EUR con centavos.
+ */
+export const INPUT_DECIMALS: Record<CurrencyCode, number> = { COP: 0, USD: 2, EUR: 2 };
+
+const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = { COP: '$', USD: 'US$', EUR: '€' };
 
 /**
- * Convierte un monto positivo escrito por la persona a entero en la unidad menor, solo con
- * operaciones de texto. Devuelve null si no es un monto, si tiene más decimales que la moneda o si
- * no cabe en un entero seguro.
+ * Convierte un monto positivo escrito por la persona a entero en la unidad menor, solo con operaciones
+ * de texto. Punto y coma valen igual: un separador seguido de exactamente 3 dígitos agrupa miles; en una
+ * moneda con decimales, el último separador seguido de 1 o 2 dígitos es el decimal. Devuelve null si no
+ * es un monto, si los miles están mal agrupados o si no cabe en un entero seguro.
  */
 export function parseAmount(text: string, currency: CurrencyCode): number | null {
-  const match = AMOUNT.exec(text.trim());
-  if (!match) return null;
-  const [, integer = '', fraction = ''] = match;
-  const digits = MINOR_UNITS[currency];
-  if (fraction.length > digits) return null;
-  const minor = Number(integer.replaceAll('.', '') + fraction.padEnd(digits, '0'));
+  const clean = text.trim().replace(/^(US\$|€|\$)\s*/, '');
+  if (!/^\d+([.,]\d+)*$/.test(clean)) return null;
+  let groups = clean.split(/[.,]/);
+  let fraction = '';
+  const last = groups.at(-1) ?? '';
+  if (groups.length > 1 && last.length <= INPUT_DECIMALS[currency]) {
+    fraction = last;
+    groups = groups.slice(0, -1);
+  }
+  const [first = '', ...rest] = groups;
+  if (rest.length > 0 && (first.length > 3 || rest.some((group) => group.length !== 3)))
+    return null;
+  const minor = Number(groups.join('') + fraction.padEnd(MINOR_UNITS[currency], '0'));
   return Number.isSafeInteger(minor) ? minor : null;
+}
+
+/**
+ * Formato colombiano: símbolo, punto de miles y coma decimal. COP se muestra en pesos y solo enseña los
+ * centavos si los hay; USD y EUR siempre con dos decimales. Sin Intl, para que sea igual en Hermes y Node.
+ */
+export function formatMoney(minor: number, currency: CurrencyCode): string {
+  const unit = 10 ** MINOR_UNITS[currency];
+  const absolute = Math.abs(minor);
+  const integer = String(Math.floor(absolute / unit)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const cents = absolute % unit;
+  const showCents = INPUT_DECIMALS[currency] > 0 || cents !== 0;
+  const decimals = showCents ? `,${String(cents).padStart(MINOR_UNITS[currency], '0')}` : '';
+  return `${minor < 0 ? '-' : ''}${CURRENCY_SYMBOLS[currency]} ${integer}${decimals}`;
 }
 
 /** INV-01: la persona escribe un número positivo y el tipo fija el signo; un ajuste conserva el suyo. */

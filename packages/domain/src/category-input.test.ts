@@ -1,11 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { predefinedCategoryId } from './categories.js';
-import {
-  type CategoryInput,
-  checkCategoryInput,
-  generalCategoryId,
-  sameCategoryName,
-} from './category-input.js';
+import { type CategoryInput, checkCategoryInput, generalCategoryId } from './category-input.js';
+import { sameName } from './names.js';
 
 const userId = '0199a6f0-0000-7000-8000-000000000001';
 
@@ -26,10 +22,10 @@ describe('generalCategoryId: el «General» de cada categoría principal', () =>
   });
 });
 
-describe('sameCategoryName', () => {
+describe('sameName', () => {
   it('ignora mayúsculas, tildes y espacios de más', () => {
-    expect(sameCategoryName('  Café   y Snacks ', 'cafe y snacks')).toBe(true);
-    expect(sameCategoryName('Mercado', 'Mercados')).toBe(false);
+    expect(sameName('  Café   y Snacks ', 'cafe y snacks')).toBe(true);
+    expect(sameName('Mercado', 'Mercados')).toBe(false);
   });
 });
 

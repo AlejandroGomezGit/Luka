@@ -2,7 +2,7 @@ import type { CategoryInputError, CategoryKind } from '@luka/domain';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { createCategory, getCategory } from '../../db/categories';
-import { useLocalSession } from '../../db/DatabaseProvider';
+import { useLocalSession } from '../../db/session';
 import { CategoryForm } from '../../ui/CategoryForm';
 
 /** Nueva categoría principal (`?kind=`) o subcategoría (`?parentId=`). */
