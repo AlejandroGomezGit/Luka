@@ -3,7 +3,7 @@ import { router, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { type CategoryNode, listCategories } from '../../db/categories';
-import { useLocalSession } from '../../db/DatabaseProvider';
+import { useLocalSession } from '../../db/session';
 import { useTheme } from '../../theme';
 import { CategoryList } from '../../ui/CategoryList';
 import { Screen } from '../../ui/Screen';

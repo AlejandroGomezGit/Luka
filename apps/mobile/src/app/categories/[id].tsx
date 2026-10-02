@@ -3,7 +3,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text } from 'react-native';
 import { getCategory, setCategoryArchived, updateCategory } from '../../db/categories';
-import { useLocalSession } from '../../db/DatabaseProvider';
+import { useLocalSession } from '../../db/session';
 import { useTheme } from '../../theme';
 import { CategoryForm } from '../../ui/CategoryForm';
 

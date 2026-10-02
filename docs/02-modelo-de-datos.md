@@ -7,7 +7,7 @@ El modelo usa los mismos conceptos en el celular (SQLite) y en el servidor (Post
 Siete reglas valen para todas las tablas y evitan los errores más caros de corregir después.
 
 1. **Identificadores generados en el cliente.** Cada registro nace con un UUID v7 creado en el celular. Así se puede crear sin conexión y reintentar sin duplicar; además, UUID v7 ordena por tiempo y mantiene compactos los índices de PostgreSQL.
-2. **Dinero en enteros.** Los montos se guardan como enteros en la unidad menor de la moneda (`amount_minor`) junto al código ISO 4217, nunca como decimales flotantes. COP tiene 2 decimales en el estándar, aunque la app muestre pesos sin centavos.
+2. **Dinero en enteros.** Los montos se guardan como enteros en la unidad menor de la moneda (`amount_minor`) junto al código ISO 4217, nunca como decimales flotantes. COP tiene 2 decimales en el estándar, aunque la app muestre pesos sin centavos. Al escribir un monto, punto y coma valen igual: en COP, que se escribe en pesos enteros, un separador seguido de exactamente 3 dígitos agrupa miles («12.500» y «12,500» son 12 500 pesos); en USD y EUR, el último separador seguido de 1 o 2 dígitos es el decimal. Se muestran con punto de miles y coma decimal: «$ 12.500», «US$ 1.234,56».
 3. **Monto con signo.** El usuario escribe un número positivo y el tipo de movimiento fija el signo al guardar: los gastos son negativos y los ingresos positivos. El saldo de una cuenta es su saldo inicial más la suma de sus movimientos.
 4. **Fecha local y fecha en UTC.** `occurred_on` es la fecha que ve el usuario y la que agrupa los reportes; `created_at` y `updated_at` son instantes en UTC. Así un gasto de las 11 p. m. no cae en el mes siguiente.
 5. **Borrado lógico.** `deleted_at` marca el registro y este se conserva 30 días antes de la purga definitiva, salvo que el usuario elimine su cuenta (RF-03), caso en el que se borra todo de inmediato.
@@ -68,12 +68,12 @@ Siete entidades cubren el MVP: usuarios, dispositivos, cuentas, categorías, mov
 | Campo | Tipo | Notas |
 | --- | --- | --- |
 | `name` | text | Nombre visible |
-| `type` | enum | `cash`, `checking`, `savings`, `credit_card`, `other` |
+| `type` | enum | `cash` (Efectivo), `savings` (Cuenta de ahorros), `checking` (Cuenta corriente), `credit_card` (Tarjeta de crédito), `other` (Otra: Nequi, Daviplata…) |
 | `currency` | char(3) | No cambia una vez que la cuenta tiene movimientos |
-| `opening_balance_minor` | bigint | Saldo inicial con signo; en una tarjeta de crédito, la deuda inicial es negativa |
+| `opening_balance_minor` | bigint | Saldo inicial con signo. La persona lo escribe en cero o positivo; en una tarjeta de crédito escribe la «Deuda actual» y se guarda en negativo. Se puede corregir después |
 | `color`, `icon` | text | Tokens de diseño, no valores sueltos |
-| `sort_order` | integer | Orden en la lista |
-| `archived_at` | timestamptz, nulo | Una cuenta archivada conserva su historial |
+| `sort_order` | integer | Orden en la lista; una cuenta nueva va al final (máximo + 1). Por ahora no hay pantalla para reordenar |
+| `archived_at` | timestamptz, nulo | Una cuenta archivada conserva su historial y su saldo, pero no se ofrece para movimientos nuevos. El nombre es único solo entre cuentas activas: para desarchivar una cuyo nombre ya usa una activa, primero hay que renombrarla |
 | card\_last4 | text\[\], nulo | V2: últimos 4 dígitos de las tarjetas de la cuenta; asignan a qué cuenta pertenece un mensaje capturado |
 
 ### categories
@@ -177,7 +177,7 @@ La base de datos rechaza los estados imposibles y la capa de dominio los valida 
 
 ### Saldo de una cuenta
 
-El saldo nunca se guarda como dato fuente: se calcula sumando los movimientos vigentes y confirmados. El dispositivo lo mantiene en una caché que se recalcula al escribir y que se puede reconstruir en cualquier momento.
+El saldo nunca se guarda como dato fuente: se calcula sumando los movimientos vigentes y confirmados (sin eliminados ni «por revisar», INV-09). Por ahora el dispositivo lo calcula al leer, con una consulta sobre los índices de `account_id` y `to_account_id`; se agregará una caché solo si la prueba de 10 000 movimientos (HU-05) lo pide. El saldo calculado puede ser negativo. En una tarjeta de crédito, un saldo negativo se muestra como «Debes $ X» y uno positivo como «A favor $ X».
 
 ```latex
 \text{saldo}(c) = \text{opening}_c + \sum_{t:\ \text{account}_t = c} \text{amount}_t + \sum_{t:\ \text{to\_account}_t = c} \text{to\_amount}_t

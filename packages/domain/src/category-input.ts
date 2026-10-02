@@ -2,6 +2,7 @@
 import { predefinedCategoryId } from './categories.js';
 import type { CategoryKind } from './enums.js';
 import { deterministicId } from './ids.js';
+import { sameName } from './names.js';
 import { isColorToken, isIconToken } from './tokens.js';
 
 export const MAX_CATEGORY_NAME = 40;
@@ -28,19 +29,6 @@ export type CategoryInputError =
   | 'parent_not_main'
   | 'parent_kind_mismatch';
 
-const normalize = (name: string) =>
-  name
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .trim()
-    .replace(/\s+/g, ' ')
-    .toLowerCase();
-
-/** Dos nombres son el mismo si solo cambian mayúsculas, tildes o espacios. */
-export function sameCategoryName(a: string, b: string): boolean {
-  return normalize(a) === normalize(b);
-}
-
 export function checkCategoryInput(
   input: CategoryInput,
   { parent, siblingNames }: CategoryInputContext,
@@ -49,8 +37,7 @@ export function checkCategoryInput(
   const name = input.name.trim();
   if (name.length === 0) errors.push('name_required');
   else if (name.length > MAX_CATEGORY_NAME) errors.push('name_too_long');
-  else if (siblingNames.some((sibling) => sameCategoryName(sibling, name)))
-    errors.push('name_duplicate');
+  else if (siblingNames.some((sibling) => sameName(sibling, name))) errors.push('name_duplicate');
   if (!isIconToken(input.icon)) errors.push('icon_unknown');
   if (!isColorToken(input.color)) errors.push('color_unknown');
   if (parent) {
