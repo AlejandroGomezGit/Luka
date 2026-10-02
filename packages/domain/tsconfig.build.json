@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  // Regla 1 de CLAUDE.md: sin DOM ni Node. Usar fs, fetch o process aquí no compila.
+  "compilerOptions": {
+    "noEmit": false,
+    "lib": ["ES2022"],
+    "types": [],
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "exclude": ["src/**/*.test.ts"]
+}
