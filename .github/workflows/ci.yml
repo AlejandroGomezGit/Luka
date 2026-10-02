@@ -30,3 +30,16 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
       - run: pnpm turbo run lint typecheck test build --cache-dir=.turbo/cache
+
+  infra:
+    name: Arranque limpio de Docker Compose
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      # RNF-12: falla si algún servicio no queda healthy (el de S3 incluye el bucket).
+      - run: docker compose -f infra/docker-compose.yml up -d --wait --wait-timeout 180
+      - if: failure()
+        run: docker compose -f infra/docker-compose.yml logs
+      - if: always()
+        run: docker compose -f infra/docker-compose.yml down -v
