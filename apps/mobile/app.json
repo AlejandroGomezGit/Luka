@@ -4,9 +4,7 @@
     "slug": "luka",
     "version": "0.1.0",
     "scheme": "luka",
-    "platforms": [
-      "ios"
-    ],
+    "platforms": ["ios"],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -14,12 +12,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.ejemplo.luka"
     },
-    "plugins": [
-      "expo-router",
-      "expo-status-bar",
-      "expo-sqlite",
-      "expo-font"
-    ],
+    "plugins": ["expo-router", "expo-status-bar", "expo-sqlite", "expo-font"],
     "experiments": {
       "typedRoutes": true
     }
