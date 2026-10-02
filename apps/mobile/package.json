@@ -13,10 +13,14 @@
   },
   "dependencies": {
     "@luka/domain": "workspace:*",
+    "@luka/schema-sqlite": "workspace:*",
+    "drizzle-orm": "^0.45.3",
     "expo": "~57.0.26",
     "expo-constants": "~57.0.20",
+    "expo-crypto": "~57.0.3",
     "expo-linking": "~57.0.11",
     "expo-router": "~57.0.24",
+    "expo-sqlite": "~57.0.3",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-native": "0.86.3",
@@ -27,15 +31,20 @@
     "@luka/config": "workspace:*",
     "@testing-library/react-native": "^14.0.1",
     "@types/jest": "29.5.14",
+    "@types/node": "^22.20.4",
     "@types/react": "~19.2.2",
+    "@types/sql.js": "^1.4.11",
+    "babel-plugin-inline-import": "^3.0.0",
+    "babel-preset-expo": "~57.0.13",
     "jest": "~29.7.0",
     "jest-expo": "~57.0.5",
+    "sql.js": "^1.14.2",
     "typescript": "~6.0.3"
   },
   "jest": {
     "preset": "jest-expo",
     "transformIgnorePatterns": [
-      "node_modules/(?!(.pnpm|(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg))"
+      "node_modules/(?!(.pnpm|(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|uuid))"
     ]
   }
 }

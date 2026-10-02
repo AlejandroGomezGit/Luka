@@ -144,3 +144,13 @@ export const attachments = sqliteTable(
   },
   (t) => [check('attachments_kind', oneOf(t.kind, ATTACHMENT_KINDS))],
 );
+
+/**
+ * Solo en el dispositivo, una fila: identidad local creada en el primer arranque. El `user_id` local se
+ * envía al servidor al registrarse (T-019), así los datos creados sin servidor no se reescriben.
+ */
+export const deviceProfile = sqliteTable('device_profile', {
+  deviceId: text('device_id').primaryKey(),
+  userId: text('user_id').notNull(),
+  createdAt: instant('created_at').notNull(),
+});

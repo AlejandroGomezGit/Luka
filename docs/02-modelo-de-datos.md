@@ -140,15 +140,18 @@ Ocho entidades más aparecen según la fase; solo `consents` es necesaria desde 
 
 ## Tablas de sincronización
 
-Cinco tablas de soporte hacen posible el modo sin conexión y la auditoría de conflictos; ninguna es visible para el usuario.
+Seis tablas de soporte hacen posible el modo sin conexión y la auditoría de conflictos; ninguna es visible para el usuario.
 
 | Tabla | Dónde | Campos clave | Para qué |
 | --- | --- | --- | --- |
 | `outbox` | Dispositivo | `op_id` (PK), `entity`, `entity_id`, `op` (`upsert` o `delete`), `patch` (campos cambiados con su reloj), `base_version`, `hlc`, `status` (`pending`, `sent`, `error`), `attempts`, `last_error` | Cola de cambios pendientes; sobrevive al cierre de la app |
+| `device_profile` | Dispositivo | `device_id` (PK), `user_id`, `created_at` | Una sola fila creada en el primer arranque (T-010): la identidad local con la que se escriben los datos antes de tener servidor. Al registrarse, la app envía ese mismo `user_id` al servidor (ADR-008), así nada se reescribe |
 | `sync_state` | Dispositivo | `device_id`, `cursor`, `last_sync_at`, `hlc`, `schema_version` | Una sola fila: hasta dónde llegó este dispositivo |
 | `user_sync_state` | Servidor | `user_id`, `last_seq` | Contador de secuencia por usuario |
 | `sync_ops` | Servidor | `server_seq`, `user_id`, `device_id`, `op_id`, `entity`, `entity_id`, `op`, `changes` (jsonb), `resulting_version`, `hlc`, `applied_at` | Registro de operaciones aplicadas; solo se agrega, nunca se edita |
 | `conflicts` | Servidor | `id`, `user_id`, `entity`, `entity_id`, `field`, `winning_op_id`, `losing_op_id`, `losing_value` (jsonb), `resolved_at` | Auditoría de cada campo que perdió un conflicto |
+
+**Pregunta abierta para T-019.** Si la persona inicia sesión en una cuenta que ya existe desde un dispositivo con datos locales, su `user_id` local no coincide con el del servidor. Hay que decidir si esos datos se fusionan con la cuenta (reescribiendo `user_id` y los UUID v5 de las categorías predefinidas, que dependen de él) o se descartan con aviso.
 
 **Por qué hay un contador por usuario.** Un `bigserial` global puede entregar números fuera del orden en que se confirman las transacciones, y un dispositivo que sincroniza en ese instante se saltaría cambios para siempre. Por eso cada operación toma su número de `user_sync_state` bajo un bloqueo de fila dentro de la misma transacción que la aplica.
 

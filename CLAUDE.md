@@ -34,7 +34,7 @@ TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con ex
 
 ## Reglas de arquitectura (no negociables)
 
-1. packages/domain es TypeScript puro: sin React Native, sin Node y sin acceso a red ni a base de datos. Lo externo entra por interfaces.
+1. packages/domain es TypeScript puro: sin React Native, sin Node y sin acceso a red ni a base de datos. Lo externo entra por interfaces. Única dependencia externa permitida: `uuid` (JavaScript puro, sin `crypto` de Node), para los UUID v7 y v5 de la regla 3.
 2. Dinero: enteros en la unidad menor (amount_minor) con moneda ISO 4217 y signo según el tipo (INV-01). Nunca decimales flotantes.
 3. Identificadores: UUID v7 generados en el cliente; UUID v5 para categorías predefinidas y ocurrencias recurrentes.
 4. Toda tabla sincronizable lleva las columnas comunes del documento 02.
