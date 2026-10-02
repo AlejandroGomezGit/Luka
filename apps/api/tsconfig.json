@@ -1,0 +1,11 @@
+{
+  "extends": "@luka/config/tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    // NestJS inyecta dependencias leyendo los metadatos de los decoradores.
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "include": ["src"]
+}

@@ -12,7 +12,7 @@ La mayor parte de la confianza viene de pruebas rápidas y deterministas sobre e
 | Propiedades | Idempotencia, orden de llegada, convergencia y reloj lógico (documento 4) | fast-check | Todas las propiedades en verde | Cada PR |
 | Categorizador | Calidad del acierto con un conjunto de prueba etiquetado y reservado | Jest | El acierto no empeora entre versiones | Cada PR que toque el categorizador |
 | Componentes de la app | Pantallas y formularios de HU-02 a HU-08, con casos felices y de error | Jest y React Native Testing Library | Cada criterio de aceptación con su prueba | Cada PR |
-| Integración de la API | Endpoints contra PostgreSQL y Redis reales | Supertest y Testcontainers | Por endpoint: éxito, validación, autenticación y aislamiento entre usuarios | Cada PR |
+| Integración de la API | Endpoints contra PostgreSQL y Redis reales | `inject` de Fastify (sin abrir un puerto) y Testcontainers | Por endpoint: éxito, validación, autenticación y aislamiento entre usuarios | Cada PR |
 | Contrato | La API cumple el OpenAPI y la app cumple el contrato | Pruebas de contrato sobre el OpenAPI generado | Ningún cambio que rompa sin subir de versión | Cada PR |
 | Migraciones | Esquemas de PostgreSQL y SQLite | Scripts de CI | Aplicar desde cero y desde la versión anterior | Cada PR que cambie el esquema |
 | Simulación de sincronización | Convergencia con varios dispositivos, relojes desfasados y red defectuosa | Simulador propio | 50 semillas por PR y 1 000 de noche | PR y nocturno |

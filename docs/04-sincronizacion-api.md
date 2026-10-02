@@ -280,7 +280,7 @@ La sincronización es la pieza donde un error pasa desapercibido hasta que algui
 | --- | --- | --- | --- |
 | Propiedades | Idempotencia, orden de llegada irrelevante, convergencia de dos réplicas, reloj que nunca retrocede e invariantes INV-01 a INV-07 tras cualquier secuencia de operaciones válidas | fast-check sobre `packages/domain` | Cada pull request |
 | Simulación multidispositivo | De dos a cuatro dispositivos con relojes desfasados, ediciones al azar y una red que pierde, duplica y reordena mensajes; al final todos coinciden con el servidor | Simulador determinista propio con semilla reproducible | 50 semillas en cada PR y 1 000 de noche; cada fallo guarda su semilla |
-| Integración | `POST /v1/sync` contra PostgreSQL real: índice único de idempotencia, dos sincronizaciones simultáneas sin saltos de secuencia, aislamiento entre usuarios, `410` por cursor vencido y migraciones | Supertest y Testcontainers, con Toxiproxy para cortes de red | Cada pull request |
+| Integración | `POST /v1/sync` contra PostgreSQL real: índice único de idempotencia, dos sincronizaciones simultáneas sin saltos de secuencia, aislamiento entre usuarios, `410` por cursor vencido y migraciones | `inject` de Fastify y Testcontainers, con Toxiproxy para cortes de red | Cada pull request |
 | E2E móvil | Crear gastos en modo avión, volver la red y ver el indicador en «al día»; el mismo flujo tras cerrar la app a mitad | Maestro en el simulador de iOS | Antes de cada versión |
 | Carga | 1 000 usuarios simulados sincronizando con p95 menor a 300 ms (RNF-03) | k6 | De noche y antes de cada lanzamiento |
 

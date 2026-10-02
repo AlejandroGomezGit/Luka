@@ -40,7 +40,7 @@ Todo el sistema se escribe en TypeScript, así un solo lenguaje cubre la app, la
 | Observabilidad | OpenTelemetry, logs JSON con Pino y Sentry en la app y en la API | Trazas, métricas y errores con un id de correlación |
 | Integración y despliegue | GitHub Actions, EAS Build y EAS Submit, Docker | Un pipeline para la API y otro para la app |
 | Infraestructura | Terraform | Entornos reproducibles cuando se pase a AWS |
-| Pruebas | Jest, React Native Testing Library, Supertest con Testcontainers, fast-check, Maestro y k6 | Unitarias, de integración, de propiedades, E2E móviles y de carga |
+| Pruebas | Jest, React Native Testing Library, `inject` de Fastify con Testcontainers, fast-check, Maestro y k6 | Unitarias, de integración, de propiedades, E2E móviles y de carga |
 
 ## Monorepo y paquetes compartidos
 

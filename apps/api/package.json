@@ -1,0 +1,43 @@
+{
+  "name": "@luka/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "nest start --watch --env-file ../../.env",
+    "start": "node dist/main.js",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --testPathIgnorePatterns integration",
+    "test:integration": "NODE_OPTIONS=--experimental-vm-modules jest --testPathPatterns integration"
+  },
+  "dependencies": {
+    "@luka/contracts": "workspace:*",
+    "@nestjs/common": "^12.1.2",
+    "@nestjs/core": "^12.1.2",
+    "@nestjs/platform-fastify": "^12.1.2",
+    "fastify": "5.12.5",
+    "ioredis": "^6.0.0",
+    "nestjs-pino": "^5.2.1",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
+    "postgres": "^3.4.9",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@jest/globals": "^30.5.2",
+    "@luka/config": "workspace:*",
+    "@nestjs/cli": "^12.0.8",
+    "@nestjs/testing": "^12.1.2",
+    "@swc/core": "^1.16.13",
+    "@swc/jest": "^0.2.39",
+    "@testcontainers/postgresql": "^12.2.0",
+    "@testcontainers/redis": "^12.2.0",
+    "@types/node": "^22.20.4",
+    "jest": "^30.5.2",
+    "testcontainers": "^12.2.0"
+  }
+}
