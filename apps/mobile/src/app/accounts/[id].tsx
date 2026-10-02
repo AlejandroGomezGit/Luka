@@ -1,6 +1,6 @@
 import type { AccountInputError } from '@luka/domain';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   accountFormValues,
   getAccount,
@@ -9,10 +9,13 @@ import {
 } from '../../db/accounts';
 import { useLocalSession } from '../../db/session';
 import { AccountForm } from '../../ui/AccountForm';
+import type { FormHandle } from '../../ui/FormHandle';
+import { HeaderButton } from '../../ui/HeaderButton';
 
 /** Editar o archivar una cuenta; para desarchivar, su nombre no puede estar en uso por una activa. */
 export default function EditAccountScreen() {
   const session = useLocalSession();
+  const form = useRef<FormHandle>(null);
   const { id } = useLocalSearchParams<{ id: string }>();
   const account = getAccount(session.db, id);
   const [errors, setErrors] = useState<AccountInputError[]>([]);
@@ -21,8 +24,16 @@ export default function EditAccountScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: account.name }} />
+      <Stack.Screen
+        options={{
+          title: account.name,
+          headerRight: () => (
+            <HeaderButton label="Guardar" onPress={() => form.current?.submit()} />
+          ),
+        }}
+      />
       <AccountForm
+        ref={form}
         initial={accountFormValues(account)}
         errors={errors}
         archived={archived}
