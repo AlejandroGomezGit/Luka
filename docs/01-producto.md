@@ -122,7 +122,7 @@ Los tres que más pesan en el portafolio son el funcionamiento sin conexión, la
 | RNF-08 | Seguridad | Base de datos local protegida con cifrado de iOS y bloqueo biométrico opcional | Revisión manual y prueba en dispositivo |
 | RNF-09 | Privacidad | Consentimiento explícito antes de usar IA o conexión bancaria; borrado completo de datos a petición del usuario | Pruebas E2E del flujo de borrado; alineación con la Ley 1581 de 2012, por validar con asesoría legal |
 | RNF-10 | Observabilidad | Logs estructurados con id de correlación, métricas de tasa, errores y latencia, trazas y alertas | Tablero y alerta de prueba disparada a propósito |
-| RNF-11 | Calidad | Cobertura de 80 % o más en lógica de dominio; CI en cada PR con lint, tipos, pruebas y build; merge bloqueado si falla | Reglas de rama protegida en GitHub |
+| RNF-11 | Calidad | Cobertura de 80 % o más en lógica de dominio; CI en cada PR con lint, tipos, pruebas y build; merge bloqueado si falla | Reglas de rama protegida en GitHub (pendientes: el plan gratuito no las permite en repositorios privados; se activan al publicar el repositorio, #9) |
 | RNF-12 | Despliegue | Entorno local completo con un solo comando (Docker Compose); infraestructura versionada como código | Prueba de arranque limpio en CI |
 | RNF-13 | Accesibilidad | Dynamic Type y VoiceOver en los flujos principales; contraste mínimo AA | Auditoría con Accessibility Inspector |
 | RNF-14 | Disponibilidad | Meta de 99,5 % mensual para la API mientras sea un servicio de bajo costo | Monitoreo externo de health checks |

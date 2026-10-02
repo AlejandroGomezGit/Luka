@@ -26,8 +26,9 @@ TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con ex
 
 - pnpm install
 - pnpm dev:api y pnpm dev:mobile
-- pnpm lint, pnpm typecheck, pnpm test y pnpm test:api
-- pnpm sim:sync --seeds 50
+- pnpm lint, pnpm typecheck, pnpm test, pnpm test:api, pnpm build y pnpm format
+- pnpm sim:sync --seeds 50 (desde H3, T-033)
+- pnpm --filter @luka/contracts openapi (regenera openapi.json)
 - pnpm db:generate y pnpm db:migrate
 - docker compose -f infra/docker-compose.yml up -d
 

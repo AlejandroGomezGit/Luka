@@ -25,7 +25,7 @@ El diagrama no se exporta a Markdown, así que esta tabla lleva los mismos nombr
 
 ## Backlog inicial
 
-Son 42 issues para los hitos 0 a 4, es decir, todo el MVP; V2 y V3 se mantienen como épicas hasta que se acerquen. Cada issue apunta a la historia, el caso de uso o el requisito que lo justifica, y Claude Code puede crearlos en GitHub con `gh issue create` a partir de esta tabla.
+Son 43 issues para los hitos 0 a 4, es decir, todo el MVP (T-043 se agregó al cerrar el H0); V2 y V3 se mantienen como épicas hasta que se acerquen. Cada issue apunta a la historia, el caso de uso o el requisito que lo justifica, y Claude Code puede crearlos en GitHub con `gh issue create` a partir de esta tabla.
 
 | ID | Issue | Hito | Etiquetas | Referencias |
 | --- | --- | --- | --- | --- |
@@ -55,6 +55,7 @@ Son 42 issues para los hitos 0 a 4, es decir, todo el MVP; V2 y V3 se mantienen 
 | T-024 | Bloqueo de la app con Face ID | H2 | `feature` `mobile` `security` | CU-02, HU-10 |
 | T-025 | Límite de tasa y cabeceras de seguridad | H2 | `feature` `api` `security` | AM-01, AM-08 |
 | T-026 | Seguridad a nivel de fila y pruebas de aislamiento entre usuarios | H2 | `feature` `db` `security` | INV-08, AM-03 |
+| T-043 | Tubería de seguridad en CI: gitleaks, osv-scanner y Renovate; CodeQL cuando el repositorio sea público | H2 | `ci` `security` | AM-09, AM-10 |
 | T-027 | Reloj lógico híbrido con pruebas de propiedades | H3 | `feature` `domain` `sync` | ADR-006 |
 | T-028 | Fusión de operaciones por campo y por grupo de campos | H3 | `feature` `domain` `sync` | Documento 4 |
 | T-029 | Outbox y estado de sincronización en el dispositivo | H3 | `feature` `mobile` `sync` | RF-23, RF-26 |
@@ -154,11 +155,13 @@ El riesgo que más puede cambiar el plan es quién publica la app en la App Stor
 | R-03 | El motor de sincronización no converge o resulta demasiado complejo | Pérdida de confianza en los datos | Pruebas de propiedades y simulador desde el inicio; si falla en el H3, reevaluar con un ADR | H3 |
 | R-04 | El reconocimiento de texto en el dispositivo no funciona bien con Expo | Retrasa los recibos de V3 | Validar un prototipo en el H4; alternativa: respaldo de IA externa con consentimiento | H4 |
 | R-05 | Los bancos tardan en habilitar el acceso a sus datos | La conexión bancaria no se puede entregar | Seguir el cronograma de la Superfinanciera; V3 puede salir sin esa épica y la tubería de captura permite sumarla después | Antes del H7 |
-| R-06 | La configuración de Metro con pnpm falla en el monorepo | Frena el H0 | Validarlo en T-001 y T-007; alternativa: enlazado `hoisted` de pnpm | H0 |
+| R-06 | La configuración de Metro con pnpm falla en el monorepo | Frena el H0 | **Cerrado en el H0:** Expo SDK 57 soporta las instalaciones aisladas de pnpm sin configurar Metro (T-007), y el CI empaqueta la app para iOS en cada PR | H0 |
 | R-07 | Apple rechaza la app por privacidad o inicio de sesión | Demora el lanzamiento | Lista del documento 5, cuenta de demostración, notas y TestFlight previo | H6 |
 | R-08 | Los costos de infraestructura superan los ingresos | Hace inviable operar | Etapa 0 de bajo costo, seguimiento mensual y decidir el modelo de ingresos antes del H6; si hay suscripción, debe usar compras dentro de la app (3.1.1) | H5 |
 | R-09 | Incumplir la Ley 1581 de 2012 | Multas y cierre de operaciones | Tabla de cumplimiento del documento 5 y asesoría legal | H6 |
 | R-10 | Un error de sincronización pierde datos de un usuario | Daño directo a las personas | Pruebas de propiedades, copias de seguridad y exportación de datos (E-09) antes del lanzamiento | H5 |
-| R-11 | La calidad del código generado con Claude Code varía | Deuda técnica y errores sutiles | `CLAUDE.md`, issues pequeños, pruebas obligatorias y revisión de cada PR | Cierre de cada hito |
+| R-11 | La calidad del código generado con Claude Code varía | Deuda técnica y errores sutiles | `CLAUDE.md`, issues pequeños, pruebas obligatorias y revisión de cada PR; las cifras se reportan siempre desde la salida real | Cierre de cada hito |
 | R-12 | Las guías de Apple cambian | Una lista vieja deja de servir | Volver a verificar las guías antes de cada envío | Cada envío |
 | R-13 | La automatización de Atajos no corre sola o iOS cambia cómo funciona | La captura automática pierde su gracia | Validarla en un iPhone real en el H5; si siempre pide confirmación, queda como un atajo de un toque y se refuerza pegar o compartir | H5 |
+| R-14 | Las versiones recientes del stack cambian sus API respecto de lo que se conoce (en el H0: NestJS 12 en ESM, `render` asíncrono en React Native Testing Library 14, `types` vacío por defecto en TypeScript 6, scripts de instalación bloqueados en pnpm 12 y MinIO sin imágenes) | Errores sutiles o configuraciones que no aplican sin avisar | Consultar la documentación de la versión instalada y no la memoria; versiones fijadas en el archivo de bloqueo y `expo install` en la app; las cifras se reportan siempre desde la salida real | Cierre de cada hito |
+| R-15 | El plan gratuito de GitHub no permite proteger ramas ni usar CodeQL en repositorios privados | Un PR con el CI en rojo se puede fusionar y falta el análisis estático (RNF-11, documento 5) | Publicar el repositorio en cuanto el README, los ADRs y los diagramas estén listos (#9), o pasar a GitHub Pro (ver R-08); mientras tanto, no fusionar nada con el CI en rojo; las cifras se reportan siempre desde la salida real | Cierre de cada hito |
