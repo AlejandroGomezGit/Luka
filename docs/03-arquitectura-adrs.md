@@ -168,12 +168,12 @@ Hay cuatro entornos y el código llega a producción solo por un camino: una pul
 
 | Entorno | Para qué | Datos | Cómo se despliega |
 | --- | --- | --- | --- |
-| Local | Desarrollo diario | Datos de ejemplo | `docker compose up` levanta PostgreSQL, Redis, almacenamiento de objetos compatible con S3, API y worker; la app corre en el simulador o en el celular con Expo |
+| Local | Desarrollo diario | Datos de ejemplo | `docker compose up` levanta PostgreSQL, Redis, almacenamiento de objetos compatible con S3 (RustFS) y correo de pruebas (Mailpit); la API corre con `pnpm dev:api` y la app en el simulador o en el celular con Expo. La imagen de la API se suma al compose en T-040 y el worker llega con BullMQ |
 | CI | Validar cada pull request | Efímeros | Contenedores de servicio en GitHub Actions y Testcontainers |
 | Staging | Probar versiones antes de publicarlas y repartir builds por TestFlight | Datos sintéticos | Automático al fusionar a `main`; las migraciones corren primero |
 | Producción | Usuarios reales | Datos reales | Manual desde una etiqueta de versión; las migraciones corren primero y hay vuelta atrás probada |
 
-**Pipeline de la API.** Lint, tipos, pruebas unitarias y de integración, construcción de la imagen Docker y despliegue; cada paso bloquea el siguiente si falla.
+**Pipeline de la API.** Lint, tipos, pruebas unitarias y de integración, construcción de la imagen Docker y despliegue; cada paso bloquea el siguiente si falla. Desde el H0 corren lint, tipos y pruebas; la imagen y el despliegue llegan en T-040.
 
 **Pipeline de la app.** Lint, tipos y pruebas, build con EAS, build de staging por TestFlight y envío a App Store Connect con EAS Submit.
 

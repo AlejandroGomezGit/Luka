@@ -8,7 +8,7 @@ La mayor parte de la confianza viene de pruebas rápidas y deterministas sobre e
 
 | Nivel | Qué cubre | Herramienta | Meta | Cuándo corre |
 | --- | --- | --- | --- | --- |
-| Unitarias | Dinero, fechas, invariantes y utilidades de `packages/domain` | Jest | Cobertura de 80 % o más en `domain` (RNF-11) | Cada PR |
+| Unitarias | Dinero, fechas, invariantes y utilidades de `packages/domain` | Jest; `packages/config`, que es JavaScript sin compilar, usa `node:test` | Cobertura de 80 % o más en `domain` (RNF-11) | Cada PR |
 | Propiedades | Idempotencia, orden de llegada, convergencia y reloj lógico (documento 4) | fast-check | Todas las propiedades en verde | Cada PR |
 | Categorizador | Calidad del acierto con un conjunto de prueba etiquetado y reservado | Jest | El acierto no empeora entre versiones | Cada PR que toque el categorizador |
 | Componentes de la app | Pantallas y formularios de HU-02 a HU-08, con casos felices y de error | Jest y React Native Testing Library | Cada criterio de aceptación con su prueba | Cada PR |
@@ -17,7 +17,7 @@ La mayor parte de la confianza viene de pruebas rápidas y deterministas sobre e
 | Migraciones | Esquemas de PostgreSQL y SQLite | Scripts de CI | Aplicar desde cero y desde la versión anterior | Cada PR que cambie el esquema |
 | Simulación de sincronización | Convergencia con varios dispositivos, relojes desfasados y red defectuosa | Simulador propio | 50 semillas por PR y 1 000 de noche | PR y nocturno |
 | E2E móvil | Registro, gasto sin conexión, sincronización y eliminación de cuenta | Maestro en el simulador de iOS | Flujos críticos en verde | Antes de cada versión |
-| Seguridad | Secretos, dependencias, análisis estático y escaneo dinámico (documento 5) | gitleaks, osv-scanner, CodeQL, ZAP | Sin hallazgos críticos | PR y nocturno |
+| Seguridad | Secretos, dependencias, análisis estático y escaneo dinámico (documento 5) | gitleaks y osv-scanner (T-043), CodeQL cuando el repositorio sea público, ZAP contra staging | Sin hallazgos críticos | PR y nocturno |
 | Carga | Sincronización con 1 000 usuarios simulados (RNF-03) | k6 | p95 menor a 300 ms | De noche y antes de lanzar |
 | Accesibilidad | VoiceOver, Dynamic Type y contraste (RNF-13) | Accessibility Inspector y revisión manual | Flujos principales sin bloqueos | Antes de cada versión |
 | Lectores de mensajes | Cada banco reconoce sus mensajes y extrae monto, comercio, fecha y tarjeta, incluidos los formatos de monto colombianos | Jest con muestras reales sin datos personales | Una muestra por cada formato; ningún lector sin muestras | Cada PR que toque la captura |
@@ -41,7 +41,7 @@ Si cualquier verificación falla, el cambio vuelve al autor y no se fusiona. Las
 
 ## Reglas del repositorio
 
-`main` siempre está listo para desplegar, y las reglas de GitHub lo hacen cumplir en lugar de depender de la disciplina.
+`main` siempre está listo para desplegar, y las reglas de GitHub lo hacen cumplir en lugar de depender de la disciplina. Mientras el repositorio sea privado, el plan gratuito de GitHub no permite proteger ramas: el CI marca el PR en rojo pero no impide fusionarlo, y la protección se activa al publicar el repositorio (#9).
 
 | Tema | Regla | Para qué sirve |
 | --- | --- | --- |
@@ -52,8 +52,8 @@ Si cualquier verificación falla, el cambio vuelve al autor y no se fusiona. Las
 | Plantilla de PR | Qué cambia, historia o caso de uso relacionado, capturas si hay interfaz y la lista de «definición de hecho» | Trazabilidad con los documentos |
 | Revisión | Como el proyecto es de una sola persona, cada PR pasa por autorrevisión con la lista de la plantilla y por el CI | Compensar la falta de un segundo revisor |
 | Versiones | SemVer; la API en `/v1`; etiquetas `api-vX.Y.Z` y `app-vX.Y.Z` | Saber qué corre en cada entorno |
-| Changelog | Generado con release-please a partir de los commits | Historia legible sin trabajo manual |
-| Dependencias | pnpm con archivo de bloqueo y actualizaciones automáticas agrupadas | Menos deuda y menos vulnerabilidades |
+| Changelog | Generado con release-please a partir de los commits (pendiente: se configura al preparar la primera versión) | Historia legible sin trabajo manual |
+| Dependencias | pnpm con archivo de bloqueo y actualizaciones automáticas agrupadas con Renovate (T-043); los scripts de instalación se aprueban uno por uno en `allowBuilds` | Menos deuda y menos vulnerabilidades |
 | Documentación | Un cambio de arquitectura exige un ADR y uno de comportamiento exige actualizar el documento afectado | Que `docs/` nunca contradiga al código |
 
 ## Observabilidad

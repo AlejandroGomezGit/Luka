@@ -61,7 +61,7 @@ Las variables con prefijo `EXPO_PUBLIC_` terminan dentro del paquete de la app, 
 | `pnpm lint` y `pnpm typecheck` | ESLint y TypeScript en todo el monorepo |
 | `pnpm test` | Pruebas unitarias, de propiedades y de componentes |
 | `pnpm test:api` | Pruebas de integración de la API con Testcontainers |
-| `pnpm sim:sync --seeds N` | Simulador de sincronización con `N` semillas |
+| `pnpm sim:sync --seeds N` | Simulador de sincronización con `N` semillas (desde H3, T-033) |
 | `pnpm build` | Compila todos los paquetes y aplicaciones |
 | `pnpm db:generate` | Genera migraciones SQL con `drizzle-kit` |
 | `pnpm db:migrate` | Aplica las migraciones en PostgreSQL local |

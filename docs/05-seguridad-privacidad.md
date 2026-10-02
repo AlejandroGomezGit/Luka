@@ -16,8 +16,8 @@ Catorce amenazas cubren lo que importa proteger: las cuentas, las sesiones, los 
 | AM-06 | Interceptar el tráfico | TLS 1.2 o superior, HSTS y App Transport Security de iOS sin excepciones | Escaneo de TLS en staging |
 | AM-07 | Repetir o manipular operaciones de sincronización | `opId` idempotente, validación del registro resultante, reloj acotado por el servidor, lotes limitados | Pruebas de propiedades y de integración |
 | AM-08 | Abuso de la API: fuerza bruta, scraping, saturación | Límite de tasa por IP y por usuario, tamaño máximo de lote, tiempos de espera | k6 y pruebas de `429` |
-| AM-09 | Secretos filtrados en el repositorio o en los logs | Escaneo de secretos en CI, gestor de secretos, logs sin datos financieros | gitleaks en cada PR y prueba del redactado de logs |
-| AM-10 | Dependencia vulnerable o comprometida | Actualización automática, auditoría en CI, archivo de bloqueo y SBOM | osv-scanner en cada PR |
+| AM-09 | Secretos filtrados en el repositorio o en los logs | Escaneo de secretos en CI, gestor de secretos, logs sin datos financieros | gitleaks en cada PR (T-043) y prueba del redactado de logs (T-019) |
+| AM-10 | Dependencia vulnerable o comprometida | Actualización automática, auditoría en CI, archivo de bloqueo y SBOM | osv-scanner en cada PR (T-043) |
 | AM-11 | Adjuntos maliciosos o excesivos | URL prefirmada con tipo y tamaño máximos, caducidad corta, bucket privado | Prueba de integración de subida |
 | AM-12 | Compartir datos con terceros sin permiso | Categorizador en el dispositivo; IA externa y banco solo con consentimiento explícito | Pruebas E2E de consentimiento |
 | AM-13 | Pérdida de datos por borrado accidental o fallo de la base | Copias de seguridad automáticas, restauración probada y borrado lógico de 30 días | Simulacro de restauración |
@@ -145,19 +145,19 @@ La seguridad se automatiza en el pipeline para que no dependa de acordarse de el
 
 | Control | Herramienta | Cuándo corre |
 | --- | --- | --- |
-| Escaneo de secretos | gitleaks | En cada PR y en cada push |
-| Análisis estático de seguridad | CodeQL de GitHub | En cada PR |
-| Auditoría de dependencias | osv-scanner y actualizaciones automáticas con Renovate | En cada PR y cada semana |
+| Escaneo de secretos | gitleaks | En cada PR y en cada push (desde T-043) |
+| Análisis estático de seguridad | CodeQL de GitHub | En cada PR, cuando el repositorio sea público: el plan gratuito no lo permite en repositorios privados |
+| Auditoría de dependencias | osv-scanner y actualizaciones automáticas con Renovate | En cada PR y cada semana (desde T-043) |
 | Escaneo de imágenes de contenedor | Trivy | Al construir la imagen |
 | Escaneo dinámico básico | OWASP ZAP contra staging | De noche |
 | Inventario de componentes (SBOM) | CycloneDX | En cada versión |
-| Rama protegida | GitHub: PR obligatorio y CI en verde | Siempre |
+| Rama protegida | GitHub: PR obligatorio y CI en verde | Siempre, desde que el repositorio sea público (#9); mientras sea privado, el plan gratuito no lo permite |
 | Secretos de producción | GitHub Environments con aprobación manual | Al desplegar |
 | Revisión de este documento | Amenazas y mitigaciones | Al cierre de cada hito |
 
 ### Respuesta a incidentes
 
-1. **Detectar.** Alertas de Sentry y de métricas, o un reporte de un usuario al correo de seguridad publicado en `SECURITY.md`.
+1. **Detectar.** Alertas de Sentry y de métricas, o un reporte privado de vulnerabilidad en GitHub, como indica `SECURITY.md`. Ese reporte se activa cuando el repositorio sea público.
 2. **Contener.** Revocar tokens y dispositivos, rotar secretos y, si hace falta, apagar un endpoint con un interruptor de funcionalidad.
 3. **Evaluar.** Determinar qué datos, de cuántas personas y desde cuándo, con los logs y el id de correlación.
 4. **Notificar.** La ley exige informar a la autoridad de protección de datos cuando hay violaciones de los códigos de seguridad con riesgo para los datos de los titulares (art. 17 (n) de la Ley 1581); los plazos y el formato se validan con asesoría legal. Avisar también a las personas afectadas.
