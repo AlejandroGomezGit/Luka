@@ -30,86 +30,6 @@ El repositorio nace privado; se hace público cuando el README, los diagramas y 
 
 Este archivo va en la raíz del repositorio y reúne lo que no cambia de una tarea a otra: dónde está cada decisión, las reglas que no se negocian y cómo trabajar. Claude Code lo carga al iniciar ([documentación de Claude Code](https://code.claude.com/docs/en/settings)); el detalle vive en `docs/`, no aquí.
 
-```markdown
-# Luka
-
-App iOS de finanzas personales (registro de gastos) que funciona sin conexión y se sincroniza sin perder datos. Es un proyecto de portafolio full stack y está diseñado para poder publicarse en la App Store. El código, los comentarios, los commits y la documentación van en español; los identificadores de código, en inglés.
-
-## Documentos (léelos antes de implementar)
-
-- docs/01-producto.md: visión, requisitos (RF y RNF), casos de uso (CU) e historias (HU).
-- docs/02-modelo-de-datos.md: entidades, invariantes (INV) y reglas de PostgreSQL y SQLite.
-- docs/03-arquitectura-adrs.md: stack, monorepo, categorizador y ADRs.
-- docs/04-sincronizacion-api.md: motor de sincronización, reloj lógico híbrido (HLC), conflictos y contrato de la API.
-- docs/05-seguridad-privacidad.md: amenazas (AM), Ley 1581 y requisitos de la App Store.
-- docs/06-pruebas-ci-observabilidad.md: pruebas, pipeline y observabilidad.
-- docs/07-roadmap-backlog.md: hitos, puertas, issues (T-xxx) y definición de hecho.
-
-Si el código y un documento se contradicen, no lo resuelvas en silencio: avísame y propón actualizar el documento o crear un ADR.
-
-## Stack y estructura
-
-TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con expo-sqlite y Drizzle. API: NestJS con Fastify, PostgreSQL con Drizzle, Redis y BullMQ. Contratos con Zod y OpenAPI. Monorepo con pnpm y Turborepo.
-
-- apps/mobile y apps/api
-- packages/domain, contracts, schema-pg, schema-sqlite y config
-- infra/ (Terraform y Docker Compose) y docs/
-
-## Comandos
-
-- pnpm install
-- pnpm dev:api y pnpm dev:mobile
-- pnpm lint, pnpm typecheck, pnpm test y pnpm test:api
-- pnpm sim:sync --seeds 50
-- pnpm db:generate y pnpm db:migrate
-- docker compose -f infra/docker-compose.yml up -d
-
-## Reglas de arquitectura (no negociables)
-
-1. packages/domain es TypeScript puro: sin React Native, sin Node y sin acceso a red ni a base de datos. Lo externo entra por interfaces.
-2. Dinero: enteros en la unidad menor (amount_minor) con moneda ISO 4217 y signo según el tipo (INV-01). Nunca decimales flotantes.
-3. Identificadores: UUID v7 generados en el cliente; UUID v5 para categorías predefinidas y ocurrencias recurrentes.
-4. Toda tabla sincronizable lleva las columnas comunes del documento 02.
-5. Borrado lógico (deleted_at); solo la eliminación de cuenta y la purga borran filas.
-6. Todo cambio del usuario pasa por el outbox y viaja con POST /v1/sync; nunca se escribe en el servidor saltándose la cola.
-7. Conflictos por campo o grupo de campos con HLC acotado por el servidor (ADR-006).
-8. Toda consulta del servidor filtra por user_id y la seguridad a nivel de fila está activa.
-9. Errores de la API en application/problem+json con un code estable.
-10. Nunca registrar importes, comercios, notas ni correos en los logs.
-11. El categorizador corre en el dispositivo; ningún texto de movimientos sale a terceros sin consentimiento (ai_external).
-12. Interfaz en español con formato COP, compatible con Dynamic Type y VoiceOver.
-13. Todo movimiento que no escribe la persona (mensaje, CSV, banco) entra por la tubería de captura de packages/domain: adaptador, lector, huella contra duplicados, cuenta, categoría y estado por revisar (ADR-014). Lo capturado no cuenta hasta confirmarse (INV-09).
-
-## Convenciones
-
-- Conventional Commits; ramas feat/, fix/, chore/, docs/ o ci/; un issue por rama y por pull request.
-- Sin any; sin dependencias nuevas sin justificarlas en el PR.
-- Las migraciones ya aplicadas no se editan: se crea una nueva.
-- Cada criterio de aceptación tiene una prueba cuyo nombre incluye el id de la historia (por ejemplo HU-03).
-- Cobertura de packages/domain: 80 % o más.
-
-## Cómo trabajar
-
-- Antes de empezar un issue, lee el documento correspondiente y resume el plan en pocas líneas. Si algo es ambiguo o grande, pregunta antes de escribir código.
-- Escribe primero la prueba del criterio de aceptación cuando sea posible.
-- Al terminar, ejecuta lint, typecheck y las pruebas y reporta el resultado real, sin suponerlo.
-- Si cambia una decisión de arquitectura, crea un ADR en docs/adr/; si cambia un comportamiento, actualiza el documento afectado en el mismo PR.
-
-## Seguridad
-
-- No leas ni imprimas archivos .env; usa .env.example con valores falsos.
-- Nunca pongas secretos en el código ni en variables EXPO_PUBLIC_, que terminan dentro de la app.
-- Pide confirmación antes de git push, de borrar datos o de instalar dependencias.
-
-## Fuera de alcance mientras no se pida
-
-Android, web, pagos o mover dinero real, y cualquier trabajo de V2 o V3 antes de su hito.
-
-## Glosario
-
-HU historia de usuario, CU caso de uso, RF y RNF requisitos, INV invariante de datos, AM amenaza, ADR registro de decisión de arquitectura, HLC reloj lógico híbrido, outbox cola local de cambios pendientes.
-```
-
 ## Variables, scripts y permisos
 
 El repositorio incluye un `.env.example` con valores falsos y nunca un `.env` real; los scripts de la raíz son la única puerta de entrada para trabajar, de modo que Claude Code y usted usan los mismos comandos.
@@ -194,7 +114,7 @@ Luego trabaja un issue a la vez, en su propia rama, con pruebas. Al terminar cad
 
 ### Hito 0 · Cimientos
 
-```text
+```plain
 Lee CLAUDE.md y docs/03-arquitectura-adrs.md, docs/06-pruebas-ci-observabilidad.md y docs/07-roadmap-backlog.md.
 
 Vamos a construir el Hito 0 (Cimientos): los issues T-001 a T-009. Puerta de calidad: pipeline de CI en verde con al menos una prueba por paquete y la infraestructura local levantando con docker compose.
@@ -238,7 +158,7 @@ Para los hitos 2 y 4 se usa la plantilla con sus issues (T-019 a T-026 y T-035 a
 
 Desde el Hito 0, la copia de `docs/` en el repositorio es la oficial y este documento queda como el diseño inicial; si ambos divergen, manda el repositorio.
 
-- **Un cambio de arquitectura exige un ADR** en `docs/adr/` (por ejemplo `014-titulo.md`), con contexto, decisión, alternativas y consecuencias. Los 13 ADRs del documento 3 se convierten en archivos durante el Hito 0 (T-009).
+- **Un cambio de arquitectura exige un ADR** en `docs/adr/` (por ejemplo `015-titulo.md`), con contexto, decisión, alternativas y consecuencias. Los 14 ADRs del documento 3 se convierten en archivos durante el Hito 0 (T-009).
 - **Un cambio de comportamiento actualiza el documento afectado en el mismo pull request**, no después.
 - **Cierre de hito.** El prompt de cierre pide revisar que `docs/` refleje lo implementado antes de abrir el siguiente hito.
 - **Índice.** Un `docs/README.md` lista los documentos y los ADRs con una línea cada uno, y el `README.md` de la raíz enlaza ahí.

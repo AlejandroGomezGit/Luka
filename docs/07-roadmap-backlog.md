@@ -10,6 +10,19 @@ El proyecto avanza por ocho hitos y no pasa al siguiente hasta cumplir la puerta
 
 No hay fechas porque el ritmo depende del tiempo que el dueño del proyecto pueda dedicarle; los hitos son una secuencia y no un calendario. Cada puerta se verifica con las pruebas del documento 6.
 
+El diagrama no se exporta a Markdown, así que esta tabla lleva los mismos nombres, alcances y puertas de calidad de los ocho hitos.
+
+| Hito | Nombre | Alcance | Puerta de calidad | Issues |
+| --- | --- | --- | --- | --- |
+| H0 | Cimientos | Monorepo, CI, Docker Compose y esqueletos | Pipeline en verde con una prueba por paquete; docker compose up funciona | T-001 a T-009 |
+| H1 | Núcleo local | App sin servidor: cuentas, movimientos y resumen | HU-02 a HU-08 con sus pruebas; la app funciona completa sin red | T-010 a T-018 |
+| H2 | API y autenticación | Registro, sesión, perfil, dispositivos y borrado | HU-01 y HU-10 en verde; aislamiento entre usuarios probado (AM-03) | T-019 a T-026 |
+| H3 | Sincronización | Motor propio, reloj híbrido, conflictos y simulador | Simulación de 1 000 semillas sin divergencia (RNF-05) y E2E sin red | T-027 a T-034 |
+| H4 | Endurecimiento y TestFlight | Adjuntos, observabilidad, seguridad y staging | RNF-01 a RNF-14 verificados; MVP estable en TestFlight para uso propio | T-035 a T-042 |
+| H5 | V2 | Captura de mensajes, presupuestos, CSV y categorizador | Requisitos V2 de prioridad Must en verde y panel de operación activo | Por definir |
+| H6 | Lanzamiento en la App Store | Trámites, privacidad, revisión y liberación por fases | Lista de App Store completa y decisión de quién publica tomada y validada | Por definir |
+| H7 | V3 | Recibos, PDF, banco y suscripciones | Conexión bancaria verificada si los bancos ya habilitaron el acceso, y consentimientos activos en producción | Por definir |
+
 ## Backlog inicial
 
 Son 42 issues para los hitos 0 a 4, es decir, todo el MVP; V2 y V3 se mantienen como épicas hasta que se acerquen. Cada issue apunta a la historia, el caso de uso o el requisito que lo justifica, y Claude Code puede crearlos en GitHub con `gh issue create` a partir de esta tabla.
