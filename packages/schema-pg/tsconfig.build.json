@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  // Lo usa la API.
+  "compilerOptions": {
+    "noEmit": false,
+    "lib": ["ES2022"],
+    "types": [],
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
+}

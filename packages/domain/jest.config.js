@@ -1,9 +1,8 @@
+import base from '@luka/config/jest';
+
 /** @type {import('jest').Config} */
 export default {
-  testEnvironment: 'node',
-  transform: { '^.+\\.ts$': '@swc/jest' },
-  // Los imports de NodeNext llevan .js; en las pruebas apuntan al .ts.
-  moduleNameMapper: { '^(\\.{1,2}/.*)\\.js$': '$1' },
-  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.test.ts', '!src/index.ts'],
+  ...base,
+  // RNF-11: cobertura de 80 % o más en el dominio.
   coverageThreshold: { global: { branches: 80, functions: 80, lines: 80, statements: 80 } },
 };

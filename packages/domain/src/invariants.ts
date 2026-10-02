@@ -2,7 +2,8 @@
  * Invariantes INV-01 a INV-07 del documento 02. Cada función devuelve los ids violados (vacío = válido);
  * el id es estable y la API lo usa como `code` en problem+json.
  */
-import type { CurrencyCode, TransactionKind } from './money.js';
+import type { CategoryKind, TransactionKind } from './enums.js';
+import type { CurrencyCode } from './money.js';
 
 export type InvariantId =
   'INV-01' | 'INV-02' | 'INV-03' | 'INV-04' | 'INV-05' | 'INV-06' | 'INV-07';
@@ -15,7 +16,7 @@ export interface AccountRef {
 }
 
 export interface CategoryRef {
-  kind: 'expense' | 'income';
+  kind: CategoryKind;
   /** Clave de las categorías predefinidas; null si la creó la persona. */
   systemKey: string | null;
 }
