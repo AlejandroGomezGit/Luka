@@ -41,6 +41,10 @@ describe('HU-02 checkAccountInput', () => {
     ]);
   });
 
+  it('el ícono es opcional: vacío vale y se muestra con uno de respaldo', () => {
+    expect(checkAccountInput({ ...valid, icon: '' }, { activeNames: [] })).toEqual([]);
+  });
+
   it('rechaza tipo y moneda desconocidos, un ícono que no es emoji y un color fuera de la paleta', () => {
     expect(
       checkAccountInput(

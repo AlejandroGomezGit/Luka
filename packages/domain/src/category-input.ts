@@ -38,7 +38,8 @@ export function checkCategoryInput(
   if (name.length === 0) errors.push('name_required');
   else if (name.length > MAX_CATEGORY_NAME) errors.push('name_too_long');
   else if (siblingNames.some((sibling) => sameName(sibling, name))) errors.push('name_duplicate');
-  if (!isEmoji(input.icon)) errors.push('icon_invalid');
+  // El ícono es opcional: vacío se muestra con uno de respaldo.
+  if (input.icon !== '' && !isEmoji(input.icon)) errors.push('icon_invalid');
   if (!isColorToken(input.color)) errors.push('color_unknown');
   if (parent) {
     if (parent.parentId !== null) errors.push('parent_not_main');

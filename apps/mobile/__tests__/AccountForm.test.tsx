@@ -154,3 +154,18 @@ test('HU-02 en dólares la coma abre los centavos y una coma final no impide gua
   await save();
   expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ openingAmountMinor: 123_400 }));
 });
+
+test('editar una cuenta con un ícono antiguo que no es emoji muestra el campo vacío y se puede guardar así', async () => {
+  const onSubmit = jest.fn();
+  await render(
+    <AccountForm
+      ref={form}
+      initial={{ ...empty, name: 'Efectivo', icon: 'banknote' }}
+      errors={[]}
+      onSubmit={onSubmit}
+    />,
+  );
+  expect(screen.getByLabelText('Ícono')).toHaveDisplayValue('');
+  await save();
+  expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ icon: '' }));
+});
