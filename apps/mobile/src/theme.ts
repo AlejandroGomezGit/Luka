@@ -10,6 +10,12 @@ export const themeColors = {
 
 export const spacing = { sm: 8, md: 16, lg: 24 } as const;
 
+/**
+ * Tamaños de accesibilidad de Dynamic Type (desde AX1, escala de 1,6 o más): Apple recomienda pasar de
+ * filas a columnas para que el texto no se parta a mitad de palabra.
+ */
+export const isAccessibilitySize = (fontScale: number) => fontScale >= 1.6;
+
 /** Tema según el modo claro u oscuro del sistema. */
 export function useTheme() {
   const scheme: Scheme = useColorScheme() === 'dark' ? 'dark' : 'light';

@@ -1,6 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import type { CategoryNode, CategoryRow } from '../db/categories';
-import { useTheme } from '../theme';
+import { isAccessibilitySize, useTheme } from '../theme';
 import { CategoryLabel } from './CategoryLabel';
 
 interface Props {
@@ -11,6 +11,7 @@ interface Props {
 /** Árbol de dos niveles (HU-07): la principal como encabezado y sus subcategorías debajo. */
 export function CategoryList({ tree, onSelect }: Props) {
   const { colors, spacing } = useTheme();
+  const { fontScale } = useWindowDimensions();
   const item = (category: CategoryRow) => (
     <Pressable
       key={category.id}
@@ -26,7 +27,7 @@ export function CategoryList({ tree, onSelect }: Props) {
     <View style={{ gap: spacing.md }}>
       {tree.map((main) => (
         <View key={main.id}>
-          <View style={styles.header}>
+          <View style={isAccessibilitySize(fontScale) ? styles.headerColumn : styles.header}>
             <View
               accessible
               accessibilityRole="header"
@@ -53,6 +54,7 @@ export function CategoryList({ tree, onSelect }: Props) {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
+  headerColumn: { flexDirection: 'column', alignItems: 'flex-start' },
   flex: { flex: 1 },
   edit: { fontSize: 17 },
 });

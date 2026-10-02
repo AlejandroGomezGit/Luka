@@ -1,14 +1,15 @@
 import { today } from '@luka/domain';
 import { Link } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { deviceClock, deviceTimeZone } from '../clock';
 import { useTheme } from '../theme';
+import { Screen } from '../ui/Screen';
 
 // Los textos no fijan allowFontScaling={false}: siguen el tamaño de Dynamic Type.
 export default function Home() {
   const { colors, spacing } = useTheme();
   return (
-    <View style={[styles.container, { padding: spacing.lg, gap: spacing.sm }]}>
+    <Screen contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm }}>
       <Text accessibilityRole="header" style={[styles.title, { color: colors.text }]}>
         Tus gastos
       </Text>
@@ -19,12 +20,11 @@ export default function Home() {
       <Link href="/categories" style={[styles.body, { color: colors.accent }]}>
         Categorías
       </Link>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
   title: { fontSize: 28, fontWeight: '700' },
   body: { fontSize: 17 },
 });
