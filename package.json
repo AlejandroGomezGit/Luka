@@ -12,7 +12,8 @@
     "test": "turbo run test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "db:generate": "turbo run db:generate"
+    "db:generate": "turbo run db:generate",
+    "dev:mobile": "pnpm --filter @luka/mobile start"
   },
   "prettier": "@luka/config/prettier",
   "devDependencies": {
