@@ -31,8 +31,8 @@ export function accountErrorMessage(
             ? 'Escribe el monto en pesos, por ejemplo 120.000.'
             : 'Escribe un monto válido, por ejemplo 1.234,56.',
       };
-    case 'icon_unknown':
-      return { field: 'icon', message: 'Elige un ícono de la lista.' };
+    case 'icon_invalid':
+      return { field: 'icon', message: 'Elige un emoji del teclado.' };
     case 'color_unknown':
       return { field: 'color', message: 'Elige un color de la lista.' };
   }

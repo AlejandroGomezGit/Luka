@@ -32,7 +32,7 @@ describe('sameName', () => {
 const valid: CategoryInput = {
   name: 'Mercado campesino',
   kind: 'expense',
-  icon: 'cart',
+  icon: '🛒',
   color: 'green',
 };
 const food = { kind: 'expense' as const, parentId: null };
@@ -61,13 +61,13 @@ describe('HU-07 checkCategoryInput', () => {
     ).toEqual(['name_duplicate']);
   });
 
-  it('solo acepta tokens de ícono y color de la lista', () => {
+  it('el ícono es un emoji y el color un token de la lista', () => {
     expect(
       checkCategoryInput(
-        { ...valid, icon: 'fork.knife', color: '#ff0000' },
+        { ...valid, icon: 'cart', color: '#ff0000' },
         { parent: null, siblingNames: [] },
       ),
-    ).toEqual(['icon_unknown', 'color_unknown']);
+    ).toEqual(['icon_invalid', 'color_unknown']);
   });
 
   it('máximo dos niveles y la principal del mismo tipo', () => {

@@ -71,7 +71,7 @@ Siete entidades cubren el MVP: usuarios, dispositivos, cuentas, categorías, mov
 | `type` | enum | `cash` (Efectivo), `savings` (Cuenta de ahorros), `checking` (Cuenta corriente), `credit_card` (Tarjeta de crédito), `other` (Otra: Nequi, Daviplata…) |
 | `currency` | char(3) | No cambia una vez que la cuenta tiene movimientos |
 | `opening_balance_minor` | bigint | Saldo inicial con signo. La persona lo escribe en cero o positivo; en una tarjeta de crédito escribe la «Deuda actual» y se guarda en negativo. Se puede corregir después |
-| `color`, `icon` | text | Tokens de diseño, no valores sueltos |
+| `color`, `icon` | text | `icon`: un emoji; `color`: token de la paleta (ver Categorías predefinidas) |
 | `sort_order` | integer | Orden en la lista; una cuenta nueva va al final (máximo + 1). Por ahora no hay pantalla para reordenar |
 | `archived_at` | timestamptz, nulo | Una cuenta archivada conserva su historial y su saldo, pero no se ofrece para movimientos nuevos. El nombre es único solo entre cuentas activas: para desarchivar una cuyo nombre ya usa una activa, primero hay que renombrarla |
 | card\_last4 | text\[\], nulo | V2: últimos 4 dígitos de las tarjetas de la cuenta; asignan a qué cuenta pertenece un mensaje capturado |
@@ -83,7 +83,7 @@ Siete entidades cubren el MVP: usuarios, dispositivos, cuentas, categorías, mov
 | `parent_id` | uuid, nulo | Una categoría puede tener subcategorías, con un máximo de dos niveles |
 | `name` | text | Nombre visible |
 | `kind` | enum | `expense` o `income` |
-| `color`, `icon` | text | Tokens de diseño |
+| `color`, `icon` | text | `icon`: un emoji; `color`: token de la paleta (ver Categorías predefinidas) |
 | `system_key` | text, nulo | Clave estable de las categorías predefinidas, por ejemplo `food.groceries`; nulo si la creó el usuario |
 | `archived_at` | timestamptz, nulo | Archivar no altera los movimientos antiguos |
 
@@ -229,7 +229,7 @@ La app crea 21 categorías principales, 15 de gasto y 6 de ingreso, con 54 subca
 - **Nombre de `.other`.** «Otros» junto a subcategorías reales; «General» cuando es la única; «Otros gastos» y «Otros ingresos» en `other_expense.other` y `other_income.other`, para no mostrar «Otros gastos › Otros».
 - **«General» de una categoría creada por la persona.** Al crear una categoría principal se crea también su «General», cuyo id es `uuid5(id de la principal, "other")`; en una predefinida es la subcategoría `.other` de su clave. Una sola función, `generalCategoryId` en `packages/domain`, aplica las dos reglas, así el categorizador y las reglas de V2 lo encuentran sin depender del nombre.
 - **Archivar no va en cascada.** Archivar o desarchivar cambia solo esa fila. Una categoría principal archivada oculta su rama al leer, y una subcategoría archivada aparte sigue archivada aunque se archive y desarchive su principal. Ninguna categoría se elimina: solo se archiva (HU-07, INV-07).
-- **Ícono y color.** Las columnas `icon` y `color` guardan tokens genéricos, nunca nombres de símbolos ni valores: 53 íconos (`cart`, `utensils`…) y 12 colores (`orange`, `teal`…), definidos en `packages/domain/src/tokens.ts`. La app los traduce en un solo archivo cada uno: `src/ui/symbols.ts` (símbolos SF, todos disponibles en iOS 16.4, la versión mínima de la app) y `src/ui/palette.ts` (un valor para modo claro y otro para oscuro, con contraste de 4,5:1 o más contra el fondo). Un token desconocido se muestra con un ícono y un color de respaldo. Una categoría se muestra siempre con ícono y nombre, nunca solo con color.
+- **Ícono y color.** `icon` guarda un emoji que la persona elige con el teclado del celular (cualquiera; las categorías predefinidas traen el suyo, por ejemplo 🛒 Supermercado) y `color` un token de una paleta fija de 12 colores (`orange`, `teal`…), definida en `packages/domain/src/tokens.ts`. La app traduce cada color en un solo archivo, `src/ui/palette.ts`, con un valor para modo claro y otro para oscuro y contraste de 4,5:1 o más contra el fondo. El emoji se muestra sobre un círculo de su color; un ícono que no es emoji se muestra con 🏷️. Una categoría o cuenta se muestra siempre con su emoji y su nombre, nunca solo con color.
 - **Reembolsos.** `refunds` es una categoría de ingreso, porque INV-01 no permite gastos positivos. Si en los reportes un reembolso compensa el gasto que devuelve se decide en el resumen mensual (T-017).
 
 | Tipo | Categoría (`system_key`) | Subcategorías (`system_key` después del punto) |

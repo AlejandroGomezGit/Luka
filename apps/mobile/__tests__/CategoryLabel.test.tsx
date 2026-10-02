@@ -1,19 +1,16 @@
 import { render, screen } from '@testing-library/react-native';
 import { CategoryLabel } from '../src/ui/CategoryLabel';
 
-// El ícono está oculto para VoiceOver, así que hay que pedirlo con includeHiddenElements.
-const icon = () => screen.getByTestId('category-icon', { includeHiddenElements: true });
-
-test('HU-07 una categoría se muestra con ícono y nombre, y VoiceOver lee el nombre', async () => {
-  await render(<CategoryLabel name="Supermercado" icon="cart" color="orange" />);
+test('HU-07 una categoría se muestra con su emoji y su nombre, y VoiceOver lee el nombre', async () => {
+  await render(<CategoryLabel name="Supermercado" icon="🛒" color="orange" />);
   expect(screen.getByLabelText('Supermercado')).toBeOnTheScreen();
   expect(screen.getByText('Supermercado')).toBeOnTheScreen();
-  // El ícono es decorativo: está, pero VoiceOver no lo anuncia por separado.
-  expect(icon()).toHaveProp('accessibilityElementsHidden', true);
+  // El emoji es decorativo junto al nombre: está, pero VoiceOver no lo anuncia por separado.
+  expect(screen.getByText('🛒', { includeHiddenElements: true })).toBeTruthy();
 });
 
-test('HU-07 un token de ícono desconocido igual muestra un ícono (el de respaldo), nunca un hueco', async () => {
-  await render(<CategoryLabel name="Mercado" icon="food" color="desconocido" />);
-  expect(icon()).toBeTruthy();
-  expect(screen.getByText('Mercado')).toBeOnTheScreen();
+test('un ícono antiguo que no es emoji se muestra con el de respaldo, nunca como texto', async () => {
+  await render(<CategoryLabel name="Mercado" icon="cart" color="orange" />);
+  expect(screen.getByText('🏷️', { includeHiddenElements: true })).toBeTruthy();
+  expect(screen.queryByText('cart', { includeHiddenElements: true })).toBeNull();
 });

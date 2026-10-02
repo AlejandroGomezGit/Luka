@@ -41,7 +41,7 @@ describe('HU-07 crear categorías propias con ícono y color', () => {
       createCategory(ctx, {
         name: 'Bebé',
         kind: 'expense',
-        icon: 'heart',
+        icon: '👶',
         color: 'pink',
         parentId: null,
       }),
@@ -49,7 +49,7 @@ describe('HU-07 crear categorías propias con ícono y color', () => {
     const main = listCategories(ctx.db, 'expense', { includeArchived: false }).find(
       (c) => c.id === id,
     );
-    expect(main).toMatchObject({ name: 'Bebé', icon: 'heart', color: 'pink', systemKey: null });
+    expect(main).toMatchObject({ name: 'Bebé', icon: '👶', color: 'pink', systemKey: null });
     expect(main?.children).toEqual([
       expect.objectContaining({
         id: generalCategoryId(userId, { id, systemKey: null }),
@@ -64,7 +64,7 @@ describe('HU-07 crear categorías propias con ícono y color', () => {
       createCategory(ctx, {
         name: 'Panadería',
         kind: 'expense',
-        icon: 'cart',
+        icon: '🥖',
         color: 'orange',
         parentId: foodId,
       }),
@@ -81,7 +81,7 @@ describe('HU-07 crear categorías propias con ícono y color', () => {
       createCategory(ctx, {
         name: 'supermércado',
         kind: 'expense',
-        icon: 'cart',
+        icon: '🥖',
         color: 'orange',
         parentId: foodId,
       }),
@@ -90,7 +90,7 @@ describe('HU-07 crear categorías propias con ícono y color', () => {
       createCategory(ctx, {
         name: 'Orgánicos',
         kind: 'expense',
-        icon: 'leaf',
+        icon: '🥬',
         color: 'green',
         parentId: groceriesId,
       }),
@@ -103,14 +103,14 @@ describe('HU-07 renombrar', () => {
   it('HU-07 se puede renombrar una predefinida y cambiarle ícono y color; la clave no cambia', async () => {
     const ctx = await context();
     expect(
-      updateCategory(ctx, groceriesId, { name: 'Mercado', icon: 'bag', color: 'green' }),
+      updateCategory(ctx, groceriesId, { name: 'Mercado', icon: '🧺', color: 'green' }),
     ).toEqual({
       ok: true,
       id: groceriesId,
     });
     expect(getCategory(ctx.db, groceriesId)).toMatchObject({
       name: 'Mercado',
-      icon: 'bag',
+      icon: '🧺',
       color: 'green',
       systemKey: 'food.groceries',
     });
@@ -134,7 +134,7 @@ describe('HU-07 archivar', () => {
       type: 'cash',
       currency: 'COP',
       color: 'green',
-      icon: 'banknote',
+      icon: '💵',
     });
     const txId = insertRow(ctx, transactions, {
       accountId,
@@ -152,7 +152,7 @@ describe('HU-07 archivar', () => {
     expect(ctx.db.select().from(transactions).where(eq(transactions.id, txId)).get()).toEqual(
       before,
     );
-    expect(getCategory(ctx.db, groceriesId)).toMatchObject({ name: 'Supermercado', icon: 'cart' });
+    expect(getCategory(ctx.db, groceriesId)).toMatchObject({ name: 'Supermercado', icon: '🛒' });
   });
 
   it('HU-07 archivar una principal oculta toda su rama; con «mostrar archivadas» vuelve a verse', async () => {

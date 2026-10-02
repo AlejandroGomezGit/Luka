@@ -8,7 +8,7 @@ export const CATEGORY_ERRORS: Record<
   name_required: { field: 'name', message: 'Escribe un nombre.' },
   name_too_long: { field: 'name', message: 'Usa 40 caracteres o menos.' },
   name_duplicate: { field: 'name', message: 'Ya hay una categoría con ese nombre aquí.' },
-  icon_unknown: { field: 'icon', message: 'Elige un ícono de la lista.' },
+  icon_invalid: { field: 'icon', message: 'Elige un emoji del teclado.' },
   color_unknown: { field: 'color', message: 'Elige un color de la lista.' },
   parent_not_main: {
     field: 'name',

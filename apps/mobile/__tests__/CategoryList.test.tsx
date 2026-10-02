@@ -7,7 +7,7 @@ const row = (id: string, name: string, parentId: string | null): CategoryNode =>
   name,
   parentId,
   kind: 'expense',
-  icon: 'cart',
+  icon: '🛒',
   color: 'orange',
   systemKey: null,
   archivedAt: null,

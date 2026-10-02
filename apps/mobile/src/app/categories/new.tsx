@@ -17,7 +17,7 @@ export default function NewCategoryScreen() {
     <>
       <Stack.Screen options={{ title: parent ? `Nueva en ${parent.name}` : 'Nueva categoría' }} />
       <CategoryForm
-        initial={{ name: '', icon: parent?.icon ?? 'tag', color: parent?.color ?? 'gray' }}
+        initial={{ name: '', icon: parent?.icon ?? '🏷️', color: parent?.color ?? 'gray' }}
         errors={errors}
         onSubmit={(values) => {
           const result = createCategory(session, { ...values, kind, parentId: parent?.id ?? null });

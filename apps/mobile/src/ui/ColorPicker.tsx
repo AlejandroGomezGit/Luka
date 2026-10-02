@@ -1,7 +1,6 @@
 import { COLOR_TOKENS } from '@luka/domain';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useTheme } from '../theme';
-import { pickerStyles, usePickerCell } from './IconPicker';
 import { colorFor } from './palette';
 
 interface Props {
@@ -9,16 +8,25 @@ interface Props {
   onChange: (token: string) => void;
 }
 
-/** Selector de color por token; VoiceOver lee el nombre del color, nunca depende solo del color. */
+/**
+ * Los 12 colores en una sola fila que se desliza; cada círculo conserva el área táctil de 44 puntos y
+ * VoiceOver lee el nombre del color, nunca depende solo del color.
+ */
 export function ColorPicker({ value, onChange }: Props) {
   const { colors, scheme, spacing } = useTheme();
-  const cell = usePickerCell();
+  const { fontScale } = useWindowDimensions();
+  const cell = Math.round(44 * Math.min(Math.max(1, fontScale), 2));
   return (
-    <>
-      <Text accessibilityRole="header" style={[pickerStyles.label, { color: colors.text }]}>
+    <View style={{ gap: spacing.sm }}>
+      <Text accessibilityRole="header" style={[styles.label, { color: colors.text }]}>
         Color
       </Text>
-      <View accessibilityRole="radiogroup" style={[pickerStyles.grid, { gap: spacing.sm }]}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        accessibilityRole="radiogroup"
+        contentContainerStyle={{ gap: spacing.sm }}
+      >
         {COLOR_TOKENS.map(({ token, name }) => {
           const selected = value === token;
           return (
@@ -29,7 +37,7 @@ export function ColorPicker({ value, onChange }: Props) {
               accessibilityState={{ selected }}
               onPress={() => onChange(token)}
               style={[
-                pickerStyles.cell,
+                styles.cell,
                 { width: cell, height: cell, borderColor: selected ? colors.text : 'transparent' },
               ]}
             >
@@ -46,11 +54,13 @@ export function ColorPicker({ value, onChange }: Props) {
             </Pressable>
           );
         })}
-      </View>
-    </>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  label: { fontSize: 17, fontWeight: '600' },
+  cell: { alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderRadius: 999 },
   swatch: { borderRadius: 999 },
 });

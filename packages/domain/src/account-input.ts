@@ -2,7 +2,7 @@
 import { ACCOUNT_TYPES, type AccountType } from './enums.js';
 import { isCurrencyCode } from './money.js';
 import { sameName } from './names.js';
-import { isColorToken, isIconToken } from './tokens.js';
+import { isColorToken, isEmoji } from './tokens.js';
 
 export const MAX_ACCOUNT_NAME = 40;
 
@@ -23,7 +23,7 @@ export type AccountInputError =
   | 'type_unknown'
   | 'currency_unknown'
   | 'amount_invalid'
-  | 'icon_unknown'
+  | 'icon_invalid'
   | 'color_unknown'
   /** INV-05: la moneda de una cuenta con movimientos no cambia. */
   | 'currency_locked';
@@ -42,7 +42,7 @@ export function checkAccountInput(
   if (!Number.isSafeInteger(input.openingAmountMinor) || input.openingAmountMinor < 0) {
     errors.push('amount_invalid');
   }
-  if (!isIconToken(input.icon)) errors.push('icon_unknown');
+  if (!isEmoji(input.icon)) errors.push('icon_invalid');
   if (!isColorToken(input.color)) errors.push('color_unknown');
   return errors;
 }

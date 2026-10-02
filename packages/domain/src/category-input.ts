@@ -3,7 +3,7 @@ import { predefinedCategoryId } from './categories.js';
 import type { CategoryKind } from './enums.js';
 import { deterministicId } from './ids.js';
 import { sameName } from './names.js';
-import { isColorToken, isIconToken } from './tokens.js';
+import { isColorToken, isEmoji } from './tokens.js';
 
 export const MAX_CATEGORY_NAME = 40;
 
@@ -24,7 +24,7 @@ export type CategoryInputError =
   | 'name_required'
   | 'name_too_long'
   | 'name_duplicate'
-  | 'icon_unknown'
+  | 'icon_invalid'
   | 'color_unknown'
   | 'parent_not_main'
   | 'parent_kind_mismatch';
@@ -38,7 +38,7 @@ export function checkCategoryInput(
   if (name.length === 0) errors.push('name_required');
   else if (name.length > MAX_CATEGORY_NAME) errors.push('name_too_long');
   else if (siblingNames.some((sibling) => sameName(sibling, name))) errors.push('name_duplicate');
-  if (!isIconToken(input.icon)) errors.push('icon_unknown');
+  if (!isEmoji(input.icon)) errors.push('icon_invalid');
   if (!isColorToken(input.color)) errors.push('color_unknown');
   if (parent) {
     if (parent.parentId !== null) errors.push('parent_not_main');
