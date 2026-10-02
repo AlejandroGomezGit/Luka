@@ -1,4 +1,5 @@
 import { today } from '@luka/domain';
+import { Link } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { deviceClock, deviceTimeZone } from '../clock';
 import { useTheme } from '../theme';
@@ -14,6 +15,10 @@ export default function Home() {
       <Text style={[styles.body, { color: colors.muted }]}>
         Hoy es {today(deviceClock, deviceTimeZone())}
       </Text>
+      {/* Acceso temporal hasta definir la navegación en T-013. */}
+      <Link href="/categories" style={[styles.body, { color: colors.accent }]}>
+        Categorías
+      </Link>
     </View>
   );
 }
