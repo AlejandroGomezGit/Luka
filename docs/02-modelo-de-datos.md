@@ -227,6 +227,7 @@ La app crea 21 categorías principales, 15 de gasto y 6 de ingreso, con 54 subca
 
 - **Dos niveles siempre.** Toda categoría principal tiene subcategorías, al menos `.other`, y un movimiento se asigna siempre a una subcategoría, nunca a la principal (INV-04). El selector muestra siempre los dos niveles.
 - **Nombre de `.other`.** «Otros» junto a subcategorías reales; «General» cuando es la única; «Otros gastos» y «Otros ingresos» en `other_expense.other` y `other_income.other`, para no mostrar «Otros gastos › Otros».
+- **Ícono y color.** Las columnas `icon` y `color` guardan tokens genéricos, nunca nombres de símbolos ni valores: 53 íconos (`cart`, `utensils`…) y 12 colores (`orange`, `teal`…), definidos en `packages/domain/src/tokens.ts`. La app los traduce en un solo archivo cada uno: `src/ui/symbols.ts` (símbolos SF, todos disponibles en iOS 16.4, la versión mínima de la app) y `src/ui/palette.ts` (un valor para modo claro y otro para oscuro, con contraste de 4,5:1 o más contra el fondo). Un token desconocido se muestra con un ícono y un color de respaldo. Una categoría se muestra siempre con ícono y nombre, nunca solo con color.
 - **Reembolsos.** `refunds` es una categoría de ingreso, porque INV-01 no permite gastos positivos. Si en los reportes un reembolso compensa el gasto que devuelve se decide en el resumen mensual (T-017).
 
 | Tipo | Categoría (`system_key`) | Subcategorías (`system_key` después del punto) |

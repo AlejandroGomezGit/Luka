@@ -3,3 +3,4 @@ CLAUDE.md
 pnpm-lock.yaml
 packages/contracts/openapi.json
 packages/*/drizzle/
+apps/mobile/expo-env.d.ts
