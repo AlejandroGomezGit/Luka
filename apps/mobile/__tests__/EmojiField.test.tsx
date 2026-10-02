@@ -7,6 +7,7 @@ function Harness({ onChange }: { onChange: (emoji: string) => void }) {
   return (
     <EmojiField
       value={value}
+      color="orange"
       onChange={(emoji) => {
         setValue(emoji);
         onChange(emoji);
