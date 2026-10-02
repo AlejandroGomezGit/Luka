@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+.turbo/
+.expo/
+*.tsbuildinfo
+.DS_Store
+
+# Secretos: solo se versiona .env.example
+.env*
+!.env.example
