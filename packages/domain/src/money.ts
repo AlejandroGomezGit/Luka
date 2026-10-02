@@ -1,3 +1,5 @@
+import type { TransactionKind } from './enums.js';
+
 /**
  * Dinero (RNF-06, ADR-007): enteros en la unidad menor con código ISO 4217, nunca decimales flotantes.
  * Los montos son `number` enteros; `Number.isSafeInteger` es la guarda (hasta 9 × 10^15 de unidad menor).
@@ -8,8 +10,6 @@
 export const MINOR_UNITS = { COP: 2, USD: 2, EUR: 2 } as const;
 
 export type CurrencyCode = keyof typeof MINOR_UNITS;
-
-export type TransactionKind = 'expense' | 'income' | 'transfer' | 'adjustment';
 
 export function isCurrencyCode(code: string): code is CurrencyCode {
   return Object.hasOwn(MINOR_UNITS, code);

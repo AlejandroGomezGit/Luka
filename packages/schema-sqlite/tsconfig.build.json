@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  // Lo usa la app: sin DOM ni Node.
+  "compilerOptions": {
+    "noEmit": false,
+    "lib": ["ES2022"],
+    "types": [],
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
+}
