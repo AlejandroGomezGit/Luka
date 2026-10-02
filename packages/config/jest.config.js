@@ -4,6 +4,8 @@ export default {
   testEnvironment: 'node',
   // También .js: los paquetes del monorepo se compilan a ESM y Jest corre en CommonJS.
   transform: { '^.+\\.[jt]s$': '@swc/jest' },
+  // uuid solo se publica en ESM: es la única dependencia de node_modules que Jest transforma.
+  transformIgnorePatterns: ['/node_modules/(?!\\.pnpm|uuid/)'],
   // Los imports de NodeNext llevan .js; en las pruebas apuntan al .ts.
   moduleNameMapper: { '^(\\.{1,2}/.*)\\.js$': '$1' },
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.test.ts', '!src/index.ts'],

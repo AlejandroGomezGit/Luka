@@ -12,7 +12,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.ejemplo.luka"
     },
-    "plugins": ["expo-router", "expo-status-bar"],
+    "plugins": ["expo-router", "expo-status-bar", "expo-sqlite"],
     "experiments": {
       "typedRoutes": true
     }

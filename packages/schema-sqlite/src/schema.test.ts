@@ -6,18 +6,24 @@ interface Journal {
   entries: { tag: string }[];
 }
 
-// Base SQLite vacía en memoria con todas las migraciones aplicadas desde cero, en el orden del journal.
-function freshDb() {
-  const db = new DatabaseSync(':memory:');
-  db.exec('PRAGMA foreign_keys = ON');
-  const journal = JSON.parse(readFileSync('drizzle/meta/_journal.json', 'utf8')) as Journal;
-  for (const { tag } of journal.entries) {
+const journal = JSON.parse(readFileSync('drizzle/meta/_journal.json', 'utf8')) as Journal;
+
+/** Aplica las migraciones del journal en orden, desde `from` (incluida) hasta `to` (excluida). */
+function migrate(db: DatabaseSync, from = 0, to = journal.entries.length) {
+  for (const { tag } of journal.entries.slice(from, to)) {
     for (const statement of readFileSync(`drizzle/${tag}.sql`, 'utf8').split(
       '--> statement-breakpoint',
     )) {
       db.exec(statement);
     }
   }
+}
+
+// Base SQLite vacía en memoria con todas las migraciones aplicadas desde cero, en el orden del journal.
+function freshDb() {
+  const db = new DatabaseSync(':memory:');
+  db.exec('PRAGMA foreign_keys = ON');
+  migrate(db);
   return db;
 }
 
@@ -64,6 +70,23 @@ describe('migraciones de SQLite', () => {
       review_status: 'confirmed',
       field_clocks: '{}',
     });
+  });
+
+  it('la última migración se aplica desde la versión anterior sin perder datos', () => {
+    const db = new DatabaseSync(':memory:');
+    db.exec('PRAGMA foreign_keys = ON');
+    migrate(db, 0, journal.entries.length - 1);
+    db.prepare(
+      `insert into accounts (id, user_id, created_at, updated_at, name, type, currency, color, icon)
+       values ('cash', 'u1', ?, ?, 'Efectivo', 'cash', 'COP', 'green', 'wallet')`,
+    ).run(now, now);
+    migrate(db, journal.entries.length - 1);
+    expect(db.prepare('select name from accounts').all()).toEqual([{ name: 'Efectivo' }]);
+    db.prepare('insert into device_profile (device_id, user_id, created_at) values (?, ?, ?)').run(
+      'd1',
+      'u1',
+      now,
+    );
   });
 
   it('INV-01 el CHECK rechaza montos en cero o con el signo contrario al tipo', () => {
