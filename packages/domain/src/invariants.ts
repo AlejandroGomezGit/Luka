@@ -19,6 +19,8 @@ export interface CategoryRef {
   kind: CategoryKind;
   /** Clave de las categorías predefinidas; null si la creó la persona. */
   systemKey: string | null;
+  /** Categoría principal; null si esta es una principal. */
+  parentId: string | null;
 }
 
 export interface NewTransaction {
@@ -67,7 +69,7 @@ export function checkNewTransaction(tx: NewTransaction, ctx: TransactionContext)
 
   const takesCategory = tx.kind === 'expense' || tx.kind === 'income';
   const wrongCategory = takesCategory
-    ? ctx.category !== null && ctx.category.kind !== tx.kind
+    ? ctx.category !== null && (ctx.category.kind !== tx.kind || ctx.category.parentId === null)
     : tx.categoryId !== null;
   if (wrongCategory) violations.push('INV-04');
 

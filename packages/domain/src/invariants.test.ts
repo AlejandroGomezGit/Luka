@@ -14,8 +14,8 @@ import { applySign } from './money.js';
 const cash: AccountRef = { id: 'a1', currency: 'COP', archivedAt: null };
 const bank: AccountRef = { id: 'a2', currency: 'COP', archivedAt: null };
 const dollars: AccountRef = { id: 'a3', currency: 'USD', archivedAt: null };
-const groceries: CategoryRef = { kind: 'expense', systemKey: 'food.groceries' };
-const salary: CategoryRef = { kind: 'income', systemKey: 'salary' };
+const groceries: CategoryRef = { kind: 'expense', systemKey: 'food.groceries', parentId: 'food' };
+const salary: CategoryRef = { kind: 'income', systemKey: 'salary.other', parentId: 'salary' };
 
 const expense = (patch: Partial<NewTransaction> = {}): NewTransaction => ({
   kind: 'expense',
@@ -115,11 +115,14 @@ describe('checkNewTransaction', () => {
     ).toEqual([]);
   });
 
-  it('INV-04 la categoría coincide con el tipo y transferencias y ajustes no llevan categoría', () => {
+  it('INV-04 la categoría es una subcategoría del mismo tipo y transferencias y ajustes no llevan categoría', () => {
     expect(checkNewTransaction(expense(), ctx({ category: salary }))).toEqual(['INV-04']);
     expect(
       checkNewTransaction(transfer({ categoryId: 'c1' }), ctx({ category: null, toAccount: bank })),
     ).toEqual(['INV-04']);
+    // Siempre una subcategoría: nunca la principal (el selector tiene dos niveles).
+    const food: CategoryRef = { kind: 'expense', systemKey: 'food', parentId: null };
+    expect(checkNewTransaction(expense(), ctx({ category: food }))).toEqual(['INV-04']);
     // Un gasto puede quedar sin categoría hasta que se asigne.
     expect(checkNewTransaction(expense({ categoryId: null }), ctx({ category: null }))).toEqual([]);
   });
@@ -150,6 +153,6 @@ describe('checkAccountCurrencyChange', () => {
 describe('checkCategoryDelete', () => {
   it('INV-07 las categorías predefinidas no se eliminan', () => {
     expect(checkCategoryDelete(groceries)).toEqual(['INV-07']);
-    expect(checkCategoryDelete({ kind: 'expense', systemKey: null })).toEqual([]);
+    expect(checkCategoryDelete({ kind: 'expense', systemKey: null, parentId: 'food' })).toEqual([]);
   });
 });
