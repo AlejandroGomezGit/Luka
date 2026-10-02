@@ -363,6 +363,10 @@ importers:
       typescript-eslint:
         specifier: ^8.71.0
         version: 8.71.0(eslint@10.11.0(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)
+    devDependencies:
+      eslint:
+        specifier: ^10.11.0
+        version: 10.11.0(supports-color@8.1.1)
 
   packages/contracts:
     dependencies:
@@ -439,7 +443,7 @@ importers:
         version: 0.31.11
       jest:
         specifier: ^30.5.2
-        version: 30.5.2(@types/node@26.6.3)(supports-color@8.1.1)
+        version: 30.5.2(@types/node@22.20.4)(supports-color@8.1.1)
       postgres:
         specifier: ^3.4.9
         version: 3.4.9
