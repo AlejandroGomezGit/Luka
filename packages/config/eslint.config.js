@@ -11,6 +11,10 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: { projectService: true },
     },
+    rules: {
+      // Permite descartar campos con desestructuración: const { a: _, ...resto } = objeto.
+      '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true }],
+    },
   },
   {
     files: ['**/*.js', '**/*.mjs', '**/*.cjs'],

@@ -1,3 +1,4 @@
 docs/
 CLAUDE.md
 pnpm-lock.yaml
+packages/contracts/openapi.json
