@@ -1,0 +1,26 @@
+{
+  "name": "@luka/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "jest --coverage"
+  },
+  "devDependencies": {
+    "@jest/globals": "^30.5.2",
+    "@luka/config": "workspace:*",
+    "@swc/core": "^1.16.13",
+    "@swc/jest": "^0.2.39",
+    "fast-check": "^4.10.2",
+    "jest": "^30.5.2"
+  }
+}
