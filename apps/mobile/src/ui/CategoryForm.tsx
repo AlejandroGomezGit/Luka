@@ -6,19 +6,12 @@ import {
 } from '@luka/domain';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { useTheme } from '../theme';
 import { CategoryLabel } from './CategoryLabel';
 import { CATEGORY_ERRORS } from './categoryErrors';
 import { colorFor } from './palette';
+import { Screen } from './Screen';
 import { ICON_LABELS, SYMBOLS } from './symbols';
 
 export interface CategoryValues {
@@ -54,7 +47,7 @@ export function CategoryForm({ initial, errors, onSubmit, archived, onToggleArch
       ));
 
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
+    <Screen contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
       <View accessibilityLiveRegion="polite">
         <CategoryLabel
           name={values.name || 'Nueva categoría'}
@@ -155,7 +148,7 @@ export function CategoryForm({ initial, errors, onSubmit, archived, onToggleArch
           </Text>
         </Pressable>
       )}
-    </ScrollView>
+    </Screen>
   );
 }
 

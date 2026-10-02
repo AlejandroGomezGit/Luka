@@ -1,6 +1,6 @@
 import { SymbolView } from 'expo-symbols';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { useTheme } from '../theme';
+import { isAccessibilitySize, useTheme } from '../theme';
 import { colorFor } from './palette';
 import { symbolFor } from './symbols';
 
@@ -18,7 +18,11 @@ export function CategoryLabel({ name, icon, color }: Props) {
   // El ícono crece con Dynamic Type, igual que el texto.
   const { fontScale } = useWindowDimensions();
   return (
-    <View accessible accessibilityLabel={name} style={[styles.row, { gap: spacing.sm }]}>
+    <View
+      accessible
+      accessibilityLabel={name}
+      style={[isAccessibilitySize(fontScale) ? styles.column : styles.row, { gap: spacing.sm }]}
+    >
       <SymbolView
         testID="category-icon"
         name={symbolFor(icon)}
@@ -34,5 +38,7 @@ export function CategoryLabel({ name, icon, color }: Props) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
+  // Con tamaños de accesibilidad el ícono va arriba y el nombre usa todo el ancho.
+  column: { flexDirection: 'column', alignItems: 'flex-start', flexShrink: 1 },
   name: { fontSize: 17, flexShrink: 1 },
 });

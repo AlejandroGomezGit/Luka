@@ -1,11 +1,12 @@
 import type { CategoryKind } from '@luka/domain';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { type CategoryNode, listCategories } from '../../db/categories';
 import { useLocalSession } from '../../db/DatabaseProvider';
 import { useTheme } from '../../theme';
 import { CategoryList } from '../../ui/CategoryList';
+import { Screen } from '../../ui/Screen';
 
 const KINDS: { kind: CategoryKind; label: string }[] = [
   { kind: 'expense', label: 'Gastos' },
@@ -26,7 +27,7 @@ export default function CategoriesScreen() {
   );
 
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
+    <Screen contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
       <Stack.Screen options={{ title: 'Categorías' }} />
       <View accessibilityRole="tablist" style={[styles.row, { gap: spacing.sm }]}>
         {KINDS.map((option) => (
@@ -59,7 +60,7 @@ export default function CategoriesScreen() {
         <Text style={[styles.text, { color: colors.accent }]}>Nueva categoría principal</Text>
       </Pressable>
       <CategoryList tree={tree} onSelect={(id) => router.push(`/categories/${id}`)} />
-    </ScrollView>
+    </Screen>
   );
 }
 
