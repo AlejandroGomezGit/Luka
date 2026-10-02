@@ -1,0 +1,60 @@
+# Entorno local (RNF-12): docker compose -f infra/docker-compose.yml up -d --wait
+# Credenciales falsas y solo locales; coinciden con .env.example.
+name: luka
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: luka
+      POSTGRES_PASSWORD: luka
+      POSTGRES_DB: luka
+    ports: ['5432:5432']
+    volumes:
+      # PostgreSQL 18 guarda los datos en /var/lib/postgresql/<versión>/docker.
+      - postgres:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'luka', '-d', 'luka']
+      interval: 2s
+      retries: 30
+
+  redis:
+    image: redis:8-alpine
+    ports: ['6379:6379']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 2s
+      retries: 30
+
+  s3:
+    image: rustfs/rustfs:1.0.0
+    environment:
+      RUSTFS_ACCESS_KEY: luka-local
+      RUSTFS_SECRET_KEY: luka-local-secret
+      RUSTFS_CONSOLE_ENABLE: 'true'
+    ports: ['9000:9000', '9001:9001']
+    volumes:
+      - s3:/data
+    healthcheck:
+      # Sano = responde y el bucket de adjuntos existe. PUT de bucket es idempotente en RustFS,
+      # así que el healthcheck también lo crea sin un contenedor de inicio aparte.
+      test:
+        - CMD-SHELL
+        - >-
+          curl -fsS -o /dev/null http://127.0.0.1:9000/health &&
+          curl -fsS -o /dev/null -X PUT --aws-sigv4 aws:amz:us-east-1:s3
+          -u luka-local:luka-local-secret http://127.0.0.1:9000/luka-attachments
+      interval: 2s
+      retries: 30
+
+  mail:
+    image: axllent/mailpit:latest
+    ports: ['1025:1025', '8025:8025']
+    healthcheck:
+      test: ['CMD', '/mailpit', 'readyz']
+      interval: 2s
+      retries: 30
+
+volumes:
+  postgres:
+  s3:
