@@ -66,3 +66,25 @@ export function applySign(kind: TransactionKind, amountMinor: number): number {
   const absolute = Math.abs(amountMinor);
   return kind === 'income' ? absolute : -absolute;
 }
+
+const groupThousands = (digits: string) => digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+const withoutLeadingZeros = (digits: string) => digits.replace(/^0+(?=\d)/, '');
+
+/**
+ * Da formato a un monto mientras se escribe: la persona solo escribe dígitos y los puntos de miles se
+ * ponen solos. En COP se ignora cualquier separador; en USD y EUR la coma, o un punto recién escrito al
+ * final, abre los decimales (máximo 2) y se muestra como coma. El resultado lo lee parseAmount.
+ */
+export function formatAmountInput(text: string, currency: CurrencyCode): string {
+  let decimalAt = INPUT_DECIMALS[currency] > 0 ? text.indexOf(',') : -1;
+  if (decimalAt < 0 && INPUT_DECIMALS[currency] > 0 && text.endsWith('.'))
+    decimalAt = text.length - 1;
+  const integerPart = decimalAt < 0 ? text : text.slice(0, decimalAt);
+  const integer = withoutLeadingZeros(integerPart.replace(/\D/g, ''));
+  if (decimalAt < 0) return groupThousands(integer);
+  const fraction = text
+    .slice(decimalAt + 1)
+    .replace(/\D/g, '')
+    .slice(0, INPUT_DECIMALS[currency]);
+  return `${groupThousands(integer || '0')},${fraction}`;
+}

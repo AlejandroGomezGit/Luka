@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import fc from 'fast-check';
-import { applySign, formatMoney, isCurrencyCode, parseAmount } from './money.js';
+import { applySign, formatAmountInput, formatMoney, isCurrencyCode, parseAmount } from './money.js';
 
 const group = (n: number, sep: string) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, sep);
 
@@ -124,5 +124,51 @@ describe('isCurrencyCode', () => {
     expect(isCurrencyCode('COP')).toBe(true);
     expect(isCurrencyCode('cop')).toBe(false);
     expect(isCurrencyCode('toString')).toBe(false);
+  });
+});
+
+describe('formatAmountInput: los separadores de miles se ponen solos al escribir', () => {
+  it('COP: solo dígitos, agrupados de a tres con punto', () => {
+    expect(formatAmountInput('120000', 'COP')).toBe('120.000');
+    expect(formatAmountInput('1.2345', 'COP')).toBe('12.345');
+    expect(formatAmountInput('1234567', 'COP')).toBe('1.234.567');
+    expect(formatAmountInput('00012', 'COP')).toBe('12');
+    expect(formatAmountInput('0', 'COP')).toBe('0');
+    expect(formatAmountInput('12,50', 'COP')).toBe('1.250');
+    expect(formatAmountInput('', 'COP')).toBe('');
+    expect(formatAmountInput('abc', 'COP')).toBe('');
+  });
+
+  it('USD y EUR: la coma, o un punto recién escrito al final, abre los decimales (máximo 2)', () => {
+    expect(formatAmountInput('1234', 'USD')).toBe('1.234');
+    expect(formatAmountInput('1.234.', 'USD')).toBe('1.234,');
+    expect(formatAmountInput('1234,5', 'USD')).toBe('1.234,5');
+    expect(formatAmountInput('1.234,567', 'EUR')).toBe('1.234,56');
+    expect(formatAmountInput(',5', 'USD')).toBe('0,5');
+    expect(formatAmountInput('0,05', 'USD')).toBe('0,05');
+  });
+
+  it('propiedad: volver a formatear lo ya formateado no lo cambia', () => {
+    fc.assert(
+      fc.property(
+        fc.string({ unit: fc.constantFrom('0', '1', '5', '9', '.', ',') }),
+        fc.constantFrom('COP' as const, 'USD' as const),
+        (text, currency) => {
+          const once = formatAmountInput(text, currency);
+          expect(formatAmountInput(once, currency)).toBe(once);
+        },
+      ),
+    );
+  });
+
+  it('propiedad: en COP lo formateado se lee como los mismos pesos', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 0, max: Math.floor(Number.MAX_SAFE_INTEGER / 100) }),
+        (pesos) => {
+          expect(parseAmount(formatAmountInput(String(pesos), 'COP'), 'COP')).toBe(pesos * 100);
+        },
+      ),
+    );
   });
 });

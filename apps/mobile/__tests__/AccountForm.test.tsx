@@ -69,7 +69,7 @@ test('HU-02 el saldo inicial tiene un texto de ayuda: se puede corregir después
   ).toBeOnTheScreen();
 });
 
-test('HU-02 un monto inválido se explica y no se guarda', async () => {
+test('HU-02 un monto demasiado grande se explica y no se guarda (con los puntos automáticos es el único inválido)', async () => {
   const onSubmit = jest.fn();
   await render(
     <AccountForm
@@ -79,7 +79,7 @@ test('HU-02 un monto inválido se explica y no se guarda', async () => {
       onSubmit={onSubmit}
     />,
   );
-  await fireEvent.changeText(screen.getByLabelText('Saldo inicial'), '12,50');
+  await fireEvent.changeText(screen.getByLabelText('Saldo inicial'), '99999999999999999');
   await save();
   expect(onSubmit).not.toHaveBeenCalled();
   expect(screen.getByText('Escribe el monto en pesos, por ejemplo 120.000.')).toBeOnTheScreen();
@@ -116,4 +116,41 @@ test('el formulario es compacto: tipo y moneda son opciones en fila y no hay un 
     'Gris',
   ]);
   expect(screen.queryByRole('button', { name: 'Guardar' })).toBeNull();
+});
+
+test('HU-02 al escribir el monto los puntos de miles se ponen solos', async () => {
+  const onSubmit = jest.fn();
+  await render(
+    <AccountForm
+      ref={form}
+      initial={{ ...empty, name: 'Banco' }}
+      errors={[]}
+      onSubmit={onSubmit}
+    />,
+  );
+  const field = screen.getByLabelText('Saldo inicial');
+  await fireEvent.changeText(field, '1500000');
+  expect(field).toHaveDisplayValue('1.500.000');
+  await save();
+  expect(onSubmit).toHaveBeenCalledWith(
+    expect.objectContaining({ openingAmountMinor: 1_500_000_00 }),
+  );
+});
+
+test('HU-02 en dólares la coma abre los centavos y una coma final no impide guardar', async () => {
+  const onSubmit = jest.fn();
+  await render(
+    <AccountForm
+      ref={form}
+      initial={{ ...empty, name: 'Ahorro USD', currency: 'USD' }}
+      errors={[]}
+      onSubmit={onSubmit}
+    />,
+  );
+  const field = screen.getByLabelText('Saldo inicial');
+  await fireEvent.changeText(field, '1234,5');
+  expect(field).toHaveDisplayValue('1.234,5');
+  await fireEvent.changeText(field, '1.234,');
+  await save();
+  expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ openingAmountMinor: 123_400 }));
 });
