@@ -55,6 +55,7 @@ TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con ex
 - Las migraciones ya aplicadas no se editan: se crea una nueva.
 - Cada criterio de aceptación tiene una prueba cuyo nombre incluye el id de la historia (por ejemplo HU-03).
 - Cobertura de packages/domain: 80 % o más.
+- Toda pantalla nueva de la app usa el componente Screen (apps/mobile/src/ui/Screen.tsx): vuelve a montar el contenido cuando cambia Dynamic Type, porque React Native no vuelve a medir el texto y lo deja cortado (#39).
 
 ## Cómo trabajar
 
