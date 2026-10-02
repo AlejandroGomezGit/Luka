@@ -261,7 +261,7 @@ components:
         record: { type: object }
     Problem:
       type: object
-      required: [type, title, status]
+      required: [type, title, status, code]
       properties:
         type: { type: string, format: uri }
         title: { type: string }
