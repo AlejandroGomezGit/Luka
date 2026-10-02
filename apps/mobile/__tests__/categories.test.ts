@@ -32,6 +32,8 @@ describe('HU-07 categorías predefinidas', () => {
       parentId: predefinedCategoryId(localUser, 'food'),
       name: 'Supermercado',
       kind: 'expense',
+      icon: 'cart',
+      color: 'orange',
       userId: localUser,
       version: 0,
     });

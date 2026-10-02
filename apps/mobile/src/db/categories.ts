@@ -4,13 +4,11 @@ import { insertRow, type WriteContext } from './write';
 
 /**
  * Siembra las categorías predefinidas (HU-07) con su UUID v5. Es idempotente: si una ya existe, aunque
- * esté renombrada o archivada, no se toca. Ícono y color son tokens con la clave de la categoría
- * principal; la interfaz los traduce a símbolo y color.
+ * esté renombrada o archivada, no se toca. Ícono y color son tokens del catálogo (documento 02).
  */
 export function seedPredefinedCategories(ctx: WriteContext): void {
   ctx.db.transaction((tx) => {
     for (const category of PREDEFINED_CATEGORIES) {
-      const root = category.parent ?? category.key;
       insertRow(
         { ...ctx, db: tx },
         categories,
@@ -19,8 +17,8 @@ export function seedPredefinedCategories(ctx: WriteContext): void {
           kind: category.kind,
           parentId: category.parent ? predefinedCategoryId(ctx.userId, category.parent) : null,
           systemKey: category.key,
-          icon: root,
-          color: root,
+          icon: category.icon,
+          color: category.color,
         },
         { id: predefinedCategoryId(ctx.userId, category.key), ifAbsent: true },
       );

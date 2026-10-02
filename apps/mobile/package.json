@@ -9,7 +9,8 @@
     "build": "expo export --platform ios",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "symbols:check": "node scripts/check-symbols.mjs"
   },
   "dependencies": {
     "@luka/domain": "workspace:*",
@@ -22,6 +23,7 @@
     "expo-router": "~57.0.24",
     "expo-sqlite": "~57.0.3",
     "expo-status-bar": "~57.0.1",
+    "expo-symbols": "~57.0.3",
     "react": "19.2.3",
     "react-native": "0.86.3",
     "react-native-safe-area-context": "~5.7.0",
