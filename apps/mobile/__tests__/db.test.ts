@@ -3,7 +3,6 @@ import type { Clock } from '@luka/domain';
 import { and, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/sql-js';
 import { migrate } from 'drizzle-orm/sql-js/migrator';
-import path from 'node:path';
 import initSqlJs from 'sql.js';
 import { ensureDeviceProfile } from '../src/db/profile';
 import type { LocalDb } from '../src/db/types';
@@ -17,7 +16,7 @@ import {
   type WriteContext,
 } from '../src/db/write';
 
-const migrationsFolder = path.join(__dirname, '../../../packages/schema-sqlite/drizzle');
+import { migrationsFolder } from '../src/db/testing';
 
 let time = Date.UTC(2026, 9, 2, 12);
 const clock: Clock = { now: () => time };

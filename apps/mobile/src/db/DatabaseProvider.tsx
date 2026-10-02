@@ -6,7 +6,7 @@ import { deviceClock } from '../clock';
 import { deviceRandom } from '../random';
 import { useTheme } from '../theme';
 import { expoDb, localDb } from './database';
-import { ensureDeviceProfile } from './profile';
+import { prepareLocalData } from './prepare';
 import type { WriteContext } from './write';
 
 export interface LocalSession extends WriteContext {
@@ -20,7 +20,7 @@ export function DatabaseProvider({ children }: { children: ReactNode }) {
   const { success, error } = useMigrations(expoDb, migrations);
   const session = useMemo<LocalSession | null>(() => {
     if (!success) return null;
-    const profile = ensureDeviceProfile(localDb, deviceClock, deviceRandom);
+    const profile = prepareLocalData(localDb, deviceClock, deviceRandom);
     return { db: localDb, clock: deviceClock, random: deviceRandom, ...profile };
   }, [success]);
 

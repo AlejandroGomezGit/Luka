@@ -22,24 +22,30 @@ export interface WriteContext {
   random: RandomBytes;
 }
 
-/** Crea un registro con id UUID v7 y lo devuelve. `version` queda en 0 hasta que el servidor lo aplique. */
+export interface InsertOptions {
+  /** Id fijo, por ejemplo el UUID v5 de una categoría predefinida; por defecto, un UUID v7 nuevo. */
+  id?: string;
+  /** Si ya existe un registro con ese id, no lo toca (sembrar de forma idempotente). */
+  ifAbsent?: boolean;
+}
+
+/** Crea un registro y devuelve su id. `version` queda en 0 hasta que el servidor lo aplique. */
 export function insertRow<T extends SyncTable>(
   ctx: WriteContext,
   table: T,
   values: NewValues<T>,
+  options: InsertOptions = {},
 ): string {
-  const id = newId(ctx.clock, ctx.random);
+  const id = options.id ?? newId(ctx.clock, ctx.random);
   const now = new Date(ctx.clock.now());
-  ctx.db
-    .insert(table)
-    .values({
-      ...values,
-      id,
-      userId: ctx.userId,
-      createdAt: now,
-      updatedAt: now,
-    } as T['$inferInsert'])
-    .run();
+  const insert = ctx.db.insert(table).values({
+    ...values,
+    id,
+    userId: ctx.userId,
+    createdAt: now,
+    updatedAt: now,
+  } as T['$inferInsert']);
+  (options.ifAbsent ? insert.onConflictDoNothing() : insert).run();
   return id;
 }
 

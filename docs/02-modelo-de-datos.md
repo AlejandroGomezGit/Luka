@@ -168,7 +168,7 @@ La base de datos rechaza los estados imposibles y la capa de dominio los valida 
 | INV-01 | `amount_minor` no es cero y su signo depende del tipo: negativo en `expense` y `transfer`, positivo en `income`, cualquiera en `adjustment` | Dominio, API, `CHECK` |
 | INV-02 | Una transferencia exige `to_account_id` distinto de `account_id` y `to_amount_minor` positivo; los demás tipos los dejan nulos | Dominio, API, `CHECK` |
 | INV-03 | Si ambas cuentas tienen la misma moneda, `to_amount_minor` es igual a `-amount_minor` | Dominio, API |
-| INV-04 | La categoría coincide con el tipo: `expense` con categorías de gasto e `income` con categorías de ingreso; transferencias y ajustes no llevan categoría | Dominio, API |
+| INV-04 | La categoría coincide con el tipo: `expense` con categorías de gasto e `income` con categorías de ingreso, y siempre es una subcategoría, nunca la principal; transferencias y ajustes no llevan categoría | Dominio, API |
 | INV-05 | `currency` del movimiento es la de su cuenta al crearlo, y la moneda de una cuenta con movimientos no cambia | Dominio, API |
 | INV-06 | Una cuenta archivada no acepta movimientos nuevos, pero conserva los existentes | Dominio, API |
 | INV-07 | Las categorías con `system_key` no se eliminan: solo se renombran o se archivan | Dominio, API |
@@ -223,27 +223,32 @@ El esquema lógico es el mismo en el servidor y en el dispositivo; solo cambian 
 
 ## Categorías predefinidas
 
-La app crea 20 categorías principales, con sus subcategorías, al registrar al usuario: 14 de gasto y 6 de ingreso. El id de cada una es un UUID v5 derivado de `user_id` y `system_key`, así dos dispositivos del mismo usuario nunca generan categorías duplicadas. La clave no cambia aunque la categoría se renombre o se traduzca.
+La app crea 21 categorías principales, 15 de gasto y 6 de ingreso, con 54 subcategorías: 75 en total, sembradas en el primer arranque. El id de cada una es un UUID v5 derivado de `user_id` y `system_key`, así dos dispositivos del mismo usuario nunca generan categorías duplicadas. La clave no cambia aunque la categoría se renombre o se traduzca; la lista completa vive en `packages/domain/src/categories.ts`.
 
-| Tipo | Categoría (`system_key`) | Subcategorías |
+- **Dos niveles siempre.** Toda categoría principal tiene subcategorías, al menos `.other`, y un movimiento se asigna siempre a una subcategoría, nunca a la principal (INV-04). El selector muestra siempre los dos niveles.
+- **Nombre de `.other`.** «Otros» junto a subcategorías reales; «General» cuando es la única; «Otros gastos» y «Otros ingresos» en `other_expense.other` y `other_income.other`, para no mostrar «Otros gastos › Otros».
+- **Reembolsos.** `refunds` es una categoría de ingreso, porque INV-01 no permite gastos positivos. Si en los reportes un reembolso compensa el gasto que devuelve se decide en el resumen mensual (T-017).
+
+| Tipo | Categoría (`system_key`) | Subcategorías (`system_key` después del punto) |
 | --- | --- | --- |
-| Gasto | Alimentación (`food`) | Supermercado, Restaurantes, Domicilios, Café y snacks |
-| Gasto | Transporte (`transport`) | Combustible, Transporte público, Taxi y apps, Parqueadero y peajes, Mantenimiento |
-| Gasto | Vivienda (`housing`) | Arriendo o cuota, Administración, Reparaciones |
-| Gasto | Servicios (`utilities`) | Energía, Agua, Gas, Internet y telefonía |
-| Gasto | Salud (`health`) | Citas y medicina prepagada, Farmacia, Deporte |
-| Gasto | Educación (`education`) | Matrículas y cursos, Libros y materiales |
-| Gasto | Entretenimiento (`entertainment`) | Salidas, Juegos y hobbies, Viajes |
-| Gasto | Compras (`shopping`) | Ropa, Tecnología, Hogar |
-| Gasto | Suscripciones (`subscriptions`) | Sin subcategorías |
-| Gasto | Deudas y créditos (`debt`) | Cuotas de tarjeta, Préstamos |
-| Gasto | Impuestos y comisiones (`fees`) | 4x1000, Cuota de manejo, Impuestos |
-| Gasto | Regalos y donaciones (`gifts`) | Sin subcategorías |
-| Gasto | Mascotas (`pets`) | Sin subcategorías |
-| Gasto | Otros gastos (`other_expense`) | Sin subcategorías |
-| Ingreso | Salario (`salary`) | Sin subcategorías |
-| Ingreso | Honorarios (`freelance`) | Sin subcategorías |
-| Ingreso | Negocio y ventas (`business`) | Sin subcategorías |
-| Ingreso | Rendimientos (`investment_income`) | Sin subcategorías |
-| Ingreso | Reembolsos (`refunds`) | Sin subcategorías |
-| Ingreso | Otros ingresos (`other_income`) | Sin subcategorías |
+| Gasto | Alimentación (`food`) | Supermercado (`groceries`), Restaurantes (`restaurants`), Domicilios (`delivery`), Café y snacks (`coffee_snacks`), Otros (`other`) |
+| Gasto | Transporte (`transport`) | Combustible (`fuel`), Transporte público (`public_transit`), Taxi y apps (`taxi_apps`), Parqueadero y peajes (`parking_tolls`), Mantenimiento (`maintenance`), Seguros, SOAT y tecnomecánica (`insurance`), Otros (`other`) |
+| Gasto | Vivienda (`housing`) | Arriendo o cuota (`rent_mortgage`), Administración (`building_fees`), Reparaciones (`repairs`), Otros (`other`) |
+| Gasto | Servicios (`utilities`) | Energía (`electricity`), Agua (`water`), Gas (`gas`), Internet y telefonía (`internet_phone`), Otros (`other`) |
+| Gasto | Salud (`health`) | Citas y medicina prepagada (`appointments_insurance`), Farmacia (`pharmacy`), Deporte (`sports`), Otros (`other`) |
+| Gasto | Educación (`education`) | Matrículas y cursos (`tuition_courses`), Libros y materiales (`books_supplies`), Otros (`other`) |
+| Gasto | Entretenimiento (`entertainment`) | Salidas (`outings`), Juegos y hobbies (`games_hobbies`), Viajes (`travel`), Otros (`other`) |
+| Gasto | Compras (`shopping`) | Ropa (`clothing`), Tecnología (`electronics`), Hogar (`home`), Otros (`other`) |
+| Gasto | Cuidado personal (`personal_care`) | General (`other`) |
+| Gasto | Suscripciones (`subscriptions`) | General (`other`) |
+| Gasto | Deudas y créditos (`debt`) | Intereses y cargos (`interest`), Préstamos (`loans`), Otros (`other`) |
+| Gasto | Impuestos y comisiones (`fees`) | 4x1000 (`gmf`), Cuota de manejo (`account_fees`), Impuestos (`taxes`), Otros (`other`) |
+| Gasto | Regalos y donaciones (`gifts`) | General (`other`) |
+| Gasto | Mascotas (`pets`) | General (`other`) |
+| Gasto | Otros gastos (`other_expense`) | Otros gastos (`other`) |
+| Ingreso | Salario (`salary`) | General (`other`) |
+| Ingreso | Honorarios (`freelance`) | General (`other`) |
+| Ingreso | Negocio y ventas (`business`) | General (`other`) |
+| Ingreso | Rendimientos (`investment_income`) | General (`other`) |
+| Ingreso | Reembolsos (`refunds`) | General (`other`) |
+| Ingreso | Otros ingresos (`other_income`) | Otros ingresos (`other`) |
