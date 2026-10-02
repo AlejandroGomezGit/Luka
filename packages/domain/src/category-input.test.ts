@@ -70,6 +70,12 @@ describe('HU-07 checkCategoryInput', () => {
     ).toEqual(['icon_invalid', 'color_unknown']);
   });
 
+  it('el ícono es opcional: vacío vale', () => {
+    expect(checkCategoryInput({ ...valid, icon: '' }, { parent: null, siblingNames: [] })).toEqual(
+      [],
+    );
+  });
+
   it('máximo dos niveles y la principal del mismo tipo', () => {
     const groceries = { kind: 'expense' as const, parentId: 'food' };
     expect(checkCategoryInput(valid, { parent: groceries, siblingNames: [] })).toEqual([

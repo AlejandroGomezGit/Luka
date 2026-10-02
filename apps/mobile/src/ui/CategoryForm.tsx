@@ -1,4 +1,4 @@
-import { type CategoryInputError, MAX_CATEGORY_NAME } from '@luka/domain';
+import { type CategoryInputError, isEmoji, MAX_CATEGORY_NAME } from '@luka/domain';
 import { type Ref, useImperativeHandle, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTheme } from '../theme';
@@ -38,7 +38,11 @@ export function CategoryForm({
   extraAction,
 }: Props) {
   const { colors, scheme, spacing } = useTheme();
-  const [values, setValues] = useState(initial);
+  // Un ícono guardado que no es emoji (datos antiguos) empieza vacío.
+  const [values, setValues] = useState({
+    ...initial,
+    icon: isEmoji(initial.icon) ? initial.icon : '',
+  });
   useImperativeHandle(ref, () => ({ submit: () => onSubmit(values) }), [onSubmit, values]);
   const errorsFor = (field: 'name' | 'icon' | 'color') =>
     errors

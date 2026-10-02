@@ -1,5 +1,6 @@
 import {
   type AccountInputError,
+  isEmoji,
   type AccountType,
   type CurrencyCode,
   formatAmountInput,
@@ -46,7 +47,11 @@ const amountText = (minor: number, currency: CurrencyCode) =>
  */
 export function AccountForm({ ref, initial, errors, onSubmit, archived, onToggleArchived }: Props) {
   const { colors, scheme, spacing } = useTheme();
-  const [values, setValues] = useState(initial);
+  // Un ícono guardado que no es emoji (datos antiguos) empieza vacío.
+  const [values, setValues] = useState({
+    ...initial,
+    icon: isEmoji(initial.icon) ? initial.icon : '',
+  });
   const [amount, setAmount] = useState(amountText(initial.openingAmountMinor, initial.currency));
   const [amountError, setAmountError] = useState(false);
   const isCard = values.type === 'credit_card';

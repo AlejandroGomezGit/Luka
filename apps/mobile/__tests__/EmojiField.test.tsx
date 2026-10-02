@@ -33,3 +33,15 @@ test('HU-07 lo que no es emoji se ignora y el ícono no cambia', async () => {
   expect(onChange).not.toHaveBeenCalled();
   expect(screen.getByLabelText('Ícono')).toHaveDisplayValue('🛒');
 });
+
+test('un ícono guardado que no es emoji (dato antiguo como «banknote») se ve como un espacio en blanco', async () => {
+  await render(<EmojiField value="banknote" color="green" onChange={jest.fn()} />);
+  expect(screen.getByLabelText('Ícono')).toHaveDisplayValue('');
+});
+
+test('borrar el emoji deja el ícono vacío', async () => {
+  const onChange = jest.fn();
+  await render(<Harness onChange={onChange} />);
+  await fireEvent.changeText(screen.getByLabelText('Ícono'), '');
+  expect(onChange).toHaveBeenLastCalledWith('');
+});

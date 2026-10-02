@@ -42,7 +42,8 @@ export function checkAccountInput(
   if (!Number.isSafeInteger(input.openingAmountMinor) || input.openingAmountMinor < 0) {
     errors.push('amount_invalid');
   }
-  if (!isEmoji(input.icon)) errors.push('icon_invalid');
+  // El ícono es opcional: vacío se muestra con uno de respaldo.
+  if (input.icon !== '' && !isEmoji(input.icon)) errors.push('icon_invalid');
   if (!isColorToken(input.color)) errors.push('color_unknown');
   return errors;
 }
