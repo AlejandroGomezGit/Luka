@@ -21,7 +21,7 @@ import {
 } from './accountTypes';
 import { CategoryLabel } from './CategoryLabel';
 import { ColorPicker } from './ColorPicker';
-import { IconPicker } from './IconPicker';
+import { EmojiField } from './EmojiField';
 import { colorFor } from './palette';
 import { Screen } from './Screen';
 
@@ -154,11 +154,7 @@ export function AccountForm({ initial, errors, onSubmit, archived, onToggleArchi
       </Text>
       {errorsFor('amount')}
 
-      <IconPicker
-        value={values.icon}
-        color={values.color}
-        onChange={(icon) => setValues({ ...values, icon })}
-      />
+      <EmojiField value={values.icon} onChange={(icon) => setValues({ ...values, icon })} />
       {errorsFor('icon')}
       <ColorPicker value={values.color} onChange={(color) => setValues({ ...values, color })} />
       {errorsFor('color')}

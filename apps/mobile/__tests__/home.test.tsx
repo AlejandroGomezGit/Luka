@@ -55,7 +55,7 @@ test('HU-02 con una cuenta activa ya no pide crear la primera', async () => {
     type: 'cash',
     currency: 'COP',
     openingAmountMinor: 0,
-    icon: 'banknote',
+    icon: '💵',
     color: 'green',
   });
   await render(wrap(value, <Home />));

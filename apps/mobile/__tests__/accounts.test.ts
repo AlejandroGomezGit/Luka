@@ -23,7 +23,7 @@ const cash: AccountFormValues = {
   type: 'cash',
   currency: 'COP',
   openingAmountMinor: 100_000_00,
-  icon: 'banknote',
+  icon: '💵',
   color: 'green',
 };
 

@@ -12,7 +12,7 @@ const valid: AccountInput = {
   type: 'savings',
   currency: 'COP',
   openingAmountMinor: 120_000_00,
-  icon: 'bank',
+  icon: '🏦',
   color: 'teal',
 };
 
@@ -41,13 +41,13 @@ describe('HU-02 checkAccountInput', () => {
     ]);
   });
 
-  it('rechaza tipo, moneda y tokens desconocidos', () => {
+  it('rechaza tipo y moneda desconocidos, un ícono que no es emoji y un color fuera de la paleta', () => {
     expect(
       checkAccountInput(
         { ...valid, type: 'wallet', currency: 'BTC', icon: 'x', color: 'y' },
         { activeNames: [] },
       ),
-    ).toEqual(['type_unknown', 'currency_unknown', 'icon_unknown', 'color_unknown']);
+    ).toEqual(['type_unknown', 'currency_unknown', 'icon_invalid', 'color_unknown']);
   });
 });
 

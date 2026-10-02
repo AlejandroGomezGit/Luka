@@ -3,32 +3,27 @@ import { CategoryForm } from '../src/ui/CategoryForm';
 
 const noop = () => undefined;
 
-test('HU-07 crear con nombre, ícono y color: se elige tocando opciones con nombre para VoiceOver', async () => {
+test('HU-07 crear con nombre, emoji del teclado y color elegido por su nombre para VoiceOver', async () => {
   const onSubmit = jest.fn();
   await render(
     <CategoryForm
-      initial={{ name: '', icon: 'tag', color: 'gray' }}
+      initial={{ name: '', icon: '🏷️', color: 'gray' }}
       errors={[]}
       onSubmit={onSubmit}
     />,
   );
   await fireEvent.changeText(screen.getByLabelText('Nombre'), 'Mercado campesino');
-  await fireEvent.press(screen.getByRole('radio', { name: 'Carrito' }));
+  await fireEvent.changeText(screen.getByLabelText('Ícono'), '🏷️🧺');
   await fireEvent.press(screen.getByRole('radio', { name: 'Verde' }));
-  expect(screen.getByRole('radio', { name: 'Carrito' })).toBeSelected();
   expect(screen.getByRole('radio', { name: 'Verde' })).toBeSelected();
   await fireEvent.press(screen.getByRole('button', { name: 'Guardar' }));
-  expect(onSubmit).toHaveBeenCalledWith({
-    name: 'Mercado campesino',
-    icon: 'cart',
-    color: 'green',
-  });
+  expect(onSubmit).toHaveBeenCalledWith({ name: 'Mercado campesino', icon: '🧺', color: 'green' });
 });
 
 test('HU-07 los errores se explican en español junto al campo', async () => {
   await render(
     <CategoryForm
-      initial={{ name: 'Supermercado', icon: 'cart', color: 'orange' }}
+      initial={{ name: 'Supermercado', icon: '🛒', color: 'orange' }}
       errors={['name_duplicate']}
       onSubmit={noop}
     />,
@@ -39,7 +34,7 @@ test('HU-07 los errores se explican en español junto al campo', async () => {
 test('INV-07 el formulario no ofrece eliminar: solo guardar y, al editar, archivar', async () => {
   await render(
     <CategoryForm
-      initial={{ name: 'Supermercado', icon: 'cart', color: 'orange' }}
+      initial={{ name: 'Supermercado', icon: '🛒', color: 'orange' }}
       errors={[]}
       onSubmit={noop}
       archived={false}

@@ -4,148 +4,149 @@
  */
 import type { CategoryKind } from './enums.js';
 import { deterministicId } from './ids.js';
-import type { ColorToken, IconToken } from './tokens.js';
+import type { ColorToken } from './tokens.js';
 
 export interface PredefinedCategory {
   key: string;
   name: string;
   kind: CategoryKind;
   parent: string | null;
-  icon: IconToken;
+  /** Emoji del catálogo; la persona lo puede cambiar por cualquier otro. */
+  icon: string;
   color: ColorToken;
 }
 
-type Sub = [key: string, name: string, icon: IconToken];
-type Group = [key: string, name: string, icon: IconToken, color: ColorToken, subcategories: Sub[]];
+type Sub = [key: string, name: string, icon: string];
+type Group = [key: string, name: string, icon: string, color: ColorToken, subcategories: Sub[]];
 
 const EXPENSE: Group[] = [
   [
     'food',
     'Alimentación',
-    'utensils',
+    '🍽️',
     'orange',
     [
-      ['groceries', 'Supermercado', 'cart'],
-      ['restaurants', 'Restaurantes', 'utensils'],
-      ['delivery', 'Domicilios', 'takeout'],
-      ['coffee_snacks', 'Café y snacks', 'coffee'],
+      ['groceries', 'Supermercado', '🛒'],
+      ['restaurants', 'Restaurantes', '🍽️'],
+      ['delivery', 'Domicilios', '🛵'],
+      ['coffee_snacks', 'Café y snacks', '☕'],
     ],
   ],
   [
     'transport',
     'Transporte',
-    'car',
+    '🚗',
     'blue',
     [
-      ['fuel', 'Combustible', 'fuel'],
-      ['public_transit', 'Transporte público', 'bus'],
-      ['taxi_apps', 'Taxi y apps', 'taxi'],
-      ['parking_tolls', 'Parqueadero y peajes', 'parking'],
-      ['maintenance', 'Mantenimiento', 'wrench'],
-      ['insurance', 'Seguros, SOAT y tecnomecánica', 'shield'],
+      ['fuel', 'Combustible', '⛽'],
+      ['public_transit', 'Transporte público', '🚌'],
+      ['taxi_apps', 'Taxi y apps', '🚕'],
+      ['parking_tolls', 'Parqueadero y peajes', '🅿️'],
+      ['maintenance', 'Mantenimiento', '🔧'],
+      ['insurance', 'Seguros, SOAT y tecnomecánica', '🛡️'],
     ],
   ],
   [
     'housing',
     'Vivienda',
-    'home',
+    '🏠',
     'brown',
     [
-      ['rent_mortgage', 'Arriendo o cuota', 'home'],
-      ['building_fees', 'Administración', 'building'],
-      ['repairs', 'Reparaciones', 'hammer'],
+      ['rent_mortgage', 'Arriendo o cuota', '🔑'],
+      ['building_fees', 'Administración', '🏢'],
+      ['repairs', 'Reparaciones', '🔨'],
     ],
   ],
   [
     'utilities',
     'Servicios',
-    'bolt',
+    '💡',
     'amber',
     [
-      ['electricity', 'Energía', 'bolt'],
-      ['water', 'Agua', 'drop'],
-      ['gas', 'Gas', 'flame'],
-      ['internet_phone', 'Internet y telefonía', 'wifi'],
+      ['electricity', 'Energía', '💡'],
+      ['water', 'Agua', '💧'],
+      ['gas', 'Gas', '🔥'],
+      ['internet_phone', 'Internet y telefonía', '📶'],
     ],
   ],
   [
     'health',
     'Salud',
-    'heart',
+    '🩺',
     'red',
     [
-      ['appointments_insurance', 'Citas y medicina prepagada', 'stethoscope'],
-      ['pharmacy', 'Farmacia', 'pill'],
-      ['sports', 'Deporte', 'run'],
+      ['appointments_insurance', 'Citas y medicina prepagada', '🩺'],
+      ['pharmacy', 'Farmacia', '💊'],
+      ['sports', 'Deporte', '🏃'],
     ],
   ],
   [
     'education',
     'Educación',
-    'graduation',
+    '🎓',
     'indigo',
     [
-      ['tuition_courses', 'Matrículas y cursos', 'graduation'],
-      ['books_supplies', 'Libros y materiales', 'book'],
+      ['tuition_courses', 'Matrículas y cursos', '🎓'],
+      ['books_supplies', 'Libros y materiales', '📚'],
     ],
   ],
   [
     'entertainment',
     'Entretenimiento',
-    'ticket',
+    '🎟️',
     'purple',
     [
-      ['outings', 'Salidas', 'ticket'],
-      ['games_hobbies', 'Juegos y hobbies', 'game'],
-      ['travel', 'Viajes', 'airplane'],
+      ['outings', 'Salidas', '🍻'],
+      ['games_hobbies', 'Juegos y hobbies', '🎮'],
+      ['travel', 'Viajes', '✈️'],
     ],
   ],
   [
     'shopping',
     'Compras',
-    'bag',
+    '🛍️',
     'pink',
     [
-      ['clothing', 'Ropa', 'shirt'],
-      ['electronics', 'Tecnología', 'laptop'],
-      ['home', 'Hogar', 'sofa'],
+      ['clothing', 'Ropa', '👕'],
+      ['electronics', 'Tecnología', '💻'],
+      ['home', 'Hogar', '🛋️'],
     ],
   ],
-  ['personal_care', 'Cuidado personal', 'sparkles', 'pink', []],
-  ['subscriptions', 'Suscripciones', 'repeat', 'cyan', []],
+  ['personal_care', 'Cuidado personal', '💇', 'pink', []],
+  ['subscriptions', 'Suscripciones', '🔁', 'cyan', []],
   [
     'debt',
     'Deudas y créditos',
-    'card',
+    '💳',
     'red',
     [
-      ['interest', 'Intereses y cargos', 'percent'],
-      ['loans', 'Préstamos', 'bank'],
+      ['interest', 'Intereses y cargos', '💸'],
+      ['loans', 'Préstamos', '🤝'],
     ],
   ],
   [
     'fees',
     'Impuestos y comisiones',
-    'receipt',
+    '🧾',
     'gray',
     [
-      ['gmf', '4x1000', 'percent'],
-      ['account_fees', 'Cuota de manejo', 'card'],
-      ['taxes', 'Impuestos', 'receipt'],
+      ['gmf', '4x1000', '🏧'],
+      ['account_fees', 'Cuota de manejo', '💳'],
+      ['taxes', 'Impuestos', '🏛️'],
     ],
   ],
-  ['gifts', 'Regalos y donaciones', 'gift', 'pink', []],
-  ['pets', 'Mascotas', 'paw', 'brown', []],
-  ['other_expense', 'Otros gastos', 'more', 'gray', []],
+  ['gifts', 'Regalos y donaciones', '🎁', 'pink', []],
+  ['pets', 'Mascotas', '🐾', 'brown', []],
+  ['other_expense', 'Otros gastos', '📦', 'gray', []],
 ];
 
 const INCOME: Group[] = [
-  ['salary', 'Salario', 'briefcase', 'green', []],
-  ['freelance', 'Honorarios', 'person', 'teal', []],
-  ['business', 'Negocio y ventas', 'banknote', 'green', []],
-  ['investment_income', 'Rendimientos', 'chart', 'teal', []],
-  ['refunds', 'Reembolsos', 'refund', 'blue', []],
-  ['other_income', 'Otros ingresos', 'plus', 'gray', []],
+  ['salary', 'Salario', '💼', 'green', []],
+  ['freelance', 'Honorarios', '🧑‍💻', 'teal', []],
+  ['business', 'Negocio y ventas', '🏪', 'green', []],
+  ['investment_income', 'Rendimientos', '📈', 'teal', []],
+  ['refunds', 'Reembolsos', '↩️', 'blue', []],
+  ['other_income', 'Otros ingresos', '💰', 'gray', []],
 ];
 
 /**
@@ -164,22 +165,17 @@ function otherName(key: string, hasSubcategories: boolean): string {
 function expand(groups: Group[], kind: CategoryKind): PredefinedCategory[] {
   return groups.flatMap(([key, name, icon, color, subcategories]) => [
     { key, name, kind, parent: null, icon, color },
-    // «Otros» junto a subcategorías usa el ícono genérico; «General» se ve igual que su principal.
-    ...[
-      ...subcategories,
-      [
-        'other',
-        otherName(key, subcategories.length > 0),
-        subcategories.length > 0 ? 'more' : icon,
-      ] as Sub,
-    ].map(([sub, subName, subIcon]) => ({
-      key: `${key}.${sub}`,
-      name: subName,
-      kind,
-      parent: key,
-      icon: subIcon,
-      color,
-    })),
+    // «Otros» y «General» llevan el emoji de su principal.
+    ...[...subcategories, ['other', otherName(key, subcategories.length > 0), icon] as Sub].map(
+      ([sub, subName, subIcon]) => ({
+        key: `${key}.${sub}`,
+        name: subName,
+        kind,
+        parent: key,
+        icon: subIcon,
+        color,
+      }),
+    ),
   ]);
 }
 

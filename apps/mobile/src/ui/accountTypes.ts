@@ -1,4 +1,4 @@
-import type { AccountType, ColorToken, CurrencyCode, IconToken } from '@luka/domain';
+import type { AccountType, ColorToken, CurrencyCode } from '@luka/domain';
 
 /** Nombres en español de los tipos de cuenta (claves del esquema, documento 02). */
 export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
@@ -22,12 +22,12 @@ export const ACCOUNT_TYPE_HINTS: Partial<Record<AccountType, string>> = {
 };
 
 /** Ícono y color con los que nace una cuenta según su tipo; se pueden cambiar. */
-export const ACCOUNT_DEFAULTS: Record<AccountType, { icon: IconToken; color: ColorToken }> = {
-  cash: { icon: 'banknote', color: 'green' },
-  savings: { icon: 'bank', color: 'teal' },
-  checking: { icon: 'card', color: 'blue' },
-  credit_card: { icon: 'card', color: 'red' },
-  other: { icon: 'phone', color: 'purple' },
+export const ACCOUNT_DEFAULTS: Record<AccountType, { icon: string; color: ColorToken }> = {
+  cash: { icon: '💵', color: 'green' },
+  savings: { icon: '🐷', color: 'teal' },
+  checking: { icon: '🏦', color: 'blue' },
+  credit_card: { icon: '💳', color: 'red' },
+  other: { icon: '📱', color: 'purple' },
 };
 
 export const CURRENCY_LABELS: Record<CurrencyCode, string> = {

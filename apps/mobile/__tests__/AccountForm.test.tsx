@@ -7,7 +7,7 @@ const empty = {
   type: 'cash',
   currency: 'COP',
   openingAmountMinor: 0,
-  icon: 'banknote',
+  icon: '💵',
   color: 'green',
 } as const;
 
@@ -23,7 +23,7 @@ test('HU-02 crear una cuenta con nombre, tipo y saldo inicial; el tipo trae íco
     type: 'other',
     currency: 'COP',
     openingAmountMinor: 120_000_00,
-    icon: 'phone',
+    icon: '📱',
     color: 'purple',
   });
 });
@@ -39,7 +39,7 @@ test('HU-02 editar una tarjeta de crédito muestra la deuda en positivo y al gua
     currency: 'COP',
     openingBalanceMinor: -500_000_00,
     name: 'Visa',
-    icon: 'card',
+    icon: '💳',
     color: 'red',
   } as AccountRow;
   const onSubmit = jest.fn();

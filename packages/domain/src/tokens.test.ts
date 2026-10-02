@@ -1,31 +1,47 @@
 import { describe, expect, it } from '@jest/globals';
 import { PREDEFINED_CATEGORIES } from './categories.js';
-import { COLOR_TOKENS, ICON_TOKENS, isColorToken, isIconToken } from './tokens.js';
+import { COLOR_TOKENS, isColorToken, isEmoji, lastEmoji } from './tokens.js';
 
-describe('tokens de ícono y color (documento 02)', () => {
-  it('hay entre 40 y 60 íconos, únicos y en inglés con guion bajo', () => {
-    expect(ICON_TOKENS.length).toBeGreaterThanOrEqual(40);
-    expect(ICON_TOKENS.length).toBeLessThanOrEqual(60);
-    expect(new Set(ICON_TOKENS).size).toBe(ICON_TOKENS.length);
-    for (const token of ICON_TOKENS) expect(token).toMatch(/^[a-z][a-z_]*$/);
+describe('ícono: un solo emoji del teclado (documento 02)', () => {
+  it('acepta un emoji, incluidos los compuestos, banderas y teclas', () => {
+    for (const emoji of ['🛒', '🍽️', '☕', '🅿️', '🧑‍💻', '👍🏽', '🇨🇴', '1️⃣', '↩️']) {
+      expect({ emoji, ok: isEmoji(emoji) }).toEqual({ emoji, ok: true });
+    }
   });
 
+  it('rechaza texto, varios emojis y vacío', () => {
+    for (const value of ['', 'a', 'cart', '🛒🛒', '🛒 ', '1', '#']) {
+      expect({ value, ok: isEmoji(value) }).toEqual({ value, ok: false });
+    }
+  });
+
+  it('lastEmoji toma el último emoji escrito, para reemplazar el anterior en el campo', () => {
+    expect(lastEmoji('🛒🍽️')).toBe('🍽️');
+    expect(lastEmoji('🛒a')).toBe('🛒');
+    expect(lastEmoji('abc')).toBeNull();
+  });
+});
+
+describe('colores (documento 02)', () => {
   it('hay 12 colores únicos, cada uno con su nombre en español para VoiceOver', () => {
     expect(COLOR_TOKENS).toHaveLength(12);
     expect(new Set(COLOR_TOKENS.map((c) => c.token)).size).toBe(12);
     for (const color of COLOR_TOKENS) expect(color.name.length).toBeGreaterThan(0);
   });
 
-  it('isIconToken e isColorToken reconocen solo los tokens de la lista', () => {
-    expect(isIconToken('cart')).toBe(true);
-    expect(isIconToken('food')).toBe(false);
+  it('isColorToken reconoce solo los colores de la lista', () => {
     expect(isColorToken('teal')).toBe(true);
     expect(isColorToken('#00ff00')).toBe(false);
   });
+});
 
-  it('cada categoría predefinida usa tokens válidos y hereda el color de su principal', () => {
+describe('catálogo con emoji', () => {
+  it('cada categoría predefinida tiene un emoji y un color válidos, y hereda el color de su principal', () => {
     for (const category of PREDEFINED_CATEGORIES) {
-      expect(isIconToken(category.icon)).toBe(true);
+      expect({ key: category.key, ok: isEmoji(category.icon) }).toEqual({
+        key: category.key,
+        ok: true,
+      });
       expect(isColorToken(category.color)).toBe(true);
       const parent = PREDEFINED_CATEGORIES.find((c) => c.key === category.parent);
       if (parent) expect(category.color).toBe(parent.color);

@@ -5,7 +5,7 @@ import { useTheme } from '../theme';
 import { CategoryLabel } from './CategoryLabel';
 import { CATEGORY_ERRORS } from './categoryErrors';
 import { ColorPicker } from './ColorPicker';
-import { IconPicker } from './IconPicker';
+import { EmojiField } from './EmojiField';
 import { colorFor } from './palette';
 import { Screen } from './Screen';
 
@@ -57,11 +57,7 @@ export function CategoryForm({ initial, errors, onSubmit, archived, onToggleArch
       />
       {errorsFor('name')}
 
-      <IconPicker
-        value={values.icon}
-        color={values.color}
-        onChange={(icon) => setValues({ ...values, icon })}
-      />
+      <EmojiField value={values.icon} onChange={(icon) => setValues({ ...values, icon })} />
       {errorsFor('icon')}
 
       <ColorPicker value={values.color} onChange={(color) => setValues({ ...values, color })} />
