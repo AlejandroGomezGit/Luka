@@ -1,12 +1,25 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { useTheme } from '../theme';
 
+interface Props {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+}
+
 /** Botón de texto para la barra superior, por ejemplo «Guardar»: siempre visible sin desplazarse. */
-export function HeaderButton({ label, onPress }: { label: string; onPress: () => void }) {
+export function HeaderButton({ label, onPress, disabled = false }: Props) {
   const { colors } = useTheme();
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} hitSlop={12}>
-      <Text style={[styles.text, { color: colors.accent }]}>{label}</Text>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      hitSlop={12}
+    >
+      <Text style={[styles.text, { color: disabled ? colors.muted : colors.accent }]}>{label}</Text>
     </Pressable>
   );
 }

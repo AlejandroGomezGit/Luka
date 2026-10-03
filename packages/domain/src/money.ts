@@ -67,6 +67,13 @@ export function applySign(kind: TransactionKind, amountMinor: number): number {
   return kind === 'income' ? absolute : -absolute;
 }
 
+/**
+ * Dígitos enteros que caben sin pasar de un entero seguro en la unidad menor: 13 en monedas con 2
+ * decimales (9.999.999.999.999,99 < 2^53).
+ */
+const maxIntegerDigits = (currency: CurrencyCode) =>
+  Math.floor(Math.log10(Number.MAX_SAFE_INTEGER / 10 ** MINOR_UNITS[currency]));
+
 const groupThousands = (digits: string) => digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 const withoutLeadingZeros = (digits: string) => digits.replace(/^0+(?=\d)/, '');
 
@@ -80,7 +87,10 @@ export function formatAmountInput(text: string, currency: CurrencyCode): string 
   if (decimalAt < 0 && INPUT_DECIMALS[currency] > 0 && text.endsWith('.'))
     decimalAt = text.length - 1;
   const integerPart = decimalAt < 0 ? text : text.slice(0, decimalAt);
-  const integer = withoutLeadingZeros(integerPart.replace(/\D/g, ''));
+  const integer = withoutLeadingZeros(integerPart.replace(/\D/g, '')).slice(
+    0,
+    maxIntegerDigits(currency),
+  );
   if (decimalAt < 0) return groupThousands(integer);
   const fraction = text
     .slice(decimalAt + 1)

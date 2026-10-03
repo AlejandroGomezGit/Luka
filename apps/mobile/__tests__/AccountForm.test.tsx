@@ -69,7 +69,7 @@ test('HU-02 el saldo inicial tiene un texto de ayuda: se puede corregir después
   ).toBeOnTheScreen();
 });
 
-test('HU-02 un monto demasiado grande se explica y no se guarda (con los puntos automáticos es el único inválido)', async () => {
+test('HU-02 el monto no deja escribir más de 13 dígitos enteros, así nunca pasa de un entero seguro', async () => {
   const onSubmit = jest.fn();
   await render(
     <AccountForm
@@ -79,10 +79,13 @@ test('HU-02 un monto demasiado grande se explica y no se guarda (con los puntos 
       onSubmit={onSubmit}
     />,
   );
-  await fireEvent.changeText(screen.getByLabelText('Saldo inicial'), '99999999999999999');
+  const field = screen.getByLabelText('Saldo inicial');
+  await fireEvent.changeText(field, '99999999999999999');
+  expect(field).toHaveDisplayValue('9.999.999.999.999');
   await save();
-  expect(onSubmit).not.toHaveBeenCalled();
-  expect(screen.getByText('Escribe el monto en pesos, por ejemplo 120.000.')).toBeOnTheScreen();
+  expect(onSubmit).toHaveBeenCalledWith(
+    expect.objectContaining({ openingAmountMinor: 999_999_999_999_900 }),
+  );
 });
 
 test('el formulario no pide número de cuenta ni de tarjeta', async () => {
