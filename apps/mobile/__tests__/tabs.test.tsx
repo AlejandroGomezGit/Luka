@@ -36,7 +36,7 @@ async function renderApp() {
 }
 
 // Los botones de la barra de pestañas son nativos: las pruebas navegan por ruta.
-test('T-044 T-016 Movimientos es la lista de movimientos y Resumen dice «Disponible pronto» hasta T-017', async () => {
+test('T-044 T-016 T-017 Movimientos y Resumen ya no son marcadores de posición', async () => {
   await renderApp();
   expect(screen.getByRole('header', { name: 'Tus gastos' })).toBeOnTheScreen();
   await act(() => router.navigate('/movements'));
@@ -44,8 +44,9 @@ test('T-044 T-016 Movimientos es la lista de movimientos y Resumen dice «Dispon
   expect(screen.getByLabelText('Buscar movimientos')).toBeOnTheScreen();
   await act(() => router.navigate('/summary'));
   expect(screen.getByRole('header', { name: 'Resumen' })).toBeOnTheScreen();
-  // Solo Resumen sigue con el marcador; Movimientos ya es la lista (T-016).
-  expect(screen.getAllByText('Disponible pronto')).toHaveLength(1);
+  // Movimientos (T-016) y Resumen (T-017) reemplazaron sus marcadores.
+  expect(screen.getByRole('button', { name: 'Mes anterior' })).toBeOnTheScreen();
+  expect(screen.queryAllByText('Disponible pronto')).toHaveLength(0);
 });
 
 test('T-044 «Administrar» al final de Inicio lleva a Cuentas y Categorías, con etiquetas para VoiceOver', async () => {

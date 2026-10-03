@@ -1,10 +1,11 @@
-import { today } from '@luka/domain';
+import { type CurrencyCode, formatMoney, monthOf, today } from '@luka/domain';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { deviceClock, deviceTimeZone } from '../../clock';
 import { type AccountWithBalance, listActiveAccounts } from '../../db/accounts';
 import { useLocalSession } from '../../db/session';
+import { monthlySummary, summaryCurrencies } from '../../db/summary';
 import { listRecentTransactions, type TransactionListItem } from '../../db/transactions';
 import { headingScale, isAccessibilitySize, useTheme } from '../../theme';
 import { AccountList } from '../../ui/AccountList';
@@ -37,11 +38,20 @@ export default function Home() {
   const { fontScale } = useWindowDimensions();
   const [accounts, setAccounts] = useState<AccountWithBalance[] | null>(null);
   const [recent, setRecent] = useState<TransactionListItem[]>([]);
+  const [spent, setSpent] = useState<{ currency: CurrencyCode; minor: number }[]>([]);
 
   // También vuelve a leer al borrar o deshacer (revision), aunque Inicio ya esté a la vista.
   const reload = useCallback(() => {
     setAccounts(listActiveAccounts(db));
     setRecent(listRecentTransactions(db, session.userId));
+    // El mismo cálculo que la pestaña Resumen para el mes en curso, una línea por moneda.
+    const month = monthOf(today(session.clock, deviceTimeZone()));
+    setSpent(
+      summaryCurrencies(db).map((currency) => ({
+        currency,
+        minor: monthlySummary(db, session.userId, month, currency).expenseMinor,
+      })),
+    );
   }, [db, session.userId, revision]);
   useFocusEffect(reload);
   const hasAccounts = accounts === null || accounts.length > 0;
@@ -84,6 +94,21 @@ export default function Home() {
             onPress={() => router.push('/accounts/new')}
           />
         </View>
+      )}
+      {accounts && accounts.length > 0 && (
+        <GroupedCard
+          title="Gastado este mes"
+          action={{ label: 'Ver resumen', onPress: () => router.navigate('/summary') }}
+        >
+          {spent.map(({ currency, minor }) => (
+            <ListRow
+              key={currency}
+              title={currency}
+              value={formatMoney(minor, currency)}
+              accessibilityLabel={`Gastado este mes en ${currency}, ${formatMoney(minor, currency)}`}
+            />
+          ))}
+        </GroupedCard>
       )}
       {accounts && accounts.length > 0 && (
         <AccountList
