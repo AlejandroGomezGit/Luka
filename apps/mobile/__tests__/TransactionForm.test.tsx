@@ -258,3 +258,124 @@ test('HU-03 el campo del monto toma el ancho del texto escrito, para que iOS no 
   ).width;
   expect(width).toBeGreaterThanOrEqual(150);
 });
+
+describe('HU-04 editar un movimiento (CU-09)', () => {
+  const edit = async (
+    initial: TransactionValues,
+    extra: Partial<Parameters<typeof TransactionForm>[0]> = {},
+  ) => {
+    const onSubmit = jest.fn<SubmitResult, [TransactionValues]>(() => ({
+      ok: true,
+      message: 'ok',
+    }));
+    const onDelete = jest.fn();
+    const result = await render(
+      <TransactionForm
+        ref={form}
+        mode="edit"
+        initial={initial}
+        accounts={accounts}
+        initialAccountId={initial.accountId}
+        today="2026-10-01"
+        topCategories={() => [groceries]}
+        allCategories={() => []}
+        onSubmit={onSubmit}
+        onDelete={onDelete}
+        {...extra}
+      />,
+    );
+    return { result, onSubmit, onDelete };
+  };
+  const expense: TransactionValues = {
+    kind: 'expense',
+    amountMinor: 12_500_00,
+    accountId: 'cop',
+    categoryId: 'groceries',
+    occurredOn: '2026-09-30',
+    note: 'Mercado',
+  };
+
+  test('HU-04 al editar, el formulario abre con los valores del movimiento y «Eliminar movimiento» es un botón destructivo de 44 pt o más al final', async () => {
+    const { onSubmit, onDelete } = await edit(expense);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(screen.getByLabelText('Monto')).toHaveDisplayValue('12.500');
+    expect(screen.getByLabelText('Nota')).toHaveDisplayValue('Mercado');
+    expect(screen.getByRole('button', { name: 'Fecha: Ayer' })).toBeOnTheScreen();
+    expect(screen.getByRole('radio', { name: 'Supermercado, Alimentación' })).toBeSelected();
+    const remove = screen.getByRole('button', { name: 'Eliminar movimiento' });
+    const style = StyleSheet.flatten(remove.props.style as never) as {
+      minHeight?: number;
+      backgroundColor?: string;
+    };
+    expect(style.minHeight).toBeGreaterThanOrEqual(44);
+    expect(style.backgroundColor).toBe('#B3261E');
+    await fireEvent.press(remove);
+    expect(onDelete).toHaveBeenCalledTimes(1);
+    await fireEvent.changeText(screen.getByLabelText('Monto'), '20000');
+    await act(() => {
+      form.current?.submit();
+    });
+    expect(onSubmit).toHaveBeenCalledWith({ ...expense, amountMinor: 20_000_00 });
+  });
+
+  test('HU-04 al editar se puede pasar de gasto a ingreso: la categoría se borra y se pide una nueva; no se ofrece Transferencia', async () => {
+    const { onSubmit } = await edit(expense);
+    expect(screen.queryByRole('radio', { name: 'Transferencia' })).toBeNull();
+    await fireEvent.press(screen.getByRole('radio', { name: 'Ingreso' }));
+    expect(screen.getByText('Elige una categoría de ingreso.')).toBeOnTheScreen();
+    await act(() => {
+      form.current?.submit();
+    });
+    expect(onSubmit).toHaveBeenCalledWith({ ...expense, kind: 'income', categoryId: null });
+  });
+
+  test('HU-04 al editar una transferencia no se cambia el tipo, y con un destino de otra moneda el monto de llegada vuelve a ser obligatorio', async () => {
+    const { onSubmit } = await edit(
+      {
+        kind: 'transfer',
+        amountMinor: 50_000_00,
+        accountId: 'cop',
+        toAccountId: 'bank',
+        toAmountMinor: 50_000_00,
+        occurredOn: '2026-10-01',
+        note: '',
+      },
+      { accounts: [...accounts, account('bank', 'Ahorro', 'COP')] },
+    );
+    expect(screen.queryByRole('radio', { name: 'Gasto' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Hacia Ahorro, COP' })).toBeOnTheScreen();
+    expect(screen.queryByLabelText(/^Llega a/)).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Hacia Ahorro, COP' }));
+    await fireEvent.press(screen.getByRole('button', { name: /^Ahorro USD,/ }));
+    expect(screen.getByLabelText('Llega a Ahorro USD · USD')).toHaveDisplayValue('');
+    await act(() => {
+      form.current?.submit();
+    });
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'transfer', toAccountId: 'usd', toAmountMinor: null }),
+    );
+  });
+
+  test('HU-04 la cuenta y la categoría archivadas del movimiento se muestran con «(archivada)» y las hojas no las ofrecen', async () => {
+    await edit(expense, {
+      accounts: [
+        { ...account('cop', 'Efectivo', 'COP'), archivedAt: new Date(0) },
+        account('usd', 'Ahorro USD', 'USD'),
+      ],
+      topCategories: () => [],
+      categoryName: () => 'Supermercado (archivada)',
+    });
+    expect(
+      screen.getByRole('button', { name: 'Pagado con Efectivo, COP, archivada' }),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('Efectivo · COP (archivada)')).toBeOnTheScreen();
+    expect(screen.getByText('Supermercado (archivada)')).toBeOnTheScreen();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Pagado con Efectivo, COP, archivada' }),
+    );
+    expect(screen.queryByRole('button', { name: /^Efectivo,/ })).toBeNull();
+    expect(screen.getByRole('button', { name: /^Ahorro USD,/ })).toBeOnTheScreen();
+  });
+});

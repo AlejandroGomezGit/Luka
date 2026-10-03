@@ -18,10 +18,12 @@ interface Props {
 /** Fila grande y tocable con la cuenta de un movimiento; abre la hoja para elegir otra (CU-08, CU-06). */
 export function AccountRow({ label, account, onPress, hint, stacked, fill = false }: Props) {
   const { colors } = useTheme();
+  // El movimiento que se edita puede estar en una cuenta archivada después (INV-06).
+  const archived = account.archivedAt !== null;
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${label} ${account.name}, ${account.currency}`}
+      accessibilityLabel={`${label} ${account.name}, ${account.currency}${archived ? ', archivada' : ''}`}
       accessibilityHint={hint}
       onPress={onPress}
       style={[
@@ -35,6 +37,7 @@ export function AccountRow({ label, account, onPress, hint, stacked, fill = fals
         <Text style={[typography.subhead, { color: colors.muted }]}>{label}</Text>
         <Text style={[typography.headline, { color: colors.text }]}>
           {account.name} · {account.currency}
+          {archived ? ' (archivada)' : ''}
         </Text>
       </View>
       {/* La flecha indica que la fila abre la lista de cuentas; apilada, la tarjeta ya lo muestra. */}

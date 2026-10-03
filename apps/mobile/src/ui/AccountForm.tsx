@@ -4,7 +4,6 @@ import {
   type AccountType,
   type CurrencyCode,
   formatAmountInput,
-  formatMoney,
   MAX_ACCOUNT_NAME,
   MINOR_UNITS,
   parseAmount,
@@ -26,6 +25,7 @@ import { Chip } from './Chip';
 import { ColorPicker } from './ColorPicker';
 import { EmojiField } from './EmojiField';
 import type { FormHandle } from './FormHandle';
+import { amountText } from './money';
 import { Screen } from './Screen';
 import { TextField } from './TextField';
 
@@ -38,10 +38,6 @@ interface Props {
   archived?: boolean;
   onToggleArchived?: () => void;
 }
-
-/** Monto para el campo de texto, sin símbolo: «500.000» o «1.234,56». */
-const amountText = (minor: number, currency: CurrencyCode) =>
-  formatMoney(minor, currency).replace(/^\S+ /, '');
 
 /**
  * Formulario de cuenta (HU-02), compacto: tipo y moneda son opciones en fila y «Guardar» está en la barra
