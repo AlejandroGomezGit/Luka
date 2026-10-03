@@ -5,6 +5,8 @@ import { IconBadge } from './CategoryLabel';
 interface Props {
   title: string;
   subtitle?: string;
+  /** Aviso bajo el subtítulo en el color de alerta, por ejemplo la ayuda de un saldo negativo. */
+  warning?: string;
   /** Valor a la derecha, por ejemplo el saldo. */
   value?: string;
   /** Segunda línea bajo el valor, por ejemplo lo que llega en otra moneda («→ US$ 25,00»). */
@@ -46,6 +48,9 @@ export function ListRow(props: Props) {
       <View style={styles.flex}>
         <Text style={[typography.body, { color: colors.text }]}>{title}</Text>
         {subtitle && <Text style={[typography.subhead, { color: colors.muted }]}>{subtitle}</Text>}
+        {props.warning && (
+          <Text style={[typography.subhead, { color: colors.alert }]}>{props.warning}</Text>
+        )}
       </View>
       {value && (
         <View style={styles.value}>

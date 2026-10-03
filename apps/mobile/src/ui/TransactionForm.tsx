@@ -38,7 +38,7 @@ import { FALLBACK_EMOJI } from './CategoryLabel';
 import { Chip, SegmentedControl } from './Chip';
 import type { FormHandle } from './FormHandle';
 import { Button } from './Button';
-import { amountText, balanceText } from './money';
+import { amountText, balanceText, isNegativeBalance, NEGATIVE_BALANCE_HELP } from './money';
 import { colorFor } from './palette';
 import { Screen } from './Screen';
 import { TextField } from './TextField';
@@ -397,6 +397,11 @@ export function TransactionForm(props: Props) {
       {account && (
         <Text style={[styles.caption, styles.centerText, { color: colors.muted }]}>
           Saldo de la cuenta: {balanceText(account.type, account.balanceMinor, currency)}
+        </Text>
+      )}
+      {account && isNegativeBalance(account.type, account.balanceMinor) && (
+        <Text style={[styles.caption, styles.centerText, { color: colors.alert }]}>
+          {NEGATIVE_BALANCE_HELP}
         </Text>
       )}
       {differentCurrency && toAccount && (

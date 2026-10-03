@@ -3,7 +3,7 @@ import type { AccountWithBalance } from '../db/accounts';
 import { ACCOUNT_TYPE_LABELS } from './accountTypes';
 import { GroupedCard } from './GroupedCard';
 import { ListRow } from './ListRow';
-import { balanceText } from './money';
+import { balanceText, isNegativeBalance, NEGATIVE_BALANCE_HELP, spokenBalance } from './money';
 
 interface Props {
   accounts: readonly AccountWithBalance[];
@@ -19,11 +19,9 @@ export function AccountList({ accounts, onSelect, title }: Props) {
       {accounts.map((account) => {
         const type = ACCOUNT_TYPE_LABELS[account.type];
         const archived = account.archivedAt ? 'archivada' : null;
-        const balance = balanceText(
-          account.type,
-          account.balanceMinor,
-          account.currency as CurrencyCode,
-        );
+        const currency = account.currency as CurrencyCode;
+        const balance = balanceText(account.type, account.balanceMinor, currency);
+        const negative = isNegativeBalance(account.type, account.balanceMinor);
         return (
           <ListRow
             key={account.id}
@@ -32,9 +30,25 @@ export function AccountList({ accounts, onSelect, title }: Props) {
             title={account.name}
             subtitle={[type, account.currency, archived].filter(Boolean).join(' · ')}
             value={balance}
-            // Una deuda (tarjeta o saldo negativo) va en el color de alerta, además de decir «Debes».
-            valueTone={balance.startsWith('Debes') ? 'alert' : 'default'}
-            accessibilityLabel={[account.name, type, balance, archived].filter(Boolean).join(', ')}
+            // La deuda de la tarjeta («Debes») y el saldo negativo de otra cuenta van en el color de alerta;
+            // el signo, «Debes» o la ayuda también lo dicen, nunca solo el color (T-046).
+            valueTone={negative || balance.startsWith('Debes') ? 'alert' : 'default'}
+            // La ayuda va dentro de la fila, que ya abre la edición de la cuenta: un enlace aparte sería
+            // un segundo botón anidado en el primero.
+            {...(negative
+              ? {
+                  warning: NEGATIVE_BALANCE_HELP,
+                  accessibilityHint: `${NEGATIVE_BALANCE_HELP}. Abre la edición de la cuenta.`,
+                }
+              : {})}
+            accessibilityLabel={[
+              account.name,
+              type,
+              spokenBalance(account.type, account.balanceMinor, currency),
+              archived,
+            ]
+              .filter(Boolean)
+              .join(', ')}
             onPress={() => onSelect(account.id)}
           />
         );
