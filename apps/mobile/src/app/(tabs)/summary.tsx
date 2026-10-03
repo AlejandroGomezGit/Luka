@@ -160,7 +160,7 @@ export default function SummaryScreen() {
                     icon={c.icon}
                     color={c.color}
                     title={c.name}
-                    subtitle={`${plural(c.count)} · ${String(shares[i] ?? 0)} %`}
+                    subtitle={`${plural(c.count)} · ${String(shares[i] ?? 0)}\u00a0%`}
                     value={money(c.amountMinor)}
                     accessibilityLabel={label}
                     {...(c.id
@@ -183,7 +183,7 @@ export default function SummaryScreen() {
                   icon="🗂️"
                   color="gray"
                   title="Otras categorías"
-                  subtitle={`${plural(restCount)} · ${String(shares[TOP] ?? 0)} %`}
+                  subtitle={`${plural(restCount)} · ${String(shares[TOP] ?? 0)}\u00a0%`}
                   value={money(rest.amountMinor)}
                   accessibilityLabel={`Otras categorías, ${money(rest.amountMinor)}, ${plural(restCount)}, ${String(shares[TOP] ?? 0)} % ${ofWhat}`}
                 />

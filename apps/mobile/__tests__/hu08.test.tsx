@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { fireEvent, getDefaultNormalizer, screen } from '@testing-library/react-native';
 import { Stack } from 'expo-router';
 import { renderRouter } from 'expo-router/testing-library';
 import type { ReactNode } from 'react';
@@ -124,6 +124,9 @@ test('HU-08 cambiar de mes: el siguiente está deshabilitado en el mes en curso'
   expect(screen.getByText('Sin movimientos en agosto 2026')).toBeOnTheScreen();
 });
 
+// Sin colapsar espacios: el normalizador por defecto convierte el espacio de no separación en uno normal.
+const exact = getDefaultNormalizer({ collapseWhitespace: false });
+
 test('HU-08 las 6 categorías más grandes y «Otras categorías», con porcentajes que suman 100, leídos por VoiceOver', async () => {
   await app();
   await fireEvent.press(screen.getByRole('button', { name: 'Mes anterior' }));
@@ -138,6 +141,9 @@ test('HU-08 las 6 categorías más grandes y «Otras categorías», con porcenta
   ];
   for (const label of expected) expect(screen.getByLabelText(label)).toBeOnTheScreen();
   expect(screen.queryByLabelText(/^Entretenimiento,/)).toBeNull();
+  // Espacio de no separación: el «%» no queda solo en otra línea con textos grandes.
+  expect(screen.getByText('2 movimientos · 32\u00a0%', { normalizer: exact })).toBeOnTheScreen();
+  expect(screen.getByText('2 movimientos · 5\u00a0%', { normalizer: exact })).toBeOnTheScreen();
 });
 
 test('HU-08 Ingresos lista los ingresos; los reembolsos cuentan como ingreso y una línea lo explica', async () => {
