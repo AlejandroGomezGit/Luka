@@ -12,103 +12,103 @@ No hay fechas porque el ritmo depende del tiempo que el dueño del proyecto pued
 
 El diagrama no se exporta a Markdown, así que esta tabla lleva los mismos nombres, alcances y puertas de calidad de los ocho hitos.
 
-| Hito | Nombre | Alcance | Puerta de calidad | Issues |
-| --- | --- | --- | --- | --- |
-| H0 | Cimientos | Monorepo, CI, Docker Compose y esqueletos | Pipeline en verde con una prueba por paquete; docker compose up funciona | T-001 a T-009 |
-| H1 | Núcleo local | App sin servidor: cuentas, movimientos y resumen | HU-02 a HU-08 con sus pruebas; la app funciona completa sin red | T-010 a T-018 y T-044 |
-| H2 | API y autenticación | Registro, sesión, perfil, dispositivos y borrado | HU-01 y HU-10 en verde; aislamiento entre usuarios probado (AM-03) | T-019 a T-026 |
-| H3 | Sincronización | Motor propio, reloj híbrido, conflictos y simulador | Simulación de 1 000 semillas sin divergencia (RNF-05) y E2E sin red | T-027 a T-034 |
-| H4 | Endurecimiento y TestFlight | Adjuntos, observabilidad, seguridad y staging | RNF-01 a RNF-14 verificados; MVP estable en TestFlight para uso propio | T-035 a T-042 y T-045 |
-| H5 | V2 | Captura de mensajes, presupuestos, CSV y categorizador | Requisitos V2 de prioridad Must en verde y panel de operación activo | Por definir |
-| H6 | Lanzamiento en la App Store | Trámites, privacidad, revisión y liberación por fases | Lista de App Store completa y decisión de quién publica tomada y validada | Por definir |
-| H7 | V3 | Recibos, PDF, banco y suscripciones | Conexión bancaria verificada si los bancos ya habilitaron el acceso, y consentimientos activos en producción | Por definir |
+| Hito | Nombre                      | Alcance                                                | Puerta de calidad                                                                                            | Issues                |
+| ---- | --------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ | --------------------- |
+| H0   | Cimientos                   | Monorepo, CI, Docker Compose y esqueletos              | Pipeline en verde con una prueba por paquete; docker compose up funciona                                     | T-001 a T-009         |
+| H1   | Núcleo local                | App sin servidor: cuentas, movimientos y resumen       | HU-02 a HU-08 con sus pruebas; la app funciona completa sin red                                              | T-010 a T-018 y T-044 |
+| H2   | API y autenticación         | Registro, sesión, perfil, dispositivos y borrado       | HU-01 y HU-10 en verde; aislamiento entre usuarios probado (AM-03)                                           | T-019 a T-026         |
+| H3   | Sincronización              | Motor propio, reloj híbrido, conflictos y simulador    | Simulación de 1 000 semillas sin divergencia (RNF-05) y E2E sin red                                          | T-027 a T-034         |
+| H4   | Endurecimiento y TestFlight | Adjuntos, observabilidad, seguridad y staging          | RNF-01 a RNF-14 verificados; MVP estable en TestFlight para uso propio                                       | T-035 a T-042 y T-045 |
+| H5   | V2                          | Captura de mensajes, presupuestos, CSV y categorizador | Requisitos V2 de prioridad Must en verde y panel de operación activo                                         | Por definir           |
+| H6   | Lanzamiento en la App Store | Trámites, privacidad, revisión y liberación por fases  | Lista de App Store completa y decisión de quién publica tomada y validada                                    | Por definir           |
+| H7   | V3                          | Recibos, PDF, banco y suscripciones                    | Conexión bancaria verificada si los bancos ya habilitaron el acceso, y consentimientos activos en producción | Por definir           |
 
 ## Backlog inicial
 
 Son 45 issues para los hitos 0 a 4, es decir, todo el MVP (T-043 se agregó al cerrar el H0; T-044 y T-045, con las maquetas de `docs/diseno/`, durante el H1); V2 y V3 se mantienen como épicas hasta que se acerquen. Cada issue apunta a la historia, el caso de uso o el requisito que lo justifica, y Claude Code puede crearlos en GitHub con `gh issue create` a partir de esta tabla.
 
-| ID | Issue | Hito | Etiquetas | Referencias |
-| --- | --- | --- | --- | --- |
-| T-001 | Inicializar el monorepo con pnpm, Turborepo y configuración compartida | H0 | `chore` `infra` | ADR-002 |
-| T-002 | Pipeline de CI: lint, tipos, pruebas y build en cada pull request | H0 | `ci` | HU-11, RNF-11 |
-| T-003 | Docker Compose local con PostgreSQL, Redis y almacenamiento compatible con S3 | H0 | `infra` | RNF-12 |
-| T-004 | Paquete `domain`: dinero, fechas y validaciones base (INV-01 a INV-07) | H0 | `feature` `domain` | RNF-06 |
-| T-005 | Paquete `contracts`: esquemas Zod y generación de OpenAPI | H0 | `feature` `api` | ADR-013 |
-| T-006 | Esquemas Drizzle de PostgreSQL y SQLite con las migraciones iniciales | H0 | `feature` `db` | Documento 2 |
-| T-007 | Esqueleto de la app Expo con navegación y tema | H0 | `feature` `mobile` | ADR-001 |
-| T-008 | Esqueleto de la API NestJS con health checks y logs estructurados | H0 | `feature` `api` | RNF-10 |
-| T-009 | README, CONTRIBUTING, SECURITY, plantilla de PR y carpeta de ADRs | H0 | `docs` | Documento 6 |
-| T-010 | Base local SQLite: migraciones al abrir y acceso mediante repositorios | H1 | `feature` `mobile` `db` | ADR-003 |
-| T-011 | Cuentas: crear, editar y archivar | H1 | `feature` `mobile` | CU-05, HU-02 |
-| T-012 | Categorías predefinidas y propias con UUID v5 | H1 | `feature` `mobile` | CU-13, HU-07 |
-| T-013 | Registrar un gasto o ingreso en tres toques | H1 | `feature` `mobile` | CU-08, HU-03 |
-| T-014 | Editar, eliminar y deshacer movimientos | H1 | `feature` `mobile` | CU-09, HU-04 |
-| T-015 | Transferencias entre cuentas | H1 | `feature` `mobile` | CU-06, HU-02 |
-| T-016 | Lista de movimientos con paginación por llave y filtros | H1 | `feature` `mobile` | CU-10, HU-05 |
-| T-017 | Resumen mensual | H1 | `feature` `mobile` | CU-18, HU-08 |
-| T-018 | Etiquetas y foto del recibo en el dispositivo | H1 | `feature` `mobile` | CU-11, HU-06 |
-| T-044 | Base de diseño: tokens y componentes | H1 | `feature` `mobile` `accessibility` | RNF-13, `docs/diseno/` |
-| T-019 | Registro, inicio de sesión y refresco con Argon2id y JWT | H2 | `feature` `api` `security` | CU-01, HU-01 |
-| T-020 | Sign in with Apple | H2 | `feature` `api` `mobile` | CU-01 |
-| T-021 | Recuperación de contraseña por correo | H2 | `feature` `api` | RF-01 |
-| T-022 | Perfil, dispositivos y consentimientos | H2 | `feature` `api` | Documento 5 |
-| T-023 | Eliminar la cuenta y todos los datos | H2 | `feature` `api` `security` | CU-03, HU-10 |
-| T-024 | Bloqueo de la app con Face ID | H2 | `feature` `mobile` `security` | CU-02, HU-10 |
-| T-025 | Límite de tasa y cabeceras de seguridad | H2 | `feature` `api` `security` | AM-01, AM-08 |
-| T-026 | Seguridad a nivel de fila y pruebas de aislamiento entre usuarios | H2 | `feature` `db` `security` | INV-08, AM-03 |
-| T-043 | Tubería de seguridad en CI: gitleaks, osv-scanner y Renovate; CodeQL cuando el repositorio sea público | H2 | `ci` `security` | AM-09, AM-10 |
-| T-027 | Reloj lógico híbrido con pruebas de propiedades | H3 | `feature` `domain` `sync` | ADR-006 |
-| T-028 | Fusión de operaciones por campo y por grupo de campos | H3 | `feature` `domain` `sync` | Documento 4 |
-| T-029 | Outbox y estado de sincronización en el dispositivo | H3 | `feature` `mobile` `sync` | RF-23, RF-26 |
-| T-030 | `POST /v1/sync` con idempotencia y secuencia por usuario | H3 | `feature` `api` `sync` | CU-21 |
-| T-031 | Descarga completa y cursor vencido (`410`) | H3 | `feature` `api` `sync` | CU-21 |
-| T-032 | Registro de conflictos y aviso en la app | H3 | `feature` `api` `mobile` `sync` | CU-22 |
-| T-033 | Simulador multidispositivo determinista y ejecución nocturna | H3 | `test` `sync` | RNF-05 |
-| T-034 | Indicador visible del estado de sincronización | H3 | `feature` `mobile` `sync` | RF-26 |
-| T-035 | Adjuntos con URLs prefirmadas | H4 | `feature` `api` `mobile` | CU-11, ADR-012 |
-| T-036 | Observabilidad: OpenTelemetry, Sentry y tableros | H4 | `infra` `api` | RNF-10 |
-| T-037 | Pruebas E2E con Maestro del flujo sin conexión | H4 | `test` `mobile` | RNF-04 |
-| T-038 | Pruebas de carga con k6 | H4 | `test` `api` | RNF-03 |
-| T-039 | Accesibilidad: Dynamic Type y VoiceOver | H4 | `feature` `mobile` | RNF-13 |
-| T-040 | Terraform y despliegue de staging | H4 | `infra` | Documento 3 |
-| T-041 | Builds de TestFlight con EAS | H4 | `ci` `mobile` | Documento 6 |
-| T-042 | Manifiesto de privacidad y revisión de dependencias | H4 | `chore` `mobile` `security` | Documento 5 |
-| T-045 | Pulido visual | H4 | `feature` `mobile` | `docs/diseno/` |
+| ID    | Issue                                                                                                  | Hito | Etiquetas                          | Referencias            |
+| ----- | ------------------------------------------------------------------------------------------------------ | ---- | ---------------------------------- | ---------------------- |
+| T-001 | Inicializar el monorepo con pnpm, Turborepo y configuración compartida                                 | H0   | `chore` `infra`                    | ADR-002                |
+| T-002 | Pipeline de CI: lint, tipos, pruebas y build en cada pull request                                      | H0   | `ci`                               | HU-11, RNF-11          |
+| T-003 | Docker Compose local con PostgreSQL, Redis y almacenamiento compatible con S3                          | H0   | `infra`                            | RNF-12                 |
+| T-004 | Paquete `domain`: dinero, fechas y validaciones base (INV-01 a INV-07)                                 | H0   | `feature` `domain`                 | RNF-06                 |
+| T-005 | Paquete `contracts`: esquemas Zod y generación de OpenAPI                                              | H0   | `feature` `api`                    | ADR-013                |
+| T-006 | Esquemas Drizzle de PostgreSQL y SQLite con las migraciones iniciales                                  | H0   | `feature` `db`                     | Documento 2            |
+| T-007 | Esqueleto de la app Expo con navegación y tema                                                         | H0   | `feature` `mobile`                 | ADR-001                |
+| T-008 | Esqueleto de la API NestJS con health checks y logs estructurados                                      | H0   | `feature` `api`                    | RNF-10                 |
+| T-009 | README, CONTRIBUTING, SECURITY, plantilla de PR y carpeta de ADRs                                      | H0   | `docs`                             | Documento 6            |
+| T-010 | Base local SQLite: migraciones al abrir y acceso mediante repositorios                                 | H1   | `feature` `mobile` `db`            | ADR-003                |
+| T-011 | Cuentas: crear, editar y archivar                                                                      | H1   | `feature` `mobile`                 | CU-05, HU-02           |
+| T-012 | Categorías predefinidas y propias con UUID v5                                                          | H1   | `feature` `mobile`                 | CU-13, HU-07           |
+| T-013 | Registrar un gasto o ingreso en tres toques                                                            | H1   | `feature` `mobile`                 | CU-08, HU-03           |
+| T-014 | Editar, eliminar y deshacer movimientos                                                                | H1   | `feature` `mobile`                 | CU-09, HU-04           |
+| T-015 | Transferencias entre cuentas                                                                           | H1   | `feature` `mobile`                 | CU-06, HU-02           |
+| T-016 | Lista de movimientos con paginación por llave y filtros                                                | H1   | `feature` `mobile`                 | CU-10, HU-05           |
+| T-017 | Resumen mensual                                                                                        | H1   | `feature` `mobile`                 | CU-18, HU-08           |
+| T-018 | Etiquetas y foto del recibo en el dispositivo                                                          | H1   | `feature` `mobile`                 | CU-11, HU-06           |
+| T-044 | Base de diseño: tokens y componentes                                                                   | H1   | `feature` `mobile` `accessibility` | RNF-13, `docs/diseno/` |
+| T-019 | Registro, inicio de sesión y refresco con Argon2id y JWT                                               | H2   | `feature` `api` `security`         | CU-01, HU-01           |
+| T-020 | Sign in with Apple                                                                                     | H2   | `feature` `api` `mobile`           | CU-01                  |
+| T-021 | Recuperación de contraseña por correo                                                                  | H2   | `feature` `api`                    | RF-01                  |
+| T-022 | Perfil, dispositivos y consentimientos                                                                 | H2   | `feature` `api`                    | Documento 5            |
+| T-023 | Eliminar la cuenta y todos los datos                                                                   | H2   | `feature` `api` `security`         | CU-03, HU-10           |
+| T-024 | Bloqueo de la app con Face ID                                                                          | H2   | `feature` `mobile` `security`      | CU-02, HU-10           |
+| T-025 | Límite de tasa y cabeceras de seguridad                                                                | H2   | `feature` `api` `security`         | AM-01, AM-08           |
+| T-026 | Seguridad a nivel de fila y pruebas de aislamiento entre usuarios                                      | H2   | `feature` `db` `security`          | INV-08, AM-03          |
+| T-043 | Tubería de seguridad en CI: gitleaks, osv-scanner y Renovate; CodeQL cuando el repositorio sea público | H2   | `ci` `security`                    | AM-09, AM-10           |
+| T-027 | Reloj lógico híbrido con pruebas de propiedades                                                        | H3   | `feature` `domain` `sync`          | ADR-006                |
+| T-028 | Fusión de operaciones por campo y por grupo de campos                                                  | H3   | `feature` `domain` `sync`          | Documento 4            |
+| T-029 | Outbox y estado de sincronización en el dispositivo                                                    | H3   | `feature` `mobile` `sync`          | RF-23, RF-26           |
+| T-030 | `POST /v1/sync` con idempotencia y secuencia por usuario                                               | H3   | `feature` `api` `sync`             | CU-21                  |
+| T-031 | Descarga completa y cursor vencido (`410`)                                                             | H3   | `feature` `api` `sync`             | CU-21                  |
+| T-032 | Registro de conflictos y aviso en la app                                                               | H3   | `feature` `api` `mobile` `sync`    | CU-22                  |
+| T-033 | Simulador multidispositivo determinista y ejecución nocturna                                           | H3   | `test` `sync`                      | RNF-05                 |
+| T-034 | Indicador visible del estado de sincronización                                                         | H3   | `feature` `mobile` `sync`          | RF-26                  |
+| T-035 | Adjuntos con URLs prefirmadas                                                                          | H4   | `feature` `api` `mobile`           | CU-11, ADR-012         |
+| T-036 | Observabilidad: OpenTelemetry, Sentry y tableros                                                       | H4   | `infra` `api`                      | RNF-10                 |
+| T-037 | Pruebas E2E con Maestro del flujo sin conexión                                                         | H4   | `test` `mobile`                    | RNF-04                 |
+| T-038 | Pruebas de carga con k6                                                                                | H4   | `test` `api`                       | RNF-03                 |
+| T-039 | Accesibilidad: Dynamic Type y VoiceOver                                                                | H4   | `feature` `mobile`                 | RNF-13                 |
+| T-040 | Terraform y despliegue de staging                                                                      | H4   | `infra`                            | Documento 3            |
+| T-041 | Builds de TestFlight con EAS                                                                           | H4   | `ci` `mobile`                      | Documento 6            |
+| T-042 | Manifiesto de privacidad y revisión de dependencias                                                    | H4   | `chore` `mobile` `security`        | Documento 5            |
+| T-045 | Pulido visual                                                                                          | H4   | `feature` `mobile`                 | `docs/diseno/`         |
 
 ## Épicas de V2, lanzamiento y V3
 
 Dieciséis épicas cubren todo lo que queda después del MVP; cada una se divide en issues cuando su hito sea el siguiente, no antes, para no planificar sobre supuestos que van a cambiar.
 
-| ID | Épica | Hito | Requisitos | Casos de uso | Dependencias |
-| --- | --- | --- | --- | --- | --- |
-| E-01 | Presupuestos y alertas push | H5 | RF-16, RF-17 | CU-15, CU-16 | Token push, worker y APNs |
-| E-02 | Movimientos recurrentes | H5 | RF-18 | CU-17 | Worker e identificadores UUID v5 deterministas |
-| E-03 | Importar CSV y revisar | H5 | RF-32, RF-34 | CU-26, CU-29 | `import_batches` e índice de duplicados |
-| E-04 | Categorizador completo y reglas del usuario | H5 | RF-15, RF-28, RF-31 | CU-14, CU-24 | `token_stats`, `category_rules` y diccionario |
-| E-05 | Registro rápido: widget y Atajos | H5 | RF-13 | CU-12 | App Intents de iOS, por validar con Expo |
-| E-06 | Reportes y exportación a CSV | H5 | RF-21, RF-22 | CU-19, CU-20 | Resumen por categoría |
-| E-07 | Varios dispositivos y conciliación | H5 | RF-07, RF-27 | CU-23, CU-07 | `DELETE /v1/devices/{id}` y notificación silenciosa |
-| E-08 | Panel de operación | H5 | RF-36 | CU-30, CU-31 | `/v1/admin/*` y rol de operador |
-| E-09 | Exportar todos mis datos | H5 | RF-04 | CU-04 | `GET /v1/export` |
-| E-10 | Dividir un movimiento entre categorías | H5 | RF-12 | Sin redactar | Se redacta el caso de uso si se prioriza (prioridad Could) |
-| E-11 | Lanzamiento en la App Store | H6 | Lista del documento 5 | Ninguno | Decisión sobre quién publica, política de privacidad y asesoría legal |
-| E-12 | Escanear recibos | H7 | RF-30, RF-31 | CU-25 | Reconocimiento de texto en el dispositivo y `ai_external` |
-| E-13 | Importar extractos en PDF | H7 | RF-33, RF-34 | CU-27 | Lectura de PDF y `ai_external` |
-| E-14 | Conexión bancaria | H7 | RF-35 | CU-28 | Estándares de finanzas abiertas de la Superfinanciera, en espera de su publicación, `bank_connection` y la decisión de E-11 |
-| E-15 | Suscripciones detectadas y aprendizaje | H7 | RF-19, RF-29 | CU-32, CU-33 | Historial de movimientos y `token_stats` |
-| E-16 | Captura de movimientos desde mensajes | H5 | RF-37 a RF-40 | CU-34 a CU-36 y CU-29 | Tubería de captura (ADR-014), App Intents de E-05, muestras reales por banco y la validación del Atajo en un iPhone (R-13) |
+| ID   | Épica                                       | Hito | Requisitos            | Casos de uso          | Dependencias                                                                                                                |
+| ---- | ------------------------------------------- | ---- | --------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| E-01 | Presupuestos y alertas push                 | H5   | RF-16, RF-17          | CU-15, CU-16          | Token push, worker y APNs                                                                                                   |
+| E-02 | Movimientos recurrentes                     | H5   | RF-18                 | CU-17                 | Worker e identificadores UUID v5 deterministas                                                                              |
+| E-03 | Importar CSV y revisar                      | H5   | RF-32, RF-34          | CU-26, CU-29          | `import_batches` e índice de duplicados                                                                                     |
+| E-04 | Categorizador completo y reglas del usuario | H5   | RF-15, RF-28, RF-31   | CU-14, CU-24          | `token_stats`, `category_rules` y diccionario                                                                               |
+| E-05 | Registro rápido: widget y Atajos            | H5   | RF-13                 | CU-12                 | App Intents de iOS, por validar con Expo                                                                                    |
+| E-06 | Reportes y exportación a CSV                | H5   | RF-21, RF-22          | CU-19, CU-20          | Resumen por categoría                                                                                                       |
+| E-07 | Varios dispositivos y conciliación          | H5   | RF-07, RF-27          | CU-23, CU-07          | `DELETE /v1/devices/{id}` y notificación silenciosa                                                                         |
+| E-08 | Panel de operación                          | H5   | RF-36                 | CU-30, CU-31          | `/v1/admin/*` y rol de operador                                                                                             |
+| E-09 | Exportar todos mis datos                    | H5   | RF-04                 | CU-04                 | `GET /v1/export`                                                                                                            |
+| E-10 | Dividir un movimiento entre categorías      | H5   | RF-12                 | Sin redactar          | Se redacta el caso de uso si se prioriza (prioridad Could)                                                                  |
+| E-11 | Lanzamiento en la App Store                 | H6   | Lista del documento 5 | Ninguno               | Decisión sobre quién publica, política de privacidad y asesoría legal                                                       |
+| E-12 | Escanear recibos                            | H7   | RF-30, RF-31          | CU-25                 | Reconocimiento de texto en el dispositivo y `ai_external`                                                                   |
+| E-13 | Importar extractos en PDF                   | H7   | RF-33, RF-34          | CU-27                 | Lectura de PDF y `ai_external`                                                                                              |
+| E-14 | Conexión bancaria                           | H7   | RF-35                 | CU-28                 | Estándares de finanzas abiertas de la Superfinanciera, en espera de su publicación, `bank_connection` y la decisión de E-11 |
+| E-15 | Suscripciones detectadas y aprendizaje      | H7   | RF-19, RF-29          | CU-32, CU-33          | Historial de movimientos y `token_stats`                                                                                    |
+| E-16 | Captura de movimientos desde mensajes       | H5   | RF-37 a RF-40         | CU-34 a CU-36 y CU-29 | Tubería de captura (ADR-014), App Intents de E-05, muestras reales por banco y la validación del Atajo en un iPhone (R-13)  |
 
 ## Etiquetas, definición de hecho y plantilla de issue
 
 Un issue está terminado solo cuando cumple la lista de «definición de hecho»; las etiquetas y los hitos de GitHub permiten filtrar el trabajo sin abrir cada issue.
 
-| Grupo | Etiquetas | Uso |
-| --- | --- | --- |
-| Tipo | `feature`, `bug`, `chore`, `docs`, `test`, `ci`, `infra` | Qué clase de trabajo es |
-| Área | `mobile`, `api`, `domain`, `db`, `sync`, `security` | Qué parte del sistema toca |
-| Fase | `mvp`, `v2`, `v3` | A qué versión pertenece |
-| Prioridad | `P0`, `P1`, `P2` | `P0` bloquea el hito en curso |
-| Estado | `blocked`, `needs-decision` | Espera algo o requiere una decisión del dueño |
+| Grupo     | Etiquetas                                                | Uso                                           |
+| --------- | -------------------------------------------------------- | --------------------------------------------- |
+| Tipo      | `feature`, `bug`, `chore`, `docs`, `test`, `ci`, `infra` | Qué clase de trabajo es                       |
+| Área      | `mobile`, `api`, `domain`, `db`, `sync`, `security`      | Qué parte del sistema toca                    |
+| Fase      | `mvp`, `v2`, `v3`                                        | A qué versión pertenece                       |
+| Prioridad | `P0`, `P1`, `P2`                                         | `P0` bloquea el hito en curso                 |
+| Estado    | `blocked`, `needs-decision`                              | Espera algo o requiere una decisión del dueño |
 
 Los hitos de GitHub (Milestones) se llaman igual que en el roadmap, por ejemplo «H3 · Sincronización».
 
@@ -127,22 +127,28 @@ Los hitos de GitHub (Milestones) se llaman igual que en el roadmap, por ejemplo 
 
 ```markdown
 ## Contexto
+
 Historia (HU-xx), caso de uso (CU-xx) o requisito (RF-xx, RNF-xx) que lo justifica.
 
 ## Qué hay que hacer
+
 Descripción corta y concreta.
 
 ## Criterios de aceptación
+
 - [ ] Dado ..., cuando ..., entonces ...
 - [ ] ...
 
 ## Fuera de alcance
+
 Lo que este issue no incluye.
 
 ## Pruebas
+
 Qué pruebas lo demuestran y en qué nivel.
 
 ## Notas
+
 Dependencias, decisiones abiertas y documentos que hay que actualizar.
 ```
 
@@ -150,33 +156,33 @@ Dependencias, decisiones abiertas y documentos que hay que actualizar.
 
 El riesgo que más puede cambiar el plan es quién publica la app en la App Store; los demás son manejables con las puertas de calidad de cada hito.
 
-| ID | Riesgo | Por qué importa | Mitigación | Se revisa en |
-| --- | --- | --- | --- | --- |
-| R-01 | La revisión de Apple trata a Luka como app financiera y exige una persona jurídica (5.1.1 (ix), 3.2.1 (viii)) | Puede bloquear el lanzamiento | Decidirlo con asesoría legal antes del H6 y preparar las notas para el revisor | H4 |
-| R-02 | El alcance supera lo que una sola persona puede hacer | Retrasos y calidad desigual | Hitos con puertas; V2 y V3 sin detalle hasta que lleguen; recortar V2 antes que la calidad del MVP | Cierre de cada hito |
-| R-03 | El motor de sincronización no converge o resulta demasiado complejo | Pérdida de confianza en los datos | Pruebas de propiedades y simulador desde el inicio; si falla en el H3, reevaluar con un ADR | H3 |
-| R-04 | El reconocimiento de texto en el dispositivo no funciona bien con Expo | Retrasa los recibos de V3 | Validar un prototipo en el H4; alternativa: respaldo de IA externa con consentimiento | H4 |
-| R-05 | Los bancos tardan en habilitar el acceso a sus datos | La conexión bancaria no se puede entregar | Seguir el cronograma de la Superfinanciera; V3 puede salir sin esa épica y la tubería de captura permite sumarla después | Antes del H7 |
-| R-06 | La configuración de Metro con pnpm falla en el monorepo | Frena el H0 | **Cerrado en el H0:** Expo SDK 57 soporta las instalaciones aisladas de pnpm sin configurar Metro (T-007), y el CI empaqueta la app para iOS en cada PR | H0 |
-| R-07 | Apple rechaza la app por privacidad o inicio de sesión | Demora el lanzamiento | Lista del documento 5, cuenta de demostración, notas y TestFlight previo | H6 |
-| R-08 | Los costos de infraestructura superan los ingresos | Hace inviable operar | Etapa 0 de bajo costo, seguimiento mensual y decidir el modelo de ingresos antes del H6; si hay suscripción, debe usar compras dentro de la app (3.1.1) | H5 |
-| R-09 | Incumplir la Ley 1581 de 2012 | Multas y cierre de operaciones | Tabla de cumplimiento del documento 5 y asesoría legal | H6 |
-| R-10 | Un error de sincronización pierde datos de un usuario | Daño directo a las personas | Pruebas de propiedades, copias de seguridad y exportación de datos (E-09) antes del lanzamiento | H5 |
-| R-11 | La calidad del código generado con Claude Code varía | Deuda técnica y errores sutiles | `CLAUDE.md`, issues pequeños, pruebas obligatorias y revisión de cada PR; las cifras se reportan siempre desde la salida real | Cierre de cada hito |
-| R-12 | Las guías de Apple cambian | Una lista vieja deja de servir | Volver a verificar las guías antes de cada envío | Cada envío |
-| R-13 | La automatización de Atajos no corre sola o iOS cambia cómo funciona | La captura automática pierde su gracia | Validarla en un iPhone real en el H5; si siempre pide confirmación, queda como un atajo de un toque y se refuerza pegar o compartir | H5 |
-| R-14 | Las versiones recientes del stack cambian sus API respecto de lo que se conoce (en el H0: NestJS 12 en ESM, `render` asíncrono en React Native Testing Library 14, `types` vacío por defecto en TypeScript 6, scripts de instalación bloqueados en pnpm 12 y MinIO sin imágenes; en el H1: React Native no vuelve a medir el texto cuando cambia Dynamic Type (#39), `renderRouter` de Expo Router pierde `getPathname` con el `render` asíncrono de RNTL 14, el ajuste automático de márgenes no reserva la barra de `NativeTabs` (DT-02) y iOS 26 dibuja el interruptor con otro tamaño (DT-05)) | Errores sutiles o configuraciones que no aplican sin avisar | Consultar la documentación de la versión instalada y no la memoria; versiones fijadas en el archivo de bloqueo y `expo install` en la app; las cifras se reportan siempre desde la salida real | Cierre de cada hito |
-| R-15 | El plan gratuito de GitHub no permite proteger ramas ni usar CodeQL en repositorios privados | Un PR con el CI en rojo se puede fusionar y falta el análisis estático (RNF-11, documento 5) | Publicar el repositorio en cuanto el README, los ADRs y los diagramas estén listos (#9), o pasar a GitHub Pro (ver R-08); mientras tanto, no fusionar nada con el CI en rojo | Cierre de cada hito |
-| R-16 | La app solo se ha probado en el simulador con Expo Go: nunca en un iPhone real, nunca con la red apagada de verdad y nunca con VoiceOver | Fallos que el simulador no muestra (rendimiento, teclado, permisos, accesibilidad) llegan tarde | Al cerrar el H1: prueba sin red con Network Link Conditioner o un iPhone, y revisión con VoiceOver y Dynamic Type; las pruebas de HU-03 fallan ante cualquier intento de red. En el H4: T-039 (accesibilidad), T-037 (Maestro sin conexión) y T-041 (builds en dispositivo) | Cierre del H1 |
+| ID   | Riesgo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Por qué importa                                                                                 | Mitigación                                                                                                                                                                                                                                                                  | Se revisa en        |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| R-01 | La revisión de Apple trata a Luka como app financiera y exige una persona jurídica (5.1.1 (ix), 3.2.1 (viii))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Puede bloquear el lanzamiento                                                                   | Decidirlo con asesoría legal antes del H6 y preparar las notas para el revisor                                                                                                                                                                                              | H4                  |
+| R-02 | El alcance supera lo que una sola persona puede hacer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Retrasos y calidad desigual                                                                     | Hitos con puertas; V2 y V3 sin detalle hasta que lleguen; recortar V2 antes que la calidad del MVP                                                                                                                                                                          | Cierre de cada hito |
+| R-03 | El motor de sincronización no converge o resulta demasiado complejo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Pérdida de confianza en los datos                                                               | Pruebas de propiedades y simulador desde el inicio; si falla en el H3, reevaluar con un ADR                                                                                                                                                                                 | H3                  |
+| R-04 | El reconocimiento de texto en el dispositivo no funciona bien con Expo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Retrasa los recibos de V3                                                                       | Validar un prototipo en el H4; alternativa: respaldo de IA externa con consentimiento                                                                                                                                                                                       | H4                  |
+| R-05 | Los bancos tardan en habilitar el acceso a sus datos                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | La conexión bancaria no se puede entregar                                                       | Seguir el cronograma de la Superfinanciera; V3 puede salir sin esa épica y la tubería de captura permite sumarla después                                                                                                                                                    | Antes del H7        |
+| R-06 | La configuración de Metro con pnpm falla en el monorepo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Frena el H0                                                                                     | **Cerrado en el H0:** Expo SDK 57 soporta las instalaciones aisladas de pnpm sin configurar Metro (T-007), y el CI empaqueta la app para iOS en cada PR                                                                                                                     | H0                  |
+| R-07 | Apple rechaza la app por privacidad o inicio de sesión                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Demora el lanzamiento                                                                           | Lista del documento 5, cuenta de demostración, notas y TestFlight previo                                                                                                                                                                                                    | H6                  |
+| R-08 | Los costos de infraestructura superan los ingresos                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Hace inviable operar                                                                            | Etapa 0 de bajo costo, seguimiento mensual y decidir el modelo de ingresos antes del H6; si hay suscripción, debe usar compras dentro de la app (3.1.1)                                                                                                                     | H5                  |
+| R-09 | Incumplir la Ley 1581 de 2012                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Multas y cierre de operaciones                                                                  | Tabla de cumplimiento del documento 5 y asesoría legal                                                                                                                                                                                                                      | H6                  |
+| R-10 | Un error de sincronización pierde datos de un usuario                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Daño directo a las personas                                                                     | Pruebas de propiedades, copias de seguridad y exportación de datos (E-09) antes del lanzamiento                                                                                                                                                                             | H5                  |
+| R-11 | La calidad del código generado con Claude Code varía                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Deuda técnica y errores sutiles                                                                 | `CLAUDE.md`, issues pequeños, pruebas obligatorias y revisión de cada PR; las cifras se reportan siempre desde la salida real                                                                                                                                               | Cierre de cada hito |
+| R-12 | Las guías de Apple cambian                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Una lista vieja deja de servir                                                                  | Volver a verificar las guías antes de cada envío                                                                                                                                                                                                                            | Cada envío          |
+| R-13 | La automatización de Atajos no corre sola o iOS cambia cómo funciona                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | La captura automática pierde su gracia                                                          | Validarla en un iPhone real en el H5; si siempre pide confirmación, queda como un atajo de un toque y se refuerza pegar o compartir                                                                                                                                         | H5                  |
+| R-14 | Las versiones recientes del stack cambian sus API respecto de lo que se conoce (en el H0: NestJS 12 en ESM, `render` asíncrono en React Native Testing Library 14, `types` vacío por defecto en TypeScript 6, scripts de instalación bloqueados en pnpm 12 y MinIO sin imágenes; en el H1: React Native no vuelve a medir el texto cuando cambia Dynamic Type (#39), `renderRouter` de Expo Router pierde `getPathname` con el `render` asíncrono de RNTL 14, el ajuste automático de márgenes no reserva la barra de `NativeTabs` (DT-02) y iOS 26 dibuja el interruptor con otro tamaño (DT-05)) | Errores sutiles o configuraciones que no aplican sin avisar                                     | Consultar la documentación de la versión instalada y no la memoria; versiones fijadas en el archivo de bloqueo y `expo install` en la app; las cifras se reportan siempre desde la salida real                                                                              | Cierre de cada hito |
+| R-15 | El plan gratuito de GitHub no permite proteger ramas ni usar CodeQL en repositorios privados                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Un PR con el CI en rojo se puede fusionar y falta el análisis estático (RNF-11, documento 5)    | Publicar el repositorio en cuanto el README, los ADRs y los diagramas estén listos (#9), o pasar a GitHub Pro (ver R-08); mientras tanto, no fusionar nada con el CI en rojo                                                                                                | Cierre de cada hito |
+| R-16 | La app solo se ha probado en el simulador con Expo Go: nunca en un iPhone real, nunca con la red apagada de verdad y nunca con VoiceOver                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Fallos que el simulador no muestra (rendimiento, teclado, permisos, accesibilidad) llegan tarde | Al cerrar el H1: prueba sin red con Network Link Conditioner o un iPhone, y revisión con VoiceOver y Dynamic Type; las pruebas de HU-03 fallan ante cualquier intento de red. En el H4: T-039 (accesibilidad), T-037 (Maestro sin conexión) y T-041 (builds en dispositivo) | Cierre del H1       |
 
 ## Deuda técnica
 
 Atajos tomados a propósito, con el momento en que se pagan. Se revisan al cierre de cada hito.
 
-| ID | Deuda | Por qué se tomó | Se paga |
-| --- | --- | --- | --- |
-| DT-01 | La barra de pestañas importa `NativeTabs` desde `expo-router/unstable-native-tabs` | En SDK 57 es la única vía para la barra nativa de iOS 26; funciona en Expo Go | Al subir a SDK 58: importar desde `expo-router/native-tabs` (estable) |
-| DT-02 | `Screen` suma a mano el área segura inferior al relleno del contenido | Con las pestañas nativas, el ajuste automático de márgenes no reserva la barra flotante: en el simulador la lista terminaba 83 pt debajo de ella | Al subir a SDK 58 o React Native: comprobar si el ajuste automático ya la reserva y, si es así, quitar el relleno |
-| DT-03 | Límites de crecimiento con Dynamic Type: títulos hasta 1,5 y 2 veces, botones de la barra superior y monto hasta 1,5 veces (`headingScale` y `AMOUNT_MAX_SCALE`) | Con AX5 los títulos partían palabras y «Guardar» se escondía en el menú «…» | Aceptado con una condición: el monto y «Guardar» siempre legibles. Se revisa con VoiceOver en el H4 (T-039) |
-| DT-04 | El título grande de Cuentas no aparece al abrir la pantalla por un enlace directo, sin pantalla anterior | Navegando desde Inicio sí aparece y la app no tiene enlaces a Cuentas | Si se agregan enlaces profundos (por ejemplo desde un Atajo, V2), o al subir de SDK |
-| DT-05 | Un `View` aparte centra el interruptor de «Mostrar archivadas» (`SwitchRow`) | En iOS 26 el interruptor nativo no coincide con el tamaño que mide React Native y salía desplazado | Al subir de React Native: comprobar si ya se centra solo y quitar el contenedor |
+| ID    | Deuda                                                                                                                                                                                                                       | Por qué se tomó                                                                                                                                  | Se paga                                                                                                           |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| DT-01 | La barra de pestañas importa `NativeTabs` desde `expo-router/unstable-native-tabs`                                                                                                                                          | En SDK 57 es la única vía para la barra nativa de iOS 26; funciona en Expo Go                                                                    | Al subir a SDK 58: importar desde `expo-router/native-tabs` (estable)                                             |
+| DT-02 | `Screen` suma a mano el área segura inferior al relleno del contenido                                                                                                                                                       | Con las pestañas nativas, el ajuste automático de márgenes no reserva la barra flotante: en el simulador la lista terminaba 83 pt debajo de ella | Al subir a SDK 58 o React Native: comprobar si el ajuste automático ya la reserva y, si es así, quitar el relleno |
+| DT-03 | Límites de crecimiento con Dynamic Type: títulos hasta 1,5 y 2 veces, botones de la barra superior y monto hasta 1,5 veces, texto de los chips y del control segmentado hasta 2 veces (`headingScale` y `AMOUNT_MAX_SCALE`) | Con AX5 los títulos partían palabras y «Guardar» se escondía en el menú «…»                                                                      | Aceptado con una condición: el monto y «Guardar» siempre legibles. Se revisa con VoiceOver en el H4 (T-039)       |
+| DT-04 | El título grande de Cuentas no aparece al abrir la pantalla por un enlace directo, sin pantalla anterior                                                                                                                    | Navegando desde Inicio sí aparece y la app no tiene enlaces a Cuentas                                                                            | Si se agregan enlaces profundos (por ejemplo desde un Atajo, V2), o al subir de SDK                               |
+| DT-05 | Un `View` aparte centra el interruptor de «Mostrar archivadas» (`SwitchRow`)                                                                                                                                                | En iOS 26 el interruptor nativo no coincide con el tamaño que mide React Native y salía desplazado                                               | Al subir de React Native: comprobar si ya se centra solo y quitar el contenedor                                   |

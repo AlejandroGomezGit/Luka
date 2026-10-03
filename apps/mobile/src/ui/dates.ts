@@ -41,3 +41,9 @@ export function sectionTitle(date: string, today: string): string {
     ? `${label} · ${full}`
     : full.charAt(0).toUpperCase() + full.slice(1);
 }
+
+/** «1 movimiento», «10.000 movimientos»: cuántos cumplen los filtros (HU-05). */
+export function countText(count: number): string {
+  const digits = String(count).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${digits} ${count === 1 ? 'movimiento' : 'movimientos'}`;
+}

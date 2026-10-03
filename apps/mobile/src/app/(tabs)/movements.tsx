@@ -16,7 +16,7 @@ import {
 import { headingScale, useTheme } from '../../theme';
 import { Button } from '../../ui/Button';
 import { Chip } from '../../ui/Chip';
-import { sectionTitle } from '../../ui/dates';
+import { countText, sectionTitle } from '../../ui/dates';
 import { activeFilters, MovementFilters, type SheetFilters } from '../../ui/MovementFilters';
 import { useScreenScrollProps } from '../../ui/Screen';
 import { TextField } from '../../ui/TextField';
@@ -126,7 +126,7 @@ export default function MovementsScreen() {
     setCursor(page.nextCursor);
     setTotal(count);
     setHasAny(countTransactions(db, userId, {}) > 0);
-    if (changed) AccessibilityInfo.announceForAccessibility(`${String(count)} movimientos`);
+    if (changed) AccessibilityInfo.announceForAccessibility(countText(count));
   }, [db, userId, filters, revision]);
   useFocusEffect(reload);
 
@@ -189,9 +189,7 @@ export default function MovementsScreen() {
           setSheetOpen(true);
         }}
       />
-      <Text style={[typography.subhead, { color: colors.muted }]}>
-        {`${String(total)} movimientos`}
-      </Text>
+      <Text style={[typography.subhead, { color: colors.muted }]}>{countText(total)}</Text>
     </View>
   );
 

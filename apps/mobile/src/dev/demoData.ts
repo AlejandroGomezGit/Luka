@@ -60,14 +60,16 @@ export function loadDemoData(ctx: WriteContext, timeZone: string, total = 10_000
     for (let i = 0; i < total; i++) {
       // Un milisegundo por movimiento: ids UUID v7 distintos y ordenados.
       const write = { ...ctx, db: tx, clock: { now: () => start + i } };
-      const occurredOn = addDays(end, -(i % 730));
+      // Repartidos en dos años: unos 14 por día, del más reciente al más antiguo.
+      const occurredOn = addDays(end, -Math.floor((i * 730) / total));
       const base = {
         occurredOn,
         categorySource: 'user',
         source: 'manual',
         reviewStatus: 'confirmed',
       } as const;
-      if (i % 30 === 0) {
+      // Un salario cada mes, más o menos.
+      if (i % Math.floor(total / 24) === 0) {
         insertRow(write, transactions, {
           ...base,
           kind: 'income',
@@ -104,7 +106,8 @@ export function loadDemoData(ctx: WriteContext, timeZone: string, total = 10_000
         insertRow(write, transactions, {
           ...base,
           kind: 'expense',
-          amountMinor: -(5_000_00 + ((i * 7_919) % 95_000_00)),
+          // Pesos enteros, sin centavos, como se escriben en COP.
+          amountMinor: -(5_000 + ((i * 7_919) % 95_000)) * 100,
           accountId: i % 3 === 0 ? card : cash,
           currency: 'COP',
           categoryId: predefinedCategoryId(ctx.userId, key),
