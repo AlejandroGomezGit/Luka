@@ -9,52 +9,10 @@ import { createAccount } from '../src/db/accounts';
 import { seedPredefinedCategories } from '../src/db/categories';
 import { LocalSessionProvider, type LocalSession } from '../src/db/session';
 import { createTestDb, testClock, testRandom } from '../src/db/testing';
+import { blockNetwork, headerTitles } from '../src/testing';
 
-/**
- * Modo avión (HU-03): durante todo el flujo, cualquier intento de red falla y queda anotado. Se anota
- * además de fallar porque la app podría atrapar el error y seguir como si nada.
- */
-const networkAttempts: string[] = [];
-const realNetwork = {
-  fetch: globalThis.fetch,
-  XMLHttpRequest: (globalThis as { XMLHttpRequest?: unknown }).XMLHttpRequest,
-  WebSocket: globalThis.WebSocket,
-};
-function blocked(api: string, target: unknown): never {
-  networkAttempts.push(`${api} ${String(target)}`);
-  throw new Error(`HU-03 sin red: intento de ${api}`);
-}
-beforeEach(() => {
-  networkAttempts.length = 0;
-  Object.assign(globalThis, {
-    fetch: (input: unknown) => blocked('fetch', input),
-    XMLHttpRequest: class {
-      open(_method: string, url: unknown) {
-        blocked('XMLHttpRequest', url);
-      }
-    },
-    WebSocket: function WebSocket(url: unknown) {
-      blocked('WebSocket', url);
-    },
-  });
-});
-afterEach(() => {
-  Object.assign(globalThis, realNetwork);
-});
-
-/** Título de la barra superior, leído de las opciones que la pantalla le pasa al encabezado nativo. */
-function headerTitles(): unknown[] {
-  const find = (node: unknown): unknown[] => {
-    if (!node || typeof node !== 'object') return [];
-    const n = node as { type?: string; props?: { title?: unknown }; children?: unknown[] };
-    return [
-      ...(n.type === 'RNSScreenStackHeaderConfig' ? [n.props?.title] : []),
-      ...(n.children ?? []).flatMap(find),
-    ];
-  };
-  const tree = screen.toJSON();
-  return find(Array.isArray(tree) ? { children: tree } : tree);
-}
+// Modo avión (HU-03): fetch, XMLHttpRequest y WebSocket fallan y se anotan durante todo el flujo.
+const networkAttempts = blockNetwork();
 
 test('HU-03 el guardia de red detecta fetch, XMLHttpRequest y WebSocket', () => {
   expect(() => fetch('https://ejemplo.co')).toThrow('sin red');

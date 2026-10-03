@@ -206,6 +206,34 @@ Se detallan los cinco casos de uso que más condicionan la arquitectura: iniciar
 
 **Postcondiciones:** sesión activa, tokens en el Keychain y base local lista.
 
+### CU-06 Registrar una transferencia entre cuentas
+
+- **Actor:** Usuario. **Requisitos:** RF-06, RNF-04.
+- **Precondiciones:** al menos dos cuentas activas. No requiere conexión.
+- **Disparador:** en «Agregar» (CU-08) el usuario elige el tipo «Transferencia». Con una sola cuenta activa la opción aparece deshabilitada y la pantalla explica que se necesitan dos cuentas; VoiceOver la lee como deshabilitada.
+
+**Flujo principal**
+
+1. La app muestra «Desde» (la cuenta de origen, la última usada) con la fecha al lado y, debajo, «Hacia»: el destino de la última transferencia si sigue activo y no es el origen; si no, la primera cuenta activa distinta del origen. No se piden categorías. La barra superior dice «Nueva transferencia».
+2. El usuario escribe el monto que sale, en la moneda del origen.
+3. Si las monedas son distintas, la app pide cuánto llega, con la cuenta y la moneda de destino («Llega a Dolares · USD») y el teclado de esa moneda. No hay tasa de cambio: la persona escribe lo que llegó.
+4. Toca «Guardar».
+5. La app guarda un solo movimiento de tipo transferencia: negativo en el origen y positivo en el destino (INV-01, INV-02). Con la misma moneda llega exactamente lo que sale (INV-03).
+6. La app confirma con un aviso («Transferencia guardada: $ 50.000 de Ahorro a Efectivo» y, con otra moneda, cuánto llega) y deja el formulario listo para otro registro.
+
+**Flujos alternativos**
+
+- El usuario cambia el origen o el destino en sus hojas inferiores; la hoja de destino no ofrece la cuenta de origen. Si elige como origen la cuenta de destino, el destino pasa al siguiente por defecto.
+- Pagar la tarjeta de crédito es una transferencia hacia la tarjeta: reduce la deuda («Debes $ 300.000») y, si se paga de más, queda «A favor».
+
+**Errores**
+
+- Monto que sale vacío, cero o negativo: se marca el campo y no se guarda.
+- Con monedas distintas, monto de llegada vacío, cero o negativo: «Escribe cuánto llega a la cuenta de destino.»
+- Destino igual al origen o inexistente: «Elige una cuenta de destino distinta.» Cuenta archivada: se pide elegir otra.
+
+**Postcondiciones:** existe una transferencia con ID estable; cambiaron los dos saldos, cada uno en su moneda, y no cuenta como gasto ni como ingreso en el resumen (HU-08).
+
 ### CU-08 Registrar un gasto o ingreso
 
 - **Actor:** Usuario. **Requisitos:** RF-08, RF-14, RNF-01, RNF-04.

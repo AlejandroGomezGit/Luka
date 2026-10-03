@@ -1,4 +1,7 @@
-/** Un gasto o ingreso que registra la persona (HU-03, CU-08): de lo escrito al movimiento nuevo. */
+/**
+ * Un gasto, ingreso o transferencia que registra la persona (HU-03, CU-08, CU-06): de lo escrito al
+ * movimiento nuevo.
+ */
 import { isLocalDate } from './dates.js';
 import {
   checkNewTransaction,
@@ -8,19 +11,37 @@ import {
 } from './invariants.js';
 import { applySign } from './money.js';
 
-export interface TransactionInput {
-  kind: 'expense' | 'income';
+interface InputBase {
   /** Lo que escribe la persona, siempre positivo; el tipo fija el signo (INV-01). */
   amountMinor: number;
+  /** Cuenta del gasto o del ingreso; en una transferencia, la de origen. */
   accountId: string;
-  /** Opcional: un movimiento puede quedar sin categoría (documento 02). */
-  categoryId: string | null;
   /** Fecha local AAAA-MM-DD. */
   occurredOn: string;
 }
 
+export type TransactionInput =
+  | (InputBase & {
+      kind: 'expense' | 'income';
+      /** Opcional: un movimiento puede quedar sin categoría (documento 02). */
+      categoryId: string | null;
+    })
+  | (InputBase & {
+      kind: 'transfer';
+      toAccountId: string;
+      /**
+       * Lo que llega, en la moneda del destino. Solo cuenta con monedas distintas; con la misma
+       * moneda llega exactamente lo que sale (INV-03).
+       */
+      toAmountMinor: number | null;
+    });
+
 export type TransactionInputError =
-  'amount_not_positive' | 'date_invalid' | 'date_in_future' | InvariantId;
+  | 'amount_not_positive'
+  | 'to_amount_not_positive'
+  | 'date_invalid'
+  | 'date_in_future'
+  | InvariantId;
 
 export type BuildResult =
   { ok: true; transaction: NewTransaction } | { ok: false; errors: TransactionInputError[] };
@@ -37,6 +58,15 @@ export function buildTransaction(
   const errors: TransactionInputError[] = [];
   if (!Number.isSafeInteger(input.amountMinor) || input.amountMinor <= 0)
     errors.push('amount_not_positive');
+  const transfer = input.kind === 'transfer' ? input : null;
+  const sameCurrency = ctx.toAccount?.currency === ctx.account.currency;
+  const toAmountMinor = transfer && (sameCurrency ? input.amountMinor : transfer.toAmountMinor);
+  if (
+    transfer &&
+    !sameCurrency &&
+    (toAmountMinor === null || !Number.isSafeInteger(toAmountMinor) || toAmountMinor <= 0)
+  )
+    errors.push('to_amount_not_positive');
   if (!isLocalDate(input.occurredOn)) errors.push('date_invalid');
   // Las fechas AAAA-MM-DD se comparan bien como texto.
   else if (input.occurredOn > today) errors.push('date_in_future');
@@ -45,11 +75,11 @@ export function buildTransaction(
   const transaction: NewTransaction = {
     kind: input.kind,
     amountMinor: applySign(input.kind, input.amountMinor),
-    toAmountMinor: null,
+    toAmountMinor,
     accountId: input.accountId,
-    toAccountId: null,
+    toAccountId: transfer?.toAccountId ?? null,
     currency: ctx.account.currency,
-    categoryId: input.categoryId,
+    categoryId: input.kind === 'transfer' ? null : input.categoryId,
   };
   const violations = checkNewTransaction(transaction, ctx);
   return violations.length > 0 ? { ok: false, errors: violations } : { ok: true, transaction };

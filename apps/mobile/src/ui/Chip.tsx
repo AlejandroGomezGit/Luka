@@ -38,7 +38,8 @@ export function Chip({ label, selected, onPress, hint }: ChipProps) {
 }
 
 interface SegmentedProps<T extends string> {
-  options: readonly { value: T; label: string }[];
+  /** Una opción deshabilitada dice por qué en `hint`, que VoiceOver lee como ayuda. */
+  options: readonly { value: T; label: string; disabled?: boolean; hint?: string }[];
   value: T;
   onChange: (value: T) => void;
   /** «tab» si cambia lo que muestra la pantalla; «radio» si es un dato del formulario. */
@@ -63,12 +64,15 @@ export function SegmentedControl<T extends string>({
     >
       {options.map((option) => {
         const selected = value === option.value;
+        const disabled = option.disabled ?? false;
         return (
           <Pressable
             key={option.value}
             accessibilityRole={role}
             accessibilityLabel={option.label}
-            accessibilityState={{ selected }}
+            accessibilityHint={option.hint}
+            accessibilityState={{ selected, disabled }}
+            disabled={disabled}
             onPress={() => onChange(option.value)}
             style={[
               styles.segment,
@@ -81,7 +85,7 @@ export function SegmentedControl<T extends string>({
           >
             <Text
               maxFontSizeMultiplier={headingScale.title}
-              style={[typography.headline, { color: colors.text }]}
+              style={[typography.headline, { color: disabled ? colors.muted : colors.text }]}
             >
               {option.label}
             </Text>
