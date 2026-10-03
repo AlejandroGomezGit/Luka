@@ -1,12 +1,18 @@
 import { render, screen } from '@testing-library/react-native';
 import { useEffect } from 'react';
-import { Text } from 'react-native';
+import { StyleSheet, Text, type ViewStyle } from 'react-native';
 import { Screen } from '../src/ui/Screen';
 
 let mockFontScale = 1;
 jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
   __esModule: true,
   default: () => ({ width: 393, height: 852, scale: 3, fontScale: mockFontScale }),
+}));
+
+let mockBottomInset = 0;
+jest.mock('react-native-safe-area-context', () => ({
+  ...jest.requireActual<object>('react-native-safe-area-context'),
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: mockBottomInset, left: 0 }),
 }));
 
 const mounts = jest.fn();
@@ -41,7 +47,16 @@ test('HU-02 HU-03 con el teclado abierto, el primer toque en una opción la sele
   expect(screen.root?.props.keyboardShouldPersistTaps).toBe('handled');
 });
 
-test('T-044 el contenido deja libre el espacio de la barra de pestañas flotante y de las barras del sistema', async () => {
-  await render(tree());
+test('T-044 el final del contenido queda por encima de la barra de pestañas flotante (área segura inferior)', async () => {
+  // Dentro de las pestañas, el área segura inferior incluye la barra: 34 pt del indicador + 49 de la barra.
+  mockBottomInset = 83;
+  await render(
+    <Screen contentContainerStyle={{ padding: 16 }}>
+      <Text>contenido</Text>
+    </Screen>,
+  );
+  const style = StyleSheet.flatten(screen.root?.props.contentContainerStyle as never) as ViewStyle;
+  expect(style.paddingBottom).toBe(16 + 83);
+  // Arriba, el ajuste automático deja libre la barra de estado y el título grande.
   expect(screen.root?.props.contentInsetAdjustmentBehavior).toBe('automatic');
 });

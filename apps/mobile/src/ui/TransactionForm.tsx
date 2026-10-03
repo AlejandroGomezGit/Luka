@@ -5,20 +5,35 @@ import {
   type CurrencyCode,
   formatAmountInput,
   formatMoney,
-  isEmoji,
   localDateFromParts,
   parseAmount,
   type TransactionInputError,
 } from '@luka/domain';
 import { type Ref, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { AccessibilityInfo, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  AccessibilityInfo,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import type { AccountWithBalance } from '../db/accounts';
 import type { CategoryNode } from '../db/categories';
 import type { TopCategory } from '../db/transactions';
-import { useTheme } from '../theme';
+import {
+  isAccessibilitySize,
+  radius,
+  sizes,
+  spacing as space,
+  typography,
+  useTheme,
+} from '../theme';
 import { AccountList } from './AccountList';
 import { BottomSheet } from './BottomSheet';
-import { FALLBACK_EMOJI } from './CategoryLabel';
+import { IconBadge } from './CategoryLabel';
+import { Chip, SegmentedControl } from './Chip';
 import type { FormHandle } from './FormHandle';
 import { balanceText } from './money';
 import { colorFor } from './palette';
@@ -52,8 +67,8 @@ interface Props {
 }
 
 const KINDS = [
-  { kind: 'expense' as const, label: 'Gasto' },
-  { kind: 'income' as const, label: 'Ingreso' },
+  { value: 'expense' as const, label: 'Gasto' },
+  { value: 'income' as const, label: 'Ingreso' },
 ];
 
 /** Cómo se presenta la cuenta según el tipo de movimiento. */
@@ -74,6 +89,8 @@ const integerPart = (text: string) => text.split(',')[0] ?? '';
 export function TransactionForm(props: Props) {
   const { ref, accounts, initialAccountId, today, onSubmit, onSavingChange, onKindChange } = props;
   const { colors, scheme, spacing } = useTheme();
+  // Con tamaños de accesibilidad, la cuenta y la fecha se apilan para que el nombre quepa.
+  const stacked = isAccessibilitySize(useWindowDimensions().fontScale);
   const [kind, setKind] = useState<'expense' | 'income'>('expense');
   const [amount, setAmount] = useState('');
   const [accountId, setAccountId] = useState(initialAccountId);
@@ -165,19 +182,6 @@ export function TransactionForm(props: Props) {
     setSheet(null);
   };
 
-  const chip = (key: string, label: string, selected: boolean, onPress: () => void) => (
-    <Pressable
-      key={key}
-      accessibilityRole="radio"
-      accessibilityLabel={label}
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={[styles.chip, { borderColor: selected ? colors.accent : colors.muted }]}
-    >
-      <Text style={[styles.text, { color: colors.text }]}>{label}</Text>
-    </Pressable>
-  );
-
   // La elegida va rellena con el color de acento y un ✓; las demás, con su color al 10 %.
   const categoryChip = (category: TopCategory) => {
     const selected = categoryId === category.id;
@@ -200,11 +204,11 @@ export function TransactionForm(props: Props) {
         <Text
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
-          style={[styles.text, { color: colors.background }]}
+          style={[styles.text, { color: colors.onAccent }]}
         >
           {selected ? '✓' : category.icon}
         </Text>
-        <Text style={[styles.text, { color: selected ? colors.background : colors.text }]}>
+        <Text style={[styles.text, { color: selected ? colors.onAccent : colors.text }]}>
           {category.label}
         </Text>
       </Pressable>
@@ -212,52 +216,31 @@ export function TransactionForm(props: Props) {
   };
 
   return (
-    <Screen contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
-      <View
-        accessibilityRole="radiogroup"
-        style={[styles.segmented, { backgroundColor: colors.card }]}
-      >
-        {KINDS.map((option) => {
-          const selected = kind === option.kind;
-          return (
-            <Pressable
-              key={option.kind}
-              accessibilityRole="radio"
-              accessibilityLabel={option.label}
-              accessibilityState={{ selected }}
-              onPress={() => chooseKind(option.kind)}
-              style={[styles.segment, selected && { backgroundColor: colors.background }]}
-            >
-              <Text style={[styles.value, { color: colors.text }]}>{option.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+    <Screen contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+      <SegmentedControl options={KINDS} value={kind} onChange={chooseKind} />
 
       {account && (
-        <View style={[styles.row, { gap: spacing.sm }]}>
+        <View style={[stacked ? styles.column : styles.row, { gap: spacing.sm }]}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${ACCOUNT_LABEL[kind]} ${account.name}, ${account.currency}`}
             accessibilityHint="Cambia la cuenta"
             onPress={() => setSheet('account')}
-            style={[styles.card, styles.row, styles.flex, { backgroundColor: colors.card }]}
+            style={[
+              styles.card,
+              stacked ? styles.column : [styles.row, styles.flex],
+              { backgroundColor: colors.card },
+            ]}
           >
-            <View
-              style={[styles.badge, { backgroundColor: `${colorFor(account.color, scheme)}33` }]}
-            >
-              <Text style={styles.text}>
-                {isEmoji(account.icon) ? account.icon : FALLBACK_EMOJI}
-              </Text>
-            </View>
+            <IconBadge icon={account.icon} color={account.color} />
             <View style={styles.flex}>
               <Text style={[styles.caption, { color: colors.muted }]}>{ACCOUNT_LABEL[kind]}</Text>
               <Text style={[styles.value, { color: colors.text }]}>
                 {account.name} · {account.currency}
               </Text>
             </View>
-            {/* Chevron: indica que la fila abre la lista de cuentas. */}
-            <Text style={[styles.chevron, { color: colors.muted }]}>›</Text>
+            {/* Chevron: indica que la fila abre la lista de cuentas; apilada, la tarjeta ya lo muestra. */}
+            {!stacked && <Text style={[styles.chevron, { color: colors.muted }]}>›</Text>}
           </Pressable>
           <Pressable
             accessibilityRole="button"
@@ -300,7 +283,7 @@ export function TransactionForm(props: Props) {
         </Text>
       )}
       {errors.map((code) => (
-        <Text key={code} style={[styles.error, { color: colorFor('red', scheme) }]}>
+        <Text key={code} style={[styles.caption, { color: colors.alert }]}>
           {transactionErrorMessage(code)}
         </Text>
       ))}
@@ -319,7 +302,7 @@ export function TransactionForm(props: Props) {
           onPress={() => setShowAll(!showAll)}
           style={[styles.pill, { backgroundColor: `${colors.accent}26` }]}
         >
-          <Text style={[styles.text, { color: colors.accent }]}>
+          <Text style={[styles.text, { color: colors.accentText }]}>
             {showAll ? 'Ocultar' : 'Todas ›'}
           </Text>
         </Pressable>
@@ -359,7 +342,7 @@ export function TransactionForm(props: Props) {
         />
       </View>
 
-      <Text accessibilityLiveRegion="polite" style={[styles.text, { color: colors.accent }]}>
+      <Text accessibilityLiveRegion="polite" style={[styles.text, { color: colors.accentText }]}>
         {message}
       </Text>
 
@@ -372,9 +355,13 @@ export function TransactionForm(props: Props) {
       </BottomSheet>
       <BottomSheet visible={sheet === 'date'} title="Elige la fecha" onClose={() => setSheet(null)}>
         <View accessibilityRole="radiogroup" style={[styles.wrap, { gap: spacing.sm }]}>
-          {chip('today', 'Hoy', occurredOn === today, () => chooseDate(today))}
-          {chip('yesterday', 'Ayer', occurredOn === yesterday, () => chooseDate(yesterday))}
-          {chip('other', 'Otra fecha', showPicker, () => setShowPicker(true))}
+          <Chip label="Hoy" selected={occurredOn === today} onPress={() => chooseDate(today)} />
+          <Chip
+            label="Ayer"
+            selected={occurredOn === yesterday}
+            onPress={() => chooseDate(yesterday)}
+          />
+          <Chip label="Otra fecha" selected={showPicker} onPress={() => setShowPicker(true)} />
         </View>
         {showPicker && (
           <DateTimePicker
@@ -398,31 +385,32 @@ export function TransactionForm(props: Props) {
 const AMOUNT_MAX_SCALE = 1.5;
 
 const styles = StyleSheet.create({
-  label: { fontSize: 17, fontWeight: '600' },
-  text: { fontSize: 17 },
-  caption: { fontSize: 15 },
-  value: { fontSize: 17, fontWeight: '600' },
+  label: typography.headline,
+  text: typography.body,
+  caption: typography.subhead,
+  value: typography.headline,
   row: { flexDirection: 'row', alignItems: 'center' },
+  column: { flexDirection: 'column', alignItems: 'stretch' },
   wrap: { flexDirection: 'row', flexWrap: 'wrap' },
   flex: { flex: 1 },
   center: { justifyContent: 'center' },
   centerText: { textAlign: 'center' },
   between: { justifyContent: 'space-between', alignItems: 'baseline' },
-  segmented: { flexDirection: 'row', borderRadius: 10, padding: 3 },
-  segment: { flex: 1, alignItems: 'center', borderRadius: 8, paddingVertical: 8 },
-  card: { borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, gap: 12 },
-  badge: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+  card: {
+    borderRadius: radius.card,
+    minHeight: sizes.row,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.md,
+    gap: space.md - space.xs,
   },
-  chevron: { fontSize: 24, transform: [{ rotate: '90deg' }] },
-  amount: { fontSize: 48, fontWeight: '700' },
-  amountInput: { minWidth: 40, flexShrink: 1, padding: 0 },
-  currency: { fontSize: 20, fontWeight: '600' },
-  chip: { borderWidth: 2, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14 },
-  pill: { borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14 },
-  error: { fontSize: 15 },
+  chevron: { ...typography.title, transform: [{ rotate: '90deg' }] },
+  amount: typography.amount,
+  amountInput: { minWidth: sizes.touch, flexShrink: 1, padding: 0 },
+  currency: { ...typography.title, fontWeight: '600' },
+  pill: {
+    borderRadius: radius.pill,
+    minHeight: sizes.touch,
+    justifyContent: 'center',
+    paddingHorizontal: space.md,
+  },
 });

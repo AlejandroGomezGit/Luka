@@ -1,6 +1,6 @@
 import { isEmoji, lastEmoji } from '@luka/domain';
 import { StyleSheet, TextInput } from 'react-native';
-import { useTheme } from '../theme';
+import { spacing, useTheme } from '../theme';
 import { colorFor } from './palette';
 
 interface Props {
@@ -16,7 +16,7 @@ interface Props {
  * y un ícono guardado que no es emoji (datos antiguos) se ve como un espacio en blanco.
  */
 export function EmojiField({ value, color, onChange }: Props) {
-  const { colors, scheme } = useTheme();
+  const { scheme, radius, sizes, typography } = useTheme();
   return (
     <TextInput
       accessibilityLabel="Ícono"
@@ -31,20 +31,19 @@ export function EmojiField({ value, color, onChange }: Props) {
         if (emoji && emoji !== value) onChange(emoji);
       }}
       style={[
+        typography.title,
         styles.input,
-        { borderColor: colors.muted, backgroundColor: `${colorFor(color, scheme)}33` },
+        {
+          minWidth: sizes.touch,
+          minHeight: sizes.touch,
+          borderRadius: radius.control,
+          backgroundColor: `${colorFor(color, scheme)}33`,
+        },
       ]}
     />
   );
 }
 
 const styles = StyleSheet.create({
-  input: {
-    fontSize: 24,
-    borderWidth: 1,
-    borderRadius: 8,
-    width: 56,
-    padding: 8,
-    textAlign: 'center',
-  },
+  input: { textAlign: 'center', paddingHorizontal: spacing.sm },
 });

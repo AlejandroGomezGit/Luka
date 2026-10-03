@@ -33,6 +33,10 @@ describe('T-044 tokens de color (RNF-13)', () => {
       }
     });
 
+    it(`modo ${name}: el texto de un control segmentado tiene 4,5:1 o más sobre su franja`, () => {
+      expect(contrast(c.text, c.fill)).toBeGreaterThanOrEqual(4.5);
+    });
+
     it(`modo ${name}: el texto de un botón relleno tiene 4,5:1 o más sobre el acento`, () => {
       expect(contrast(c.onAccent, c.accent)).toBeGreaterThanOrEqual(4.5);
     });

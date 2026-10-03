@@ -1,13 +1,14 @@
 import { type CategoryInputError, isEmoji, MAX_CATEGORY_NAME } from '@luka/domain';
 import { type Ref, useImperativeHandle, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Text } from 'react-native';
 import { useTheme } from '../theme';
 import { CATEGORY_ERRORS } from './categoryErrors';
+import { Button } from './Button';
 import { ColorPicker } from './ColorPicker';
 import { EmojiField } from './EmojiField';
 import type { FormHandle } from './FormHandle';
-import { colorFor } from './palette';
 import { Screen } from './Screen';
+import { TextField } from './TextField';
 
 export interface CategoryValues {
   name: string;
@@ -37,7 +38,7 @@ export function CategoryForm({
   onToggleArchived,
   extraAction,
 }: Props) {
-  const { colors, scheme, spacing } = useTheme();
+  const { colors, spacing, typography } = useTheme();
   // Un ícono guardado que no es emoji (datos antiguos) empieza vacío.
   const [values, setValues] = useState({
     ...initial,
@@ -48,29 +49,27 @@ export function CategoryForm({
     errors
       .filter((code) => CATEGORY_ERRORS[code].field === field)
       .map((code) => (
-        <Text key={code} style={[styles.error, { color: colorFor('red', scheme) }]}>
+        <Text key={code} style={[typography.subhead, { color: colors.alert }]}>
           {CATEGORY_ERRORS[code].message}
         </Text>
       ));
 
   return (
-    <Screen contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
-      <Text style={[styles.label, { color: colors.text }]}>Nombre</Text>
-      <View style={[styles.row, { gap: spacing.sm }]}>
-        <EmojiField
-          value={values.icon}
-          color={values.color}
-          onChange={(icon) => setValues({ ...values, icon })}
-        />
-        <TextInput
-          accessibilityLabel="Nombre"
-          value={values.name}
-          onChangeText={(name) => setValues({ ...values, name })}
-          maxLength={MAX_CATEGORY_NAME}
-          style={[styles.input, { color: colors.text, borderColor: colors.muted }]}
-        />
-      </View>
-      <Text style={[styles.hint, { color: colors.muted }]}>
+    <Screen contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+      <TextField
+        label="Nombre"
+        leading={
+          <EmojiField
+            value={values.icon}
+            color={values.color}
+            onChange={(icon) => setValues({ ...values, icon })}
+          />
+        }
+        value={values.name}
+        onChangeText={(name) => setValues({ ...values, name })}
+        maxLength={MAX_CATEGORY_NAME}
+      />
+      <Text style={[typography.subhead, { color: colors.muted }]}>
         Toca el ícono para elegir un emoji del teclado.
       </Text>
       {errorsFor('name')}
@@ -80,34 +79,20 @@ export function CategoryForm({
       {errorsFor('color')}
 
       {extraAction && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={extraAction.label}
+        <Button
+          label={extraAction.label}
+          icon="+"
+          variant="secondary"
           onPress={extraAction.onPress}
-        >
-          <Text style={[styles.secondary, { color: colors.accent }]}>{extraAction.label}</Text>
-        </Pressable>
+        />
       )}
       {onToggleArchived && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={archived ? 'Desarchivar' : 'Archivar'}
+        <Button
+          label={archived ? 'Desarchivar' : 'Archivar'}
+          variant="text"
           onPress={onToggleArchived}
-        >
-          <Text style={[styles.secondary, { color: colors.accent }]}>
-            {archived ? 'Desarchivar' : 'Archivar'}
-          </Text>
-        </Pressable>
+        />
       )}
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  label: { fontSize: 17, fontWeight: '600' },
-  row: { flexDirection: 'row', alignItems: 'center' },
-  input: { flex: 1, fontSize: 17, borderWidth: 1, borderRadius: 8, padding: 12 },
-  hint: { fontSize: 15 },
-  error: { fontSize: 15 },
-  secondary: { fontSize: 17, textAlign: 'center', padding: 12 },
-});

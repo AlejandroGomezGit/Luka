@@ -1,6 +1,6 @@
 import { isEmoji } from '@luka/domain';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { isAccessibilitySize, typography, useTheme } from '../theme';
+import { isAccessibilitySize, radius, sizes, typography, useTheme } from '../theme';
 import { colorFor } from './palette';
 
 interface Props {
@@ -34,7 +34,7 @@ export function CategoryLabel({ name, icon, color }: Props) {
 export function IconBadge({ icon, color }: { icon: string; color: string }) {
   const { scheme } = useTheme();
   const { fontScale } = useWindowDimensions();
-  const size = Math.round(32 * fontScale);
+  const size = Math.round(sizes.badge * fontScale);
   return (
     <View
       accessibilityElementsHidden
@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   // Con tamaños de accesibilidad el ícono va arriba y el nombre usa todo el ancho.
   column: { flexDirection: 'column', alignItems: 'flex-start', flexShrink: 1 },
-  badge: { borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
+  badge: { borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   emoji: typography.body,
   name: { ...typography.body, flexShrink: 1 },
 });
