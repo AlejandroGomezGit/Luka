@@ -104,3 +104,16 @@ test('HU-04 una transferencia en la misma moneda muestra un solo monto', async (
   expect(screen.getByText('$ 50.000')).toBeOnTheScreen();
   expect(screen.queryByText(/^→/)).toBeNull();
 });
+
+test('HU-04 un movimiento cuya categoría tiene un ícono antiguo que no es emoji muestra 🏷️', async () => {
+  const old = item();
+  await render(
+    <TransactionRow
+      item={{ ...old, category: old.category && { ...old.category, icon: 'cart' } }}
+      today="2026-10-01"
+      onPress={jest.fn()}
+    />,
+  );
+  expect(screen.queryByText('cart', { includeHiddenElements: true })).toBeNull();
+  expect(screen.getByText('🏷️', { includeHiddenElements: true })).toBeTruthy();
+});

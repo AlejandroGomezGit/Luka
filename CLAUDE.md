@@ -51,6 +51,7 @@ TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con ex
 ## Convenciones
 
 - Conventional Commits; ramas feat/, fix/, chore/, docs/ o ci/; un issue por rama y por pull request.
+- Los PR de funcionalidades se mergean con squash (con mi OK); el mensaje del squash dice qué se verificó (pruebas, simulador) y qué no.
 - Sin any.
 - Toda dependencia nueva, incluso de tipos o de desarrollo, se aprueba antes de instalarla y se lista en el PR con su motivo y su licencia.
 - Las migraciones ya aplicadas no se editan: se crea una nueva.
