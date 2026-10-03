@@ -93,7 +93,10 @@ export default function Home() {
         />
       )}
       {accounts && accounts.length > 0 && (
-        <GroupedCard title="Recientes">
+        <GroupedCard
+          title="Recientes"
+          action={{ label: 'Ver todos', onPress: () => router.navigate('/movements') }}
+        >
           {recent.length === 0 ? (
             <Text style={[typography.body, { padding: spacing.md, color: colors.muted }]}>
               Aún no tienes movimientos
