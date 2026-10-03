@@ -1,6 +1,7 @@
 /**
  * Único lugar que traduce un token de color de categoría a su valor. En modo claro son tonos oscuros y
- * en modo oscuro tonos claros: todos superan 4,5:1 contra el fondo (lo comprueba la prueba de paleta).
+ * en modo oscuro tonos claros: todos superan 3:1 contra el fondo y la tarjeta (WCAG 1.4.11, elementos
+ * gráficos; lo comprueban las pruebas de paleta y de tema).
  * El color acompaña al ícono y al nombre; nunca es la única forma de distinguir una categoría.
  */
 import type { ColorToken } from '@luka/domain';

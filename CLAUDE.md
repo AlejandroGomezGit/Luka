@@ -51,7 +51,8 @@ TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con ex
 ## Convenciones
 
 - Conventional Commits; ramas feat/, fix/, chore/, docs/ o ci/; un issue por rama y por pull request.
-- Sin any; sin dependencias nuevas sin justificarlas en el PR.
+- Sin any.
+- Toda dependencia nueva, incluso de tipos o de desarrollo, se aprueba antes de instalarla y se lista en el PR con su motivo y su licencia.
 - Las migraciones ya aplicadas no se editan: se crea una nueva.
 - Cada criterio de aceptación tiene una prueba cuyo nombre incluye el id de la historia (por ejemplo HU-03).
 - Cobertura de packages/domain: 80 % o más.
