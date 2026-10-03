@@ -300,6 +300,32 @@ Se detallan los cinco casos de uso que más condicionan la arquitectura: iniciar
 
 **Postcondiciones:** el cambio persiste en el dispositivo y la cola tiene una operación nueva (desde T-029).
 
+### CU-10 Buscar y filtrar movimientos
+
+- **Actor:** Usuario. **Requisitos:** RF-10, RNF-02, RNF-04.
+- **Precondiciones:** ninguna. No requiere conexión.
+- **Disparador:** el usuario abre la pestaña Movimientos o toca «Ver todos» en «Recientes».
+
+**Flujo principal**
+
+1. La app muestra los movimientos confirmados y no borrados, agrupados por día con encabezados («Hoy · viernes 2 de octubre», «Miércoles 30 de septiembre»), del más reciente al más antiguo y, en el mismo día, lo último registrado primero. Carga de a 50 y agrega la siguiente página al llegar al final.
+2. El usuario escribe en «Buscar movimientos»: la app espera 250 ms y busca, sin distinguir mayúsculas ni tildes, en la nota, el comercio, la categoría (subcategoría o principal) y la cuenta. Lo escrito se busca tal cual: «50%» no coincide con todo.
+3. El usuario elige el tipo (Todos, Gastos, Ingresos o Transferencias) y, en «Filtros», cuenta (incluye las transferencias de origen y de destino), categoría (una principal incluye sus subcategorías; las transferencias no tienen categoría), fechas (este mes, mes pasado, últimos 30 días o personalizado, con la fecha local) y monto (mínimo y máximo con moneda: con una sola moneda entre las cuentas activas se usa esa; con varias se elige, y solo cuentan las cuentas en ella; en una transferencia se compara el monto que sale). Los filtros se combinan.
+4. La app muestra cuántos movimientos cumplen y lo anuncia al lector de pantalla.
+5. Al tocar un movimiento se abre CU-09. Al volver se conservan los filtros y lo ya cargado; si se deshace un borrado, la fila reaparece en su lugar.
+
+**Flujos alternativos**
+
+- Sin movimientos: «Aún no tienes movimientos».
+- Con filtros sin resultados: «No hay movimientos con estos filtros» y «Quitar filtros».
+- Los filtros se conservan mientras la app está abierta y vuelven a «Todos» al reiniciarla.
+
+**Errores**
+
+- Almacenamiento local dañado: se muestra el error, como en CU-08.
+
+**Postcondiciones:** ninguna; buscar y filtrar no cambian datos.
+
 ### CU-21 Sincronizar cambios
 
 - **Actores:** Usuario (disparo automático) y servidor de la API. **Requisitos:** RF-23, RF-24, RF-26, RNF-05.

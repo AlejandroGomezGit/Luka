@@ -140,12 +140,13 @@ Ocho entidades más aparecen según la fase; solo `consents` es necesaria desde 
 
 ## Tablas de sincronización
 
-Seis tablas de soporte hacen posible el modo sin conexión y la auditoría de conflictos; ninguna es visible para el usuario.
+Siete tablas de soporte hacen posible el modo sin conexión, la búsqueda y la auditoría de conflictos; ninguna es visible para el usuario.
 
 | Tabla | Dónde | Campos clave | Para qué |
 | --- | --- | --- | --- |
 | `outbox` | Dispositivo | `op_id` (PK), `entity`, `entity_id`, `op` (`upsert` o `delete`), `patch` (campos cambiados con su reloj), `base_version`, `hlc`, `status` (`pending`, `sent`, `error`), `attempts`, `last_error` | Cola de cambios pendientes; sobrevive al cierre de la app |
 | `device_profile` | Dispositivo | `device_id` (PK), `user_id`, `created_at` | Una sola fila creada en el primer arranque (T-010): la identidad local con la que se escriben los datos antes de tener servidor. Al registrarse, la app envía ese mismo `user_id` al servidor (ADR-008), así nada se reescribe |
+| `transaction_search` | Dispositivo | `transaction_id` (PK, clave foránea a `transactions` con borrado en cascada), `content` | Texto de búsqueda de cada movimiento (HU-05): nota y comercio en minúsculas y sin tildes. Tabla derivada y solo local: se escribe al crear o editar, cada arranque completa la que falte (idempotente), se puede reconstruir entera desde `transactions` y nunca se sincroniza |
 | `sync_state` | Dispositivo | `device_id`, `cursor`, `last_sync_at`, `hlc`, `schema_version` | Una sola fila: hasta dónde llegó este dispositivo |
 | `user_sync_state` | Servidor | `user_id`, `last_seq` | Contador de secuencia por usuario |
 | `sync_ops` | Servidor | `server_seq`, `user_id`, `device_id`, `op_id`, `entity`, `entity_id`, `op`, `changes` (jsonb), `resulting_version`, `hlc`, `applied_at` | Registro de operaciones aplicadas; solo se agrega, nunca se edita |
@@ -177,7 +178,7 @@ La base de datos rechaza los estados imposibles y la capa de dominio los valida 
 
 ### Saldo de una cuenta
 
-El saldo nunca se guarda como dato fuente: se calcula sumando los movimientos vigentes y confirmados (sin eliminados ni «por revisar», INV-09). Por ahora el dispositivo lo calcula al leer, con una consulta sobre los índices de `account_id` y `to_account_id`; se agregará una caché solo si la prueba de 10 000 movimientos (HU-05) lo pide. El saldo calculado puede ser negativo. En una tarjeta de crédito, un saldo negativo se muestra como «Debes $ X» y uno positivo como «A favor $ X».
+El saldo nunca se guarda como dato fuente: se calcula sumando los movimientos vigentes y confirmados (sin eliminados ni «por revisar», INV-09). Por ahora el dispositivo lo calcula al leer, con una consulta sobre los índices de `account_id` y `to_account_id`; la prueba de 10 000 movimientos de T-016 mostró que no hace falta una caché (ver Consultas críticas). El saldo calculado puede ser negativo. En una tarjeta de crédito, un saldo negativo se muestra como «Debes $ X» y uno positivo como «A favor $ X».
 
 ```latex
 \text{saldo}(c) = \text{opening}_c + \sum_{t:\ \text{account}_t = c} \text{amount}_t + \sum_{t:\ \text{to\_account}_t = c} \text{to\_amount}_t
@@ -189,10 +190,10 @@ El MVP no convierte monedas: los resúmenes se agrupan por moneda. La conversió
 
 | Consulta | Índice o técnica | Dónde |
 | --- | --- | --- |
-| Lista de movimientos paginada | Índice `(user_id, occurred_on DESC, id)` parcial sobre `deleted_at IS NULL`; paginación por llave, no por `OFFSET` | Ambos |
+| Lista de movimientos paginada | Índice `(user_id, occurred_on DESC, id)` parcial sobre `deleted_at IS NULL`; orden por fecha descendente y, en el mismo día, por id descendente (UUID v7: lo último registrado primero); paginación por llave con fecha e id, no por `OFFSET`. Con 10 000 movimientos la primera página tarda 0,52 ms en el simulador iPhone 17 (SQLite nativo) | Ambos |
 | Resumen mensual por categoría | Índice `(user_id, occurred_on, category_id)` y suma agrupada; en el dispositivo, totales por mes en caché | Ambos |
-| Saldo de una cuenta | Índices sobre `account_id` y `to_account_id`; caché local | Ambos |
-| Búsqueda por texto | FTS5 de SQLite sobre comercio y nota, si el build de `expo-sqlite` lo incluye; si no, `LIKE` sobre texto normalizado (por validar) | Dispositivo |
+| Saldo de una cuenta | Índices sobre `account_id` y `to_account_id`; sin caché: con 10 000 movimientos la suma tarda 0,58 ms en el simulador iPhone 17 y 1,65 ms en sql.js (T-016) | Ambos |
+| Búsqueda por texto | `LIKE` escapado (`%`, `_` y `\`) sobre `transaction_search` (nota y comercio normalizados), más los ids de las cuentas y categorías cuyo nombre coincide, en la misma consulta. FTS5 está en el `expo-sqlite` de Expo Go, pero no en sql.js, donde corren las pruebas; con 10 000 movimientos `LIKE` tarda 1,31 ms recorriendo todo y 0,24 ms para 50 resultados en el simulador, así que no hace falta (T-016) | Dispositivo |
 | Cambios desde un cursor | Índice `(user_id, server_seq)` en `sync_ops` | Servidor |
 | Duplicados al importar | Índice único parcial `(user_id, account_id, external_id)` donde `external_id` no es nulo | Servidor |
 
