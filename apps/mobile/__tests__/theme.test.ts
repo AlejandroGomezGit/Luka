@@ -1,7 +1,7 @@
 import { COLOR_TOKENS } from '@luka/domain';
 import { themeColors } from '../src/theme';
 import { contrast } from '../src/ui/contrast';
-import { colorFor } from '../src/ui/palette';
+import { colorFor, SERIES_COLORS } from '../src/ui/palette';
 
 const schemes = [
   ['claro', 'light'],
@@ -51,6 +51,29 @@ describe('T-044 tokens de color (RNF-13)', () => {
         const ratio = contrast(colorFor(token, scheme), c.card);
         expect({ token, ok: ratio >= 3 }).toEqual({ token, ok: true });
       }
+    });
+  }
+});
+
+describe('HU-08 colores de la barra del resumen', () => {
+  for (const [name, scheme] of schemes) {
+    it(`modo ${name}: cada color tiene 3:1 o más con la tarjeta y se distingue del vecino también por luminosidad`, () => {
+      const colors = SERIES_COLORS[scheme];
+      expect(colors).toHaveLength(7);
+      for (const color of colors) {
+        expect({ color, ok: contrast(color, themeColors[scheme].card) >= 3 }).toEqual({
+          color,
+          ok: true,
+        });
+      }
+      colors.slice(1).forEach((color, i) => {
+        const previous = colors[i] ?? color;
+        expect({ previous, color, ok: contrast(previous, color) >= 1.2 }).toEqual({
+          previous,
+          color,
+          ok: true,
+        });
+      });
     });
   }
 });

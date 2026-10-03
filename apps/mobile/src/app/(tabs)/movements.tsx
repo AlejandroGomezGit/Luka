@@ -1,5 +1,5 @@
-import { dateRange, parseAmount, today as localToday } from '@luka/domain';
-import { router, useFocusEffect } from 'expo-router';
+import { type CurrencyCode, dateRange, parseAmount, today as localToday } from '@luka/domain';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, SectionList, StyleSheet, Text, View } from 'react-native';
 import { deviceTimeZone } from '../../clock';
@@ -94,6 +94,25 @@ export default function MovementsScreen() {
   const [text, setText] = useState('');
   const [search, setSearch] = useState('');
   const [sheet, setSheet] = useState<SheetFilters>({});
+  // Desde el resumen (HU-08) llegan la categoría, el mes, el tipo y la moneda: se aplican como filtros.
+  const params = useLocalSearchParams<{
+    categoryId?: string;
+    from?: string;
+    to?: string;
+    kind?: Kind;
+    currency?: CurrencyCode;
+  }>();
+  useEffect(() => {
+    if (!params.categoryId || !params.from || !params.to) return;
+    setKind(params.kind ?? 'all');
+    setText('');
+    setSearch('');
+    setSheet({
+      categoryId: params.categoryId,
+      dates: { from: params.from, to: params.to },
+      ...(params.currency ? { amount: { currency: params.currency, min: '', max: '' } } : {}),
+    });
+  }, [params.categoryId, params.from, params.to, params.kind, params.currency]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [items, setItems] = useState<TransactionListItem[]>([]);
   const [cursor, setCursor] = useState<ListCursor | null>(null);

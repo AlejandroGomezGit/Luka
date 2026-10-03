@@ -131,8 +131,8 @@ Los tres que más pesan en el portafolio son el funcionamiento sin conexión, la
 
 La app se organiza como las apps de iOS: una barra de pestañas abajo y pantallas que se abren encima. El diseño sigue las maquetas de `docs/diseno/` con los tokens y componentes base de T-044.
 
-- **Pestañas:** Inicio, Movimientos y Resumen, con la barra nativa de iOS. Movimientos y Resumen muestran «Disponible pronto» hasta T-016 y T-017. «Por revisar» se agrega en V2, con la captura de mensajes.
-- **Inicio:** la fecha, el título y el botón «Agregar»; debajo, «Mis cuentas» con el saldo de cada una y, al final, la sección «Administrar» con dos filas, Cuentas y Categorías, cada una con su nombre y una ayuda para VoiceOver («Abre la lista de tus cuentas»).
+- **Pestañas:** Inicio, Movimientos (CU-10) y Resumen (CU-18), con la barra nativa de iOS. «Por revisar» se agrega en V2, con la captura de mensajes.
+- **Inicio:** la fecha, el título y el botón «Agregar»; debajo, «Gastado este mes» (una línea por moneda, con el mismo cálculo que el Resumen, y «Ver resumen»), «Mis cuentas» con el saldo de cada una y, al final, la sección «Administrar» con dos filas, Cuentas y Categorías, cada una con su nombre y una ayuda para VoiceOver («Abre la lista de tus cuentas»).
 - **Pantallas encima de las pestañas:** Cuentas, Categorías, sus formularios y «Agregar» (CU-08) se abren sobre las pestañas, que se ocultan mientras tanto, como en Ajustes de iOS. Sin cuentas, «Agregar» lleva a crear la primera (CU-05).
 
 ## Catálogo de casos de uso
@@ -325,6 +325,32 @@ Se detallan los cinco casos de uso que más condicionan la arquitectura: iniciar
 - Almacenamiento local dañado: se muestra el error, como en CU-08.
 
 **Postcondiciones:** ninguna; buscar y filtrar no cambian datos.
+
+### CU-18 Ver el resumen mensual
+
+- **Actor:** Usuario. **Requisitos:** RF-20, RNF-02, RNF-04.
+- **Precondiciones:** ninguna. No requiere conexión.
+- **Disparador:** el usuario abre la pestaña Resumen o toca «Ver resumen» en «Gastado este mes».
+
+**Flujo principal**
+
+1. La app muestra el mes en curso como «Octubre 2026 · hasta hoy», con «Mes anterior» y «Mes siguiente» (deshabilitado en el mes en curso). Los límites del mes son la fecha local.
+2. Muestra ingresos, gastos y balance del mes en la moneda elegida. Cuentan solo los gastos y los ingresos confirmados y no borrados; las transferencias, los pagos de tarjeta y los ajustes no cuentan. Los reembolsos cuentan como ingresos, y una línea de ayuda lo dice.
+3. Con cuentas en varias monedas, la app muestra una opción por moneda y cada una se resume por separado, sin convertir (doc 02).
+4. El usuario elige Gastos o Ingresos. La app muestra el total, una barra apilada y la lista de categorías principales (las subcategorías se suman a su principal; sin categoría va a «Sin categoría»), de mayor a menor: las 6 primeras y, si hay más, «Otras categorías» con el resto. Cada fila muestra monto, número de movimientos y porcentaje; los porcentajes suman 100 (método del mayor residuo).
+5. La barra no tiene información que la lista no tenga: VoiceOver la salta y cada fila lleva el mismo color en una pastilla, con su emoji y su nombre.
+6. Al tocar una categoría se abre Movimientos (CU-10) filtrado por esa categoría, ese mes, ese tipo y esa moneda; el contador coincide con el número de movimientos del resumen.
+
+**Flujos alternativos**
+
+- Mes sin gastos ni ingresos: «Sin movimientos en octubre 2026».
+- Sin cuentas: el resumen se muestra en COP y vacío.
+
+**Errores**
+
+- Almacenamiento local dañado: se muestra el error, como en CU-08.
+
+**Postcondiciones:** ninguna; el resumen no cambia datos.
 
 ### CU-21 Sincronizar cambios
 

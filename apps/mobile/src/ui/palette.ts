@@ -27,3 +27,13 @@ export function colorFor(token: string, scheme: Scheme): string {
     ? CATEGORY_COLORS[token as ColorToken][scheme]
     : themeColors[scheme].muted;
 }
+
+/**
+ * Colores de la barra del resumen (HU-08), de la categoría más grande a «Otras categorías». Cada uno
+ * tiene 3:1 o más con la tarjeta y se distingue del vecino también por luminosidad (pasos de 1,2:1 o
+ * más), así que la barra no depende solo del tono. La lista usa el mismo color como pastilla.
+ */
+export const SERIES_COLORS: Record<Scheme, readonly string[]> = {
+  light: ['#33247E', '#683508', '#105A4E', '#AB247E', '#1A74B4', '#A27C09', '#8D939E'],
+  dark: ['#EFEDFA', '#F8D0AC', '#26D8BA', '#E78FCA', '#3D9EE3', '#A57E09', '#6D737F'],
+};

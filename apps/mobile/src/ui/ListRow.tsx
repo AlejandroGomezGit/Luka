@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Switch, Text, useWindowDimensions, View } from 'react-native';
-import { isAccessibilitySize, useTheme } from '../theme';
+import { isAccessibilitySize, radius, sizes, useTheme } from '../theme';
 import { IconBadge } from './CategoryLabel';
 
 interface Props {
@@ -11,6 +11,8 @@ interface Props {
   valueDetail?: string;
   /** «alert» para una deuda, en el color de alerta. */
   valueTone?: 'default' | 'alert';
+  /** Pastilla de color antes del ícono, por ejemplo el color de la categoría en la barra del resumen. */
+  swatch?: string;
   /** Emoji y token de color del ícono. */
   icon?: string;
   color?: string;
@@ -33,6 +35,13 @@ export function ListRow(props: Props) {
   const label = props.accessibilityLabel ?? [title, subtitle, value].filter(Boolean).join(', ');
   const content = (
     <>
+      {props.swatch && (
+        <View
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={[styles.swatch, { backgroundColor: props.swatch }]}
+        />
+      )}
       {icon !== undefined && <IconBadge icon={icon} color={color ?? 'gray'} />}
       <View style={styles.flex}>
         <Text style={[typography.body, { color: colors.text }]}>{title}</Text>
@@ -132,6 +141,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
   column: { flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' },
   flex: { flexShrink: 1, flexGrow: 1 },
+  swatch: { width: sizes.swatch, height: sizes.swatch, borderRadius: radius.pill },
   value: { flexShrink: 0 },
   right: { textAlign: 'right' },
 });

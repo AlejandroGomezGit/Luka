@@ -47,3 +47,10 @@ export function countText(count: number): string {
   const digits = String(count).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   return `${digits} ${count === 1 ? 'movimiento' : 'movimientos'}`;
 }
+
+/** «Septiembre 2026» para un mes AAAA-MM. */
+export function monthTitle(month: string): string {
+  const [year, index] = month.split('-');
+  const name = MONTHS[Number(index) - 1] ?? '';
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${year ?? ''}`;
+}
