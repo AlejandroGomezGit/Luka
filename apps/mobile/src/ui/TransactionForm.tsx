@@ -14,7 +14,10 @@ import type { AccountWithBalance } from '../db/accounts';
 import type { CategoryNode } from '../db/categories';
 import type { TopCategory } from '../db/transactions';
 import { useTheme } from '../theme';
+import { AccountList } from './AccountList';
+import { BottomSheet } from './BottomSheet';
 import type { FormHandle } from './FormHandle';
+import { balanceText } from './money';
 import { colorFor } from './palette';
 import { Screen } from './Screen';
 import { transactionErrorMessage } from './transactionErrors';
@@ -48,12 +51,16 @@ const KINDS = [
   { kind: 'income' as const, label: 'Ingreso' },
 ];
 
+/** Cómo se presenta la cuenta según el tipo de movimiento. */
+const ACCOUNT_LABEL = { expense: 'Pagado con', income: 'Depositado en' } as const;
+
 /** El número escrito sin los decimales que la otra moneda no admite. */
 const integerPart = (text: string) => text.split(',')[0] ?? '';
 
 /**
- * Registrar un gasto o ingreso (HU-03, CU-08): el monto con el teclado numérico ya abierto, una de las
- * categorías más usadas y «Guardar» en la barra superior. Después de guardar queda listo para otro.
+ * Registrar un gasto o ingreso (HU-03, CU-08). Orden: tipo; cuenta («Pagado con» o «Depositado en») y
+ * fecha; monto con su moneda y el saldo de la cuenta; categorías; nota. «Guardar» está en la barra
+ * superior y después de guardar el formulario queda listo para otro.
  */
 export function TransactionForm(props: Props) {
   const { ref, accounts, initialAccountId, today, onSubmit, onSavingChange } = props;
@@ -65,12 +72,16 @@ export function TransactionForm(props: Props) {
   const [occurredOn, setOccurredOn] = useState(today);
   const [note, setNote] = useState('');
   const [showAll, setShowAll] = useState(false);
+  const [sheet, setSheet] = useState<'account' | 'date' | null>(null);
   const [showPicker, setShowPicker] = useState(false);
   const [errors, setErrors] = useState<TransactionInputError[]>([]);
   const [message, setMessage] = useState('');
   // Evita guardar dos veces si se toca «Guardar» de nuevo antes de que la pantalla se redibuje.
   const saving = useRef(false);
-  const currency = (accounts.find((a) => a.id === accountId)?.currency ?? 'COP') as CurrencyCode;
+  const account = accounts.find((a) => a.id === accountId) ?? accounts[0];
+  const currency = (account?.currency ?? 'COP') as CurrencyCode;
+  const yesterday = addDays(today, -1);
+  const dateLabel = occurredOn === today ? 'Hoy' : occurredOn === yesterday ? 'Ayer' : occurredOn;
 
   useEffect(() => {
     saving.current = false;
@@ -78,7 +89,7 @@ export function TransactionForm(props: Props) {
   }, [amount, onSavingChange]);
 
   const submit = () => {
-    if (saving.current) return;
+    if (saving.current || !account) return;
     const text = amount.replace(/,$/, '');
     const amountMinor = text === '' ? 0 : (parseAmount(text, currency) ?? 0);
     if (amountMinor <= 0) {
@@ -87,7 +98,14 @@ export function TransactionForm(props: Props) {
     }
     saving.current = true;
     onSavingChange?.(true);
-    const result = onSubmit({ kind, amountMinor, accountId, categoryId, occurredOn, note });
+    const result = onSubmit({
+      kind,
+      amountMinor,
+      accountId: account.id,
+      categoryId,
+      occurredOn,
+      note,
+    });
     if (!result.ok) {
       saving.current = false;
       onSavingChange?.(false);
@@ -103,17 +121,27 @@ export function TransactionForm(props: Props) {
   };
   useImperativeHandle(ref, () => ({ submit }));
 
-  const chip = (
-    key: string,
-    label: string,
-    selected: boolean,
-    onPress: () => void,
-    a11y?: string,
-  ) => (
+  const chooseAccount = (id: string) => {
+    const next = accounts.find((a) => a.id === id);
+    if (next && next.currency !== currency) {
+      // Se conserva el número escrito y se reformatea para la otra moneda.
+      setAmount(formatAmountInput(integerPart(amount), next.currency as CurrencyCode));
+    }
+    setAccountId(id);
+    setSheet(null);
+  };
+
+  const chooseDate = (date: string) => {
+    setOccurredOn(date);
+    setShowPicker(false);
+    setSheet(null);
+  };
+
+  const chip = (key: string, label: string, selected: boolean, onPress: () => void) => (
     <Pressable
       key={key}
       accessibilityRole="radio"
-      accessibilityLabel={a11y ?? label}
+      accessibilityLabel={label}
       accessibilityState={{ selected }}
       onPress={onPress}
       style={[styles.chip, { borderColor: selected ? colors.accent : colors.muted }]}
@@ -150,13 +178,6 @@ export function TransactionForm(props: Props) {
     </Pressable>
   );
 
-  const errorText = errors.map((code) => (
-    <Text key={code} style={[styles.error, { color: colorFor('red', scheme) }]}>
-      {transactionErrorMessage(code)}
-    </Text>
-  ));
-  const yesterday = addDays(today, -1);
-
   return (
     <Screen contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
       <View accessibilityRole="radiogroup" style={[styles.wrap, { gap: spacing.sm }]}>
@@ -168,8 +189,37 @@ export function TransactionForm(props: Props) {
         )}
       </View>
 
+      {account && (
+        <View style={[styles.row, { gap: spacing.sm }]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${ACCOUNT_LABEL[kind]} ${account.name}, ${account.currency}`}
+            accessibilityHint="Cambia la cuenta"
+            onPress={() => setSheet('account')}
+            style={[styles.field, styles.flex, { borderColor: colors.muted }]}
+          >
+            <Text style={[styles.caption, { color: colors.muted }]}>{ACCOUNT_LABEL[kind]}</Text>
+            <Text style={[styles.value, { color: colors.text }]}>
+              {account.icon} {account.name} · {account.currency}
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Fecha: ${dateLabel}`}
+            accessibilityHint="Cambia la fecha"
+            onPress={() => setSheet('date')}
+            style={[styles.field, { borderColor: colors.muted }]}
+          >
+            <Text style={[styles.caption, { color: colors.muted }]}>Fecha</Text>
+            <Text style={[styles.value, { color: colors.text }]}>{dateLabel}</Text>
+          </Pressable>
+        </View>
+      )}
+
       <View style={[styles.row, { gap: spacing.sm }]}>
+        {/* La key cambia con la moneda: el campo se vuelve a montar y el teclado cambia al instante. */}
         <TextInput
+          key={currency}
           accessibilityLabel="Monto"
           autoFocus
           value={amount}
@@ -180,7 +230,16 @@ export function TransactionForm(props: Props) {
         />
         <Text style={[styles.currency, { color: colors.muted }]}>{currency}</Text>
       </View>
-      {errorText}
+      {account && (
+        <Text style={[styles.caption, { color: colors.muted }]}>
+          Saldo: {balanceText(account.type, account.balanceMinor, currency)}
+        </Text>
+      )}
+      {errors.map((code) => (
+        <Text key={code} style={[styles.error, { color: colorFor('red', scheme) }]}>
+          {transactionErrorMessage(code)}
+        </Text>
+      ))}
 
       <View style={[styles.wrap, { gap: spacing.sm }]}>
         {props.topCategories(kind).map(categoryChip)}
@@ -212,55 +271,6 @@ export function TransactionForm(props: Props) {
           </View>
         ))}
 
-      <Text accessibilityRole="header" style={[styles.label, { color: colors.text }]}>
-        Cuenta
-      </Text>
-      <View accessibilityRole="radiogroup" style={[styles.wrap, { gap: spacing.sm }]}>
-        {accounts.map((account) =>
-          chip(
-            account.id,
-            `${account.icon} ${account.name}`,
-            accountId === account.id,
-            () => {
-              if (account.currency !== currency) {
-                // Se conserva el número escrito y se reformatea para la otra moneda.
-                setAmount(formatAmountInput(integerPart(amount), account.currency as CurrencyCode));
-              }
-              setAccountId(account.id);
-            },
-            `${account.name}, ${account.currency}`,
-          ),
-        )}
-      </View>
-
-      <Text accessibilityRole="header" style={[styles.label, { color: colors.text }]}>
-        Fecha
-      </Text>
-      <View accessibilityRole="radiogroup" style={[styles.wrap, { gap: spacing.sm }]}>
-        {chip('today', 'Hoy', occurredOn === today, () => setOccurredOn(today))}
-        {chip('yesterday', 'Ayer', occurredOn === yesterday, () => setOccurredOn(yesterday))}
-        {chip(
-          'other',
-          occurredOn !== today && occurredOn !== yesterday ? occurredOn : 'Otra fecha',
-          occurredOn !== today && occurredOn !== yesterday,
-          () => setShowPicker(true),
-        )}
-      </View>
-      {showPicker && (
-        <DateTimePicker
-          value={new Date(`${occurredOn}T12:00:00`)}
-          mode="date"
-          display="inline"
-          maximumDate={new Date(`${today}T23:59:59`)}
-          onValueChange={(_, date) => {
-            setShowPicker(false);
-            // Componentes locales de la fecha elegida, nunca toISOString.
-            setOccurredOn(localDateFromParts(date.getFullYear(), date.getMonth(), date.getDate()));
-          }}
-          onDismiss={() => setShowPicker(false)}
-        />
-      )}
-
       <TextInput
         accessibilityLabel="Nota"
         placeholder="Nota (opcional)"
@@ -273,6 +283,34 @@ export function TransactionForm(props: Props) {
       <Text accessibilityLiveRegion="polite" style={[styles.text, { color: colors.accent }]}>
         {message}
       </Text>
+
+      <BottomSheet
+        visible={sheet === 'account'}
+        title="Elige la cuenta"
+        onClose={() => setSheet(null)}
+      >
+        <AccountList accounts={accounts} onSelect={chooseAccount} />
+      </BottomSheet>
+      <BottomSheet visible={sheet === 'date'} title="Elige la fecha" onClose={() => setSheet(null)}>
+        <View accessibilityRole="radiogroup" style={[styles.wrap, { gap: spacing.sm }]}>
+          {chip('today', 'Hoy', occurredOn === today, () => chooseDate(today))}
+          {chip('yesterday', 'Ayer', occurredOn === yesterday, () => chooseDate(yesterday))}
+          {chip('other', 'Otra fecha', showPicker, () => setShowPicker(true))}
+        </View>
+        {showPicker && (
+          <DateTimePicker
+            value={new Date(`${occurredOn}T12:00:00`)}
+            mode="date"
+            display="inline"
+            maximumDate={new Date(`${today}T23:59:59`)}
+            onValueChange={(_, date) => {
+              // Componentes locales de la fecha elegida, nunca toISOString.
+              chooseDate(localDateFromParts(date.getFullYear(), date.getMonth(), date.getDate()));
+            }}
+            onDismiss={() => setShowPicker(false)}
+          />
+        )}
+      </BottomSheet>
     </Screen>
   );
 }
@@ -280,8 +318,12 @@ export function TransactionForm(props: Props) {
 const styles = StyleSheet.create({
   label: { fontSize: 17, fontWeight: '600' },
   text: { fontSize: 17 },
+  caption: { fontSize: 15 },
+  value: { fontSize: 17, fontWeight: '600' },
   row: { flexDirection: 'row', alignItems: 'center' },
   wrap: { flexDirection: 'row', flexWrap: 'wrap' },
+  flex: { flex: 1 },
+  field: { borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 14, gap: 2 },
   amount: {
     flex: 1,
     fontSize: 28,

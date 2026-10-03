@@ -52,17 +52,20 @@ function setup(
 
 test('HU-03 al cambiar a una cuenta de otra moneda se conserva el número escrito y se ve el código de moneda', async () => {
   await setup();
-  const amount = screen.getByLabelText('Monto');
-  await fireEvent.changeText(amount, '12500');
-  expect(amount).toHaveDisplayValue('12.500');
+  // El campo se vuelve a montar al cambiar de moneda: se busca de nuevo cada vez.
+  const amount = () => screen.getByLabelText('Monto');
+  await fireEvent.changeText(amount(), '12500');
+  expect(amount()).toHaveDisplayValue('12.500');
   expect(screen.getByText('COP')).toBeOnTheScreen();
-  await fireEvent.press(screen.getByRole('radio', { name: 'Ahorro USD, USD' }));
-  expect(amount).toHaveDisplayValue('12.500');
+  await fireEvent.press(screen.getByRole('button', { name: 'Pagado con Efectivo, COP' }));
+  await fireEvent.press(screen.getByRole('button', { name: /^Ahorro USD,/ }));
+  expect(amount()).toHaveDisplayValue('12.500');
   expect(screen.getByText('USD')).toBeOnTheScreen();
-  await fireEvent.changeText(amount, '1234,5');
-  await fireEvent.press(screen.getByRole('radio', { name: 'Efectivo, COP' }));
+  await fireEvent.changeText(amount(), '1234,5');
+  await fireEvent.press(screen.getByRole('button', { name: 'Pagado con Ahorro USD, USD' }));
+  await fireEvent.press(screen.getByRole('button', { name: /^Efectivo,/ }));
   // COP no tiene centavos: el número entero se conserva.
-  expect(amount).toHaveDisplayValue('1.234');
+  expect(amount()).toHaveDisplayValue('1.234');
 });
 
 test('HU-03 sin monto se explica «El monto debe ser mayor que cero» y no se guarda', async () => {

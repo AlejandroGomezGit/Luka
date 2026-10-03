@@ -41,7 +41,9 @@ export function AccountList({ accounts, onSelect }: Props) {
             <View style={styles.flex}>
               <CategoryLabel name={account.name} icon={account.icon} color={account.color} />
               <Text style={[styles.detail, { color: colors.muted }]}>
-                {account.archivedAt ? `${type} · archivada` : type}
+                {[type, account.currency, account.archivedAt ? 'archivada' : null]
+                  .filter(Boolean)
+                  .join(' · ')}
               </Text>
             </View>
             <Text style={[styles.balance, { color: colors.text }]}>{balance}</Text>

@@ -64,3 +64,44 @@ test('HU-03 desde Inicio se llega a «Guardar» en 3 toques, sin red, y el saldo
   await fireEvent.press(screen.getByRole('button', { name: 'Listo' }));
   expect(screen.getByText('$ 107.500')).toBeOnTheScreen();
 });
+
+test('HU-03 con una cuenta COP y otra USD, se elige la de dólares en la hoja, se registra 12,50 y Inicio descuenta US$ 12,50', async () => {
+  const value = await session();
+  const usd = createAccount(value, {
+    name: 'Ahorro USD',
+    type: 'savings',
+    currency: 'USD',
+    openingAmountMinor: 100_00,
+    icon: '🐷',
+    color: 'teal',
+  });
+  if (!usd.ok) throw new Error(usd.errors.join());
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <LocalSessionProvider value={value}>{children}</LocalSessionProvider>
+  );
+  await renderRouter(
+    { _layout: () => <Stack />, index: Home, 'transactions/new': NewTransactionScreen },
+    { initialUrl: '/', wrapper },
+  );
+  expect(screen.getByText('US$ 100,00')).toBeOnTheScreen();
+
+  await fireEvent.press(screen.getByRole('button', { name: 'Agregar' }));
+  // La cuenta es lo primero del formulario: una fila grande «Pagado con».
+  await fireEvent.press(screen.getByRole('button', { name: 'Pagado con Efectivo, COP' }));
+  await fireEvent.press(screen.getByRole('button', { name: /^Ahorro USD,/ }));
+  expect(screen.getByRole('button', { name: 'Pagado con Ahorro USD, USD' })).toBeOnTheScreen();
+  expect(screen.getByText('USD')).toBeOnTheScreen();
+  expect(screen.getByText('Saldo: US$ 100,00')).toBeOnTheScreen();
+
+  await fireEvent.changeText(screen.getByLabelText('Monto'), '12,50');
+  expect(screen.getByLabelText('Monto')).toHaveDisplayValue('12,50');
+  await fireEvent.press(screen.getByRole('button', { name: 'Guardar' }));
+
+  const saved = value.db.select().from(transactions).all();
+  expect(saved).toEqual([
+    expect.objectContaining({ accountId: usd.id, amountMinor: -1250, currency: 'USD' }),
+  ]);
+  await fireEvent.press(screen.getByRole('button', { name: 'Listo' }));
+  expect(screen.getByText('US$ 87,50')).toBeOnTheScreen();
+  expect(screen.getByText('$ 120.000')).toBeOnTheScreen();
+});

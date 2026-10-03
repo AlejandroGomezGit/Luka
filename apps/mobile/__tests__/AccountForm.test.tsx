@@ -172,3 +172,22 @@ test('editar una cuenta con un ícono antiguo que no es emoji muestra el campo v
   await save();
   expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ icon: '' }));
 });
+
+test('HU-02 elegir «Dólar (USD)» crea la cuenta en dólares', async () => {
+  const onSubmit = jest.fn();
+  await render(
+    <AccountForm
+      ref={form}
+      initial={{ ...empty, name: 'Dólares' }}
+      errors={[]}
+      onSubmit={onSubmit}
+    />,
+  );
+  await fireEvent.press(screen.getByRole('radio', { name: 'Dólar (USD)' }));
+  expect(screen.getByRole('radio', { name: 'Dólar (USD)' })).toBeSelected();
+  await fireEvent.changeText(screen.getByLabelText('Saldo inicial'), '100');
+  await save();
+  expect(onSubmit).toHaveBeenCalledWith(
+    expect.objectContaining({ currency: 'USD', openingAmountMinor: 100_00 }),
+  );
+});
