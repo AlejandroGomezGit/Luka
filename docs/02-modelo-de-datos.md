@@ -178,7 +178,7 @@ La base de datos rechaza los estados imposibles y la capa de dominio los valida 
 
 ### Saldo de una cuenta
 
-El saldo nunca se guarda como dato fuente: se calcula sumando los movimientos vigentes y confirmados (sin eliminados ni «por revisar», INV-09). Por ahora el dispositivo lo calcula al leer, con una consulta sobre los índices de `account_id` y `to_account_id`; la prueba de 10 000 movimientos de T-016 mostró que no hace falta una caché (ver Consultas críticas). El saldo calculado puede ser negativo. En una tarjeta de crédito, un saldo negativo se muestra como «Debes $ X» y uno positivo como «A favor $ X».
+El saldo nunca se guarda como dato fuente: se calcula sumando los movimientos vigentes y confirmados (sin eliminados ni «por revisar», INV-09). Por ahora el dispositivo lo calcula al leer, con una consulta sobre los índices de `account_id` y `to_account_id`; la prueba de 10 000 movimientos de T-016 mostró que no hace falta una caché (ver Consultas críticas). El saldo calculado puede ser negativo. En una tarjeta de crédito, un saldo negativo se muestra como «Debes $ X» y uno positivo como «A favor $ X». En las demás cuentas, un saldo negativo se muestra con su signo en el color de alerta y la ayuda «Saldo negativo: revisa los movimientos o corrige el saldo inicial», en las listas de cuentas y en «Saldo de la cuenta» del formulario; VoiceOver lo lee como «saldo negativo, menos 25.000 pesos». Mientras llega el ajuste de saldo (CU-07, V2), se corrige editando el saldo inicial (T-046).
 
 ```latex
 \text{saldo}(c) = \text{opening}_c + \sum_{t:\ \text{account}_t = c} \text{amount}_t + \sum_{t:\ \text{to\_account}_t = c} \text{to\_amount}_t
