@@ -29,7 +29,8 @@ export function createTransaction(
 ): TransactionResult {
   const account = getAccount(ctx.db, input.accountId);
   if (!account) return { ok: false, errors: ['INV-06'] };
-  const category = input.categoryId ? getCategory(ctx.db, input.categoryId) : undefined;
+  const categoryId = input.kind === 'transfer' ? null : input.categoryId;
+  const category = categoryId ? getCategory(ctx.db, categoryId) : undefined;
   const result = buildTransaction(
     input,
     {
