@@ -7,16 +7,25 @@ import { listCategories } from '../../db/categories';
 import { useLocalSession } from '../../db/session';
 import {
   createTransaction,
+  lastTransferDestination,
   lastUsedAccountId,
   savedMessage,
   topCategories,
+  transferSavedMessage,
 } from '../../db/transactions';
 import type { FormHandle } from '../../ui/FormHandle';
 import { HeaderButton } from '../../ui/HeaderButton';
-import { TransactionForm } from '../../ui/TransactionForm';
+import { type Kind, TransactionForm } from '../../ui/TransactionForm';
+
+const TITLES: Record<Kind, string> = {
+  expense: 'Nuevo gasto',
+  income: 'Nuevo ingreso',
+  transfer: 'Nueva transferencia',
+};
 
 /**
- * Registrar un gasto o ingreso (HU-03): «Guardar» registra y deja el formulario listo para otro. A la
+ * Registrar un gasto, ingreso (HU-03) o transferencia (CU-06): «Guardar» registra y deja el formulario
+ * listo para otro. A la
  * izquierda dice «Cancelar» mientras no se haya guardado nada y «Listo» después.
  */
 export default function NewTransactionScreen() {
@@ -24,7 +33,7 @@ export default function NewTransactionScreen() {
   const form = useRef<FormHandle>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [kind, setKind] = useState<'expense' | 'income'>('expense');
+  const [kind, setKind] = useState<Kind>('expense');
   const accounts = useMemo(() => listActiveAccounts(session.db), [session.db]);
   const initialAccountId = lastUsedAccountId(session.db);
   const todayDate = today(session.clock, deviceTimeZone());
@@ -34,7 +43,7 @@ export default function NewTransactionScreen() {
     <>
       <Stack.Screen
         options={{
-          title: kind === 'expense' ? 'Nuevo gasto' : 'Nuevo ingreso',
+          title: TITLES[kind],
           headerLeft: () => (
             <HeaderButton label={saved ? 'Listo' : 'Cancelar'} onPress={() => router.back()} />
           ),
@@ -57,10 +66,14 @@ export default function NewTransactionScreen() {
         allCategories={(kind) => listCategories(session.db, kind, { includeArchived: false })}
         onSavingChange={setSaving}
         onKindChange={setKind}
+        transferDestination={(fromId) => lastTransferDestination(session.db, fromId)}
         onSubmit={(values) => {
           const result = createTransaction(session, values, deviceTimeZone());
           if (!result.ok) return result;
           setSaved(true);
+          if (values.kind === 'transfer') {
+            return { ok: true, message: transferSavedMessage(session.db, values) };
+          }
           const currency = (accounts.find((a) => a.id === values.accountId)?.currency ??
             'COP') as CurrencyCode;
           return {

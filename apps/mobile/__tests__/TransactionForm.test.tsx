@@ -143,3 +143,103 @@ test('HU-03 al cambiar a Ingreso la cuenta dice «Depositado en» y la pantalla 
   expect(onKindChange).toHaveBeenCalledWith('income');
   expect(screen.getByRole('button', { name: 'Depositado en Efectivo, COP' })).toBeOnTheScreen();
 });
+
+describe('HU-02 transferencias (CU-06)', () => {
+  const transferForm = (
+    list: readonly AccountWithBalance[],
+    onSubmit: (values: TransactionValues) => SubmitResult = () => ({ ok: true, message: 'ok' }),
+  ) =>
+    render(
+      <TransactionForm
+        ref={form}
+        accounts={list}
+        initialAccountId="cop"
+        today="2026-10-01"
+        topCategories={() => [groceries]}
+        allCategories={() => []}
+        onSubmit={onSubmit}
+      />,
+    );
+
+  test('HU-02 con una sola cuenta activa «Transferencia» está deshabilitada, explica por qué y VoiceOver la lee deshabilitada', async () => {
+    await transferForm([account('cop', 'Efectivo', 'COP')]);
+    const option = screen.getByRole('radio', { name: 'Transferencia' });
+    expect(option).toBeDisabled();
+    expect(
+      screen.getByText('Para transferir necesitas al menos dos cuentas activas.'),
+    ).toBeOnTheScreen();
+    await fireEvent.press(option);
+    expect(screen.queryByRole('button', { name: /^Hacia/ })).toBeNull();
+  });
+
+  test('HU-02 en Transferencia se eligen «Desde» y «Hacia», no hay categorías y con la misma moneda no se pide cuánto llega', async () => {
+    const onSubmit = jest.fn(() => ({ ok: true as const, message: 'ok' }));
+    await transferForm(
+      [account('cop', 'Efectivo', 'COP'), account('bank', 'Ahorro', 'COP')],
+      onSubmit,
+    );
+    await fireEvent.press(screen.getByRole('radio', { name: 'Transferencia' }));
+    expect(screen.getByRole('button', { name: 'Desde Efectivo, COP' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Hacia Ahorro, COP' })).toBeOnTheScreen();
+    expect(screen.queryByRole('radio', { name: 'Supermercado, Alimentación' })).toBeNull();
+    expect(screen.queryByLabelText(/^Llega a/)).toBeNull();
+    await fireEvent.changeText(screen.getByLabelText('Monto'), '50000');
+    await act(() => {
+      form.current?.submit();
+    });
+    expect(onSubmit).toHaveBeenCalledWith({
+      kind: 'transfer',
+      amountMinor: 50_000_00,
+      accountId: 'cop',
+      toAccountId: 'bank',
+      toAmountMinor: null,
+      occurredOn: '2026-10-01',
+      note: '',
+    });
+  });
+
+  test('HU-02 con monedas distintas se escribe cuánto llega en «Llega a Ahorro USD · USD»', async () => {
+    const onSubmit = jest.fn(() => ({ ok: true as const, message: 'ok' }));
+    await transferForm(accounts, onSubmit);
+    await fireEvent.press(screen.getByRole('radio', { name: 'Transferencia' }));
+    await fireEvent.changeText(screen.getByLabelText('Monto'), '100000');
+    const arrives = screen.getByLabelText('Llega a Ahorro USD · USD');
+    expect(screen.getByText('Llega a Ahorro USD · USD')).toBeOnTheScreen();
+    await fireEvent.changeText(arrives, '25,5');
+    expect(screen.getByLabelText('Llega a Ahorro USD · USD')).toHaveDisplayValue('25,5');
+    await act(() => {
+      form.current?.submit();
+    });
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amountMinor: 100_000_00,
+        toAccountId: 'usd',
+        toAmountMinor: 25_50,
+      }),
+    );
+  });
+
+  test('HU-02 la hoja «Hacia» no ofrece la cuenta de origen', async () => {
+    await transferForm([...accounts, account('bank', 'Ahorro', 'COP')]);
+    await fireEvent.press(screen.getByRole('radio', { name: 'Transferencia' }));
+    await fireEvent.press(screen.getByRole('button', { name: /^Hacia / }));
+    expect(screen.queryByRole('button', { name: /^Efectivo,/ })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: /^Ahorro,/ }));
+    expect(screen.getByRole('button', { name: 'Hacia Ahorro, COP' })).toBeOnTheScreen();
+  });
+
+  test('HU-02 los errores de una transferencia se explican en español', async () => {
+    await transferForm(accounts, () => ({
+      ok: false,
+      errors: ['to_amount_not_positive', 'INV-02', 'INV-06'],
+    }));
+    await fireEvent.press(screen.getByRole('radio', { name: 'Transferencia' }));
+    await fireEvent.changeText(screen.getByLabelText('Monto'), '100000');
+    await act(() => {
+      form.current?.submit();
+    });
+    expect(screen.getByText('Escribe cuánto llega a la cuenta de destino.')).toBeOnTheScreen();
+    expect(screen.getByText('Elige una cuenta de destino distinta.')).toBeOnTheScreen();
+    expect(screen.getByText('Esta cuenta está archivada: elige otra.')).toBeOnTheScreen();
+  });
+});

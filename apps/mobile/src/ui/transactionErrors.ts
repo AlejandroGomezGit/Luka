@@ -11,6 +11,10 @@ export function transactionErrorMessage(code: TransactionInputError): string {
       return 'La fecha no es válida.';
     case 'INV-06':
       return 'Esta cuenta está archivada: elige otra.';
+    case 'to_amount_not_positive':
+      return 'Escribe cuánto llega a la cuenta de destino.';
+    case 'INV-02':
+      return 'Elige una cuenta de destino distinta.';
     case 'INV-04':
       return 'Esa categoría no corresponde al tipo de movimiento.';
     default:

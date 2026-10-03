@@ -31,23 +31,34 @@ import {
   useTheme,
 } from '../theme';
 import { AccountList } from './AccountList';
+import { AccountRow } from './AccountRow';
 import { BottomSheet } from './BottomSheet';
-import { IconBadge } from './CategoryLabel';
 import { Chip, SegmentedControl } from './Chip';
 import type { FormHandle } from './FormHandle';
 import { balanceText } from './money';
 import { colorFor } from './palette';
 import { Screen } from './Screen';
+import { TextField } from './TextField';
 import { transactionErrorMessage } from './transactionErrors';
 
-export interface TransactionValues {
-  kind: 'expense' | 'income';
+export type Kind = 'expense' | 'income' | 'transfer';
+
+interface ValuesBase {
   amountMinor: number;
+  /** Cuenta del gasto o ingreso; en una transferencia, la de origen. */
   accountId: string;
-  categoryId: string | null;
   occurredOn: string;
   note: string;
 }
+
+export type TransactionValues =
+  | (ValuesBase & { kind: 'expense' | 'income'; categoryId: string | null })
+  | (ValuesBase & {
+      kind: 'transfer';
+      toAccountId: string;
+      /** Solo con monedas distintas; con la misma moneda llega lo mismo que sale. */
+      toAmountMinor: number | null;
+    });
 
 export type SubmitResult =
   { ok: true; message: string } | { ok: false; errors: TransactionInputError[] };
@@ -62,17 +73,20 @@ interface Props {
   allCategories: (kind: CategoryKind) => CategoryNode[];
   onSubmit: (values: TransactionValues) => SubmitResult;
   onSavingChange?: (saving: boolean) => void;
-  /** Para el título de la pantalla: «Nuevo gasto» o «Nuevo ingreso». */
-  onKindChange?: (kind: 'expense' | 'income') => void;
+  /** Para el título de la pantalla: «Nuevo gasto», «Nuevo ingreso» o «Nueva transferencia». */
+  onKindChange?: (kind: Kind) => void;
+  /** Destino por defecto de una transferencia desde esa cuenta (lastTransferDestination). */
+  transferDestination?: (fromId: string) => string | null;
 }
 
-const KINDS = [
-  { value: 'expense' as const, label: 'Gasto' },
-  { value: 'income' as const, label: 'Ingreso' },
-];
+const NEEDS_TWO_ACCOUNTS = 'Para transferir necesitas al menos dos cuentas activas.';
 
 /** Cómo se presenta la cuenta según el tipo de movimiento. */
-const ACCOUNT_LABEL = { expense: 'Pagado con', income: 'Depositado en' } as const;
+const ACCOUNT_LABEL = {
+  expense: 'Pagado con',
+  income: 'Depositado en',
+  transfer: 'Desde',
+} as const;
 
 /** Símbolo de la moneda delante del monto: «$», «US$» o «€». */
 const symbolOf = (currency: CurrencyCode) => formatMoney(0, currency).split(' ')[0];
@@ -81,24 +95,27 @@ const symbolOf = (currency: CurrencyCode) => formatMoney(0, currency).split(' ')
 const integerPart = (text: string) => text.split(',')[0] ?? '';
 
 /**
- * Registrar un gasto o ingreso (HU-03, CU-08), según la maqueta docs/diseno/Agregar gasto.png. Orden:
- * tipo; cuenta («Pagado con» o «Depositado en») y fecha; monto con su moneda y el saldo de la cuenta;
- * categorías; nota. «Guardar» está en la barra superior y después de guardar el formulario queda listo
- * para otro.
+ * Registrar un gasto o ingreso (HU-03, CU-08), según la maqueta docs/diseno/Agregar gasto.png, o una
+ * transferencia (CU-06). Orden: tipo; cuenta («Pagado con», «Depositado en» o «Desde») y fecha; en una
+ * transferencia, «Hacia»; monto con su moneda y el saldo de la cuenta; con monedas distintas, cuánto
+ * llega; categorías (no en transferencias); nota. «Guardar» está en la barra superior y después de
+ * guardar el formulario queda listo para otro.
  */
 export function TransactionForm(props: Props) {
   const { ref, accounts, initialAccountId, today, onSubmit, onSavingChange, onKindChange } = props;
   const { colors, scheme, spacing } = useTheme();
   // Con tamaños de accesibilidad, la cuenta y la fecha se apilan para que el nombre quepa.
   const stacked = isAccessibilitySize(useWindowDimensions().fontScale);
-  const [kind, setKind] = useState<'expense' | 'income'>('expense');
+  const [kind, setKind] = useState<Kind>('expense');
   const [amount, setAmount] = useState('');
   const [accountId, setAccountId] = useState(initialAccountId);
+  const [toAccountId, setToAccountId] = useState<string | null>(null);
+  const [toAmount, setToAmount] = useState('');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [occurredOn, setOccurredOn] = useState(today);
   const [note, setNote] = useState('');
   const [showAll, setShowAll] = useState(false);
-  const [sheet, setSheet] = useState<'account' | 'date' | null>(null);
+  const [sheet, setSheet] = useState<'account' | 'toAccount' | 'date' | null>(null);
   const [showPicker, setShowPicker] = useState(false);
   const [errors, setErrors] = useState<TransactionInputError[]>([]);
   const [message, setMessage] = useState('');
@@ -106,6 +123,24 @@ export function TransactionForm(props: Props) {
   const saving = useRef(false);
   const account = accounts.find((a) => a.id === accountId) ?? accounts[0];
   const currency = (account?.currency ?? 'COP') as CurrencyCode;
+  const canTransfer = accounts.length >= 2;
+  const isTransfer = kind === 'transfer';
+  const toAccount = isTransfer ? accounts.find((a) => a.id === toAccountId) : undefined;
+  const toCurrency = toAccount?.currency as CurrencyCode | undefined;
+  // Con monedas distintas no hay tasa de cambio: la persona escribe cuánto llega.
+  const differentCurrency = toCurrency !== undefined && toCurrency !== currency;
+  const destinationFor = (fromId: string) =>
+    props.transferDestination?.(fromId) ?? accounts.find((a) => a.id !== fromId)?.id ?? null;
+  const kinds = [
+    { value: 'expense' as const, label: 'Gasto' },
+    { value: 'income' as const, label: 'Ingreso' },
+    {
+      value: 'transfer' as const,
+      label: 'Transferencia',
+      disabled: !canTransfer,
+      ...(canTransfer ? {} : { hint: NEEDS_TWO_ACCOUNTS }),
+    },
+  ];
   const yesterday = addDays(today, -1);
   const dateLabel = occurredOn === today ? 'Hoy' : occurredOn === yesterday ? 'Ayer' : occurredOn;
 
@@ -124,14 +159,32 @@ export function TransactionForm(props: Props) {
     }
     saving.current = true;
     onSavingChange?.(true);
-    const result = onSubmit({
-      kind,
-      amountMinor,
-      accountId: account.id,
-      categoryId,
-      occurredOn,
-      note,
-    });
+    const arrives = toAmount.replace(/,$/, '');
+    const result = onSubmit(
+      isTransfer && toAccount
+        ? {
+            kind,
+            amountMinor,
+            accountId: account.id,
+            toAccountId: toAccount.id,
+            // Vacío o inválido llega como null y el dominio lo explica (to_amount_not_positive).
+            toAmountMinor: differentCurrency
+              ? arrives === ''
+                ? null
+                : parseAmount(arrives, toCurrency)
+              : null,
+            occurredOn,
+            note,
+          }
+        : {
+            kind: kind === 'income' ? 'income' : 'expense',
+            amountMinor,
+            accountId: account.id,
+            categoryId,
+            occurredOn,
+            note,
+          },
+    );
     if (!result.ok) {
       saving.current = false;
       onSavingChange?.(false);
@@ -142,6 +195,7 @@ export function TransactionForm(props: Props) {
     setMessage(result.message);
     AccessibilityInfo.announceForAccessibility(result.message);
     setAmount('');
+    setToAmount('');
     setCategoryId(null);
     setNote('');
   };
@@ -154,18 +208,32 @@ export function TransactionForm(props: Props) {
       setAmount(formatAmountInput(integerPart(amount), next.currency as CurrencyCode));
     }
     setAccountId(id);
+    // El origen nunca es también el destino.
+    if (isTransfer && id === toAccountId) setToAccountId(destinationFor(id));
     setSheet(null);
   };
 
-  const chooseKind = (next: 'expense' | 'income') => {
+  const chooseToAccount = (id: string) => {
+    const next = accounts.find((a) => a.id === id);
+    if (next && toCurrency && next.currency !== toCurrency) {
+      setToAmount(formatAmountInput(integerPart(toAmount), next.currency as CurrencyCode));
+    }
+    setToAccountId(id);
+    setSheet(null);
+  };
+
+  const chooseKind = (next: Kind) => {
     setKind(next);
     setCategoryId(null);
+    if (next === 'transfer' && (toAccountId === null || toAccountId === accountId)) {
+      setToAccountId(destinationFor(accountId));
+    }
     onKindChange?.(next);
   };
 
   // Ruta de la categoría elegida, «Alimentación › Supermercado»; el «General» muestra solo la principal.
   const categoryPath = (() => {
-    for (const main of categoryId ? props.allCategories(kind) : []) {
+    for (const main of categoryId && !isTransfer ? props.allCategories(kind) : []) {
       const index = main.children.findIndex((child) => child.id === categoryId);
       if (index === -1) continue;
       const child = main.children[index];
@@ -217,31 +285,21 @@ export function TransactionForm(props: Props) {
 
   return (
     <Screen contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
-      <SegmentedControl options={KINDS} value={kind} onChange={chooseKind} />
+      <SegmentedControl options={kinds} value={kind} onChange={chooseKind} />
+      {!canTransfer && (
+        <Text style={[styles.caption, { color: colors.muted }]}>{NEEDS_TWO_ACCOUNTS}</Text>
+      )}
 
       {account && (
         <View style={[stacked ? styles.column : styles.row, { gap: spacing.sm }]}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${ACCOUNT_LABEL[kind]} ${account.name}, ${account.currency}`}
-            accessibilityHint="Cambia la cuenta"
+          <AccountRow
+            label={ACCOUNT_LABEL[kind]}
+            account={account}
+            hint={isTransfer ? 'Cambia la cuenta de origen' : 'Cambia la cuenta'}
             onPress={() => setSheet('account')}
-            style={[
-              styles.card,
-              stacked ? styles.column : [styles.row, styles.flex],
-              { backgroundColor: colors.card },
-            ]}
-          >
-            <IconBadge icon={account.icon} color={account.color} />
-            <View style={styles.flex}>
-              <Text style={[styles.caption, { color: colors.muted }]}>{ACCOUNT_LABEL[kind]}</Text>
-              <Text style={[styles.value, { color: colors.text }]}>
-                {account.name} · {account.currency}
-              </Text>
-            </View>
-            {/* Chevron: indica que la fila abre la lista de cuentas; apilada, la tarjeta ya lo muestra. */}
-            {!stacked && <Text style={[styles.chevron, { color: colors.muted }]}>›</Text>}
-          </Pressable>
+            stacked={stacked}
+            fill
+          />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Fecha: ${dateLabel}`}
@@ -252,6 +310,16 @@ export function TransactionForm(props: Props) {
             <Text style={[styles.value, { color: colors.text }]}>📅 {dateLabel}</Text>
           </Pressable>
         </View>
+      )}
+
+      {toAccount && (
+        <AccountRow
+          label="Hacia"
+          account={toAccount}
+          hint="Cambia la cuenta de destino"
+          onPress={() => setSheet('toAccount')}
+          stacked={stacked}
+        />
       )}
 
       <View style={[styles.row, styles.center, { gap: spacing.sm }]}>
@@ -282,52 +350,68 @@ export function TransactionForm(props: Props) {
           Saldo de la cuenta: {balanceText(account.type, account.balanceMinor, currency)}
         </Text>
       )}
+      {differentCurrency && toAccount && (
+        <TextField
+          key={toCurrency}
+          label={`Llega a ${toAccount.name} · ${toCurrency}`}
+          value={toAmount}
+          placeholder="0"
+          onChangeText={(text) => setToAmount(formatAmountInput(text, toCurrency))}
+          keyboardType={toCurrency === 'COP' ? 'number-pad' : 'decimal-pad'}
+        />
+      )}
       {errors.map((code) => (
         <Text key={code} style={[styles.caption, { color: colors.alert }]}>
           {transactionErrorMessage(code)}
         </Text>
       ))}
 
-      <View style={[styles.wrap, styles.between, { gap: spacing.sm }]}>
-        <Text accessibilityRole="header" style={[styles.label, { color: colors.text }]}>
-          Categoría
-        </Text>
-        <Text style={[styles.caption, { color: colors.muted }]}>{categoryPath}</Text>
-      </View>
-      <View style={[styles.wrap, { gap: spacing.sm }]}>
-        {props.topCategories(kind).map(categoryChip)}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={showAll ? 'Ocultar categorías' : 'Todas las categorías'}
-          onPress={() => setShowAll(!showAll)}
-          style={[styles.pill, { backgroundColor: `${colors.accent}26` }]}
-        >
-          <Text style={[styles.text, { color: colors.accentText }]}>
-            {showAll ? 'Ocultar' : 'Todas ›'}
-          </Text>
-        </Pressable>
-      </View>
-      {showAll &&
-        props.allCategories(kind).map((main) => (
-          <View key={main.id} style={{ gap: spacing.sm }}>
+      {!isTransfer && (
+        <>
+          <View style={[styles.wrap, styles.between, { gap: spacing.sm }]}>
             <Text accessibilityRole="header" style={[styles.label, { color: colors.text }]}>
-              {main.icon} {main.name}
+              Categoría
             </Text>
-            <View style={[styles.wrap, { gap: spacing.sm }]}>
-              {main.children.map((child, index) =>
-                categoryChip({
-                  id: child.id,
-                  // El «General» u «Otros» va al final de cada principal (listCategories).
-                  label: index === main.children.length - 1 ? main.name : child.name,
-                  accessibilityLabel:
-                    index === main.children.length - 1 ? main.name : `${child.name}, ${main.name}`,
-                  icon: child.icon,
-                  color: child.color,
-                }),
-              )}
-            </View>
+            <Text style={[styles.caption, { color: colors.muted }]}>{categoryPath}</Text>
           </View>
-        ))}
+          <View style={[styles.wrap, { gap: spacing.sm }]}>
+            {props.topCategories(kind).map(categoryChip)}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={showAll ? 'Ocultar categorías' : 'Todas las categorías'}
+              onPress={() => setShowAll(!showAll)}
+              style={[styles.pill, { backgroundColor: `${colors.accent}26` }]}
+            >
+              <Text style={[styles.text, { color: colors.accentText }]}>
+                {showAll ? 'Ocultar' : 'Todas ›'}
+              </Text>
+            </Pressable>
+          </View>
+          {showAll &&
+            props.allCategories(kind).map((main) => (
+              <View key={main.id} style={{ gap: spacing.sm }}>
+                <Text accessibilityRole="header" style={[styles.label, { color: colors.text }]}>
+                  {main.icon} {main.name}
+                </Text>
+                <View style={[styles.wrap, { gap: spacing.sm }]}>
+                  {main.children.map((child, index) =>
+                    categoryChip({
+                      id: child.id,
+                      // El «General» u «Otros» va al final de cada principal (listCategories).
+                      label: index === main.children.length - 1 ? main.name : child.name,
+                      accessibilityLabel:
+                        index === main.children.length - 1
+                          ? main.name
+                          : `${child.name}, ${main.name}`,
+                      icon: child.icon,
+                      color: child.color,
+                    }),
+                  )}
+                </View>
+              </View>
+            ))}
+        </>
+      )}
 
       <View style={[styles.card, styles.row, { gap: spacing.md, backgroundColor: colors.card }]}>
         <Text style={[styles.text, { color: colors.text }]}>Nota</Text>
@@ -352,6 +436,16 @@ export function TransactionForm(props: Props) {
         onClose={() => setSheet(null)}
       >
         <AccountList accounts={accounts} onSelect={chooseAccount} />
+      </BottomSheet>
+      <BottomSheet
+        visible={sheet === 'toAccount'}
+        title="Elige la cuenta de destino"
+        onClose={() => setSheet(null)}
+      >
+        <AccountList
+          accounts={accounts.filter((a) => a.id !== accountId)}
+          onSelect={chooseToAccount}
+        />
       </BottomSheet>
       <BottomSheet visible={sheet === 'date'} title="Elige la fecha" onClose={() => setSheet(null)}>
         <View accessibilityRole="radiogroup" style={[styles.wrap, { gap: spacing.sm }]}>
