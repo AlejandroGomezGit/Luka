@@ -104,7 +104,7 @@ Siete entidades cubren el MVP: usuarios, dispositivos, cuentas, categorías, mov
 | `category_confidence` | smallint, nulo | De 0 a 100; solo si la asignó el modelo |
 | `merchant` | text, nulo | Comercio o descripción corta |
 | `note` | text, nulo | Nota libre |
-| `tags` | text\[\] | Etiquetas en minúsculas y sin tildes; en SQLite se guardan como JSON |
+| `tags` | text\[\] | Etiquetas como las escribe la persona («Viaje a Medellín»), sin espacios de sobra; se comparan sin mayúsculas ni tildes para buscar y para quitar repetidas. Hasta 10 de hasta 30 caracteres (`parseTags` y `tagErrors` en `packages/domain`). En SQLite se guardan como JSON |
 | `source` | enum | `manual`, `import_csv`, `import_pdf`, `message_paste`, `message_shortcut`, `bank`, `receipt_scan`, `recurring` |
 | `review_status` | enum | `confirmed` o `pending_review`; lo que llega de mensajes, importaciones o bancos entra como `pending_review` y solo cuenta al confirmarse (INV-09) |
 | `external_id` | text, nulo | Identificador del banco o huella de la fila importada o del mensaje, para detectar duplicados entre fuentes |
@@ -122,6 +122,8 @@ Siete entidades cubren el MVP: usuarios, dispositivos, cuentas, categorías, mov
 | `sha256` | text | Verifica la subida y detecta archivos repetidos |
 | `storage_key` | text, nulo | Clave en el almacenamiento de objetos; nulo mientras el archivo solo está en el dispositivo |
 | `uploaded_at` | timestamptz, nulo | Nulo hasta que la subida termina |
+
+En el MVP hay una foto de recibo por movimiento (T-018). El archivo vive en `Documents/attachments/<id>.jpg`, con el mismo id de la fila, así que no hace falta una columna con la ruta local: se reduce a 1.600 px en su lado largo y se guarda como JPEG con calidad 0,7; volver a codificarla deja fuera el GPS y los demás metadatos (prueba de concepto de T-018, con JPEG y HEIC). Con `storage_key` y `uploaded_at` nulos la foto está pendiente de subir (T-035). Quitar o reemplazar la foto, o borrar su movimiento, la borra de forma lógica; Deshacer devuelve solo lo que se borró con el movimiento, en el mismo instante. El archivo se borra del iPhone cuando ya no se puede deshacer (desaparece el aviso o se abre la app); la fila sigue el borrado lógico de 30 días.
 
 ## Entidades de V2 y V3
 
@@ -146,7 +148,7 @@ Siete tablas de soporte hacen posible el modo sin conexión, la búsqueda y la a
 | --- | --- | --- | --- |
 | `outbox` | Dispositivo | `op_id` (PK), `entity`, `entity_id`, `op` (`upsert` o `delete`), `patch` (campos cambiados con su reloj), `base_version`, `hlc`, `status` (`pending`, `sent`, `error`), `attempts`, `last_error` | Cola de cambios pendientes; sobrevive al cierre de la app |
 | `device_profile` | Dispositivo | `device_id` (PK), `user_id`, `created_at` | Una sola fila creada en el primer arranque (T-010): la identidad local con la que se escriben los datos antes de tener servidor. Al registrarse, la app envía ese mismo `user_id` al servidor (ADR-008), así nada se reescribe |
-| `transaction_search` | Dispositivo | `transaction_id` (PK, clave foránea a `transactions` con borrado en cascada), `content` | Texto de búsqueda de cada movimiento (HU-05): nota y comercio en minúsculas y sin tildes. Tabla derivada y solo local: se escribe al crear o editar, cada arranque completa la que falte (idempotente), se puede reconstruir entera desde `transactions` y nunca se sincroniza |
+| `transaction_search` | Dispositivo | `transaction_id` (PK, clave foránea a `transactions` con borrado en cascada), `content` | Texto de búsqueda de cada movimiento (HU-05, HU-06): nota, comercio y etiquetas en minúsculas y sin tildes. Tabla derivada y solo local: se escribe al crear o editar, cada arranque completa la que falte por lotes de 500 después del primer render (idempotente), se puede reconstruir entera desde `transactions` y nunca se sincroniza |
 | `sync_state` | Dispositivo | `device_id`, `cursor`, `last_sync_at`, `hlc`, `schema_version` | Una sola fila: hasta dónde llegó este dispositivo |
 | `user_sync_state` | Servidor | `user_id`, `last_seq` | Contador de secuencia por usuario |
 | `sync_ops` | Servidor | `server_seq`, `user_id`, `device_id`, `op_id`, `entity`, `entity_id`, `op`, `changes` (jsonb), `resulting_version`, `hlc`, `applied_at` | Registro de operaciones aplicadas; solo se agrega, nunca se edita |
@@ -193,7 +195,7 @@ El MVP no convierte monedas: los resúmenes se agrupan por moneda. La conversió
 | Lista de movimientos paginada | Índice `(user_id, occurred_on DESC, id)` parcial sobre `deleted_at IS NULL`; orden por fecha descendente y, en el mismo día, por id descendente (UUID v7: lo último registrado primero); paginación por llave con fecha e id, no por `OFFSET`. Con 10 000 movimientos la primera página tarda 0,52 ms en el simulador iPhone 17 (SQLite nativo) | Ambos |
 | Resumen mensual por categoría | Índice `(user_id, occurred_on, category_id)` y suma agrupada por tipo y categoría con el rango de fechas del mes. En el dispositivo SQLite prefiere `transactions_list`, que también empieza por `user_id` y `occurred_on` y ya excluye los borrados; una prueba comprueba que el plan busca por índice con ese rango y no recorre la tabla. Sin caché: con 10 000 movimientos, un mes completo (422 movimientos) tarda 3,14 ms en el simulador iPhone 17 y 2,46 ms en sql.js, y el mes en curso 2,85 ms y 2,21 ms (mediana de 21, T-017). Las subcategorías se suman a su principal en la app | Ambos |
 | Saldo de una cuenta | Índices sobre `account_id` y `to_account_id`; sin caché: con 10 000 movimientos la suma tarda 0,58 ms en el simulador iPhone 17 y 1,65 ms en sql.js (T-016) | Ambos |
-| Búsqueda por texto | `LIKE` escapado (`%`, `_` y `\`) sobre `transaction_search` (nota y comercio normalizados), más los ids de las cuentas y categorías cuyo nombre coincide, en la misma consulta. FTS5 está en el `expo-sqlite` de Expo Go, pero no en sql.js, donde corren las pruebas; con 10 000 movimientos `LIKE` tarda 1,31 ms recorriendo todo y 0,24 ms para 50 resultados en el simulador, así que no hace falta (T-016) | Dispositivo |
+| Búsqueda por texto | `LIKE` escapado (`%`, `_` y `\`) sobre `transaction_search` (nota, comercio y etiquetas normalizados), más los ids de las cuentas y categorías cuyo nombre coincide, en la misma consulta. FTS5 está en el `expo-sqlite` de Expo Go, pero no en sql.js, donde corren las pruebas; con 10 000 movimientos `LIKE` tarda 1,31 ms recorriendo todo y 0,24 ms para 50 resultados en el simulador, así que no hace falta (T-016) | Dispositivo |
 | Cambios desde un cursor | Índice `(user_id, server_seq)` en `sync_ops` | Servidor |
 | Duplicados al importar | Índice único parcial `(user_id, account_id, external_id)` donde `external_id` no es nulo | Servidor |
 

@@ -66,6 +66,8 @@ Algunos campos solo tienen sentido juntos, y fusionarlos por separado producirí
 - **Clasificación:** `category_id`, `category_source`, `category_confidence`.
 - **Todos los demás campos** se fusionan de uno en uno.
 
+**Etiquetas.** `tags` es un solo campo: gana la lista completa con el reloj mayor, no se unen las listas de dos dispositivos. Se guardan como las escribe la persona; el cliente quita las repetidas sin importar mayúsculas ni tildes al escribirlas (`parseTags`), así que el servidor no necesita normalizarlas. Si dos dispositivos las editan a la vez, el cambio perdedor queda en `conflicts` como cualquier otro campo.
+
 ### Reglas por situación
 
 | Situación | Regla | Resultado |
