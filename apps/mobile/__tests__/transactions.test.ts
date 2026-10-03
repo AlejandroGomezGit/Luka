@@ -1,17 +1,27 @@
 import { predefinedCategoryId } from '@luka/domain';
 import { transactions } from '@luka/schema-sqlite';
-import { createAccount, listActiveAccounts, setAccountArchived } from '../src/db/accounts';
+import {
+  createAccount,
+  listAccounts,
+  listActiveAccounts,
+  setAccountArchived,
+  updateAccount,
+} from '../src/db/accounts';
 import { seedPredefinedCategories, setCategoryArchived } from '../src/db/categories';
 import { createTestDb, testClock, testRandom } from '../src/db/testing';
 import {
   createTransaction,
+  getTransaction,
   lastTransferDestination,
   lastUsedAccountId,
+  listRecentTransactions,
   topCategories,
+  transactionValues,
   transferSavedMessage,
+  updateTransaction,
 } from '../src/db/transactions';
 import { balanceText } from '../src/ui/money';
-import { insertRow, softDelete, type WriteContext } from '../src/db/write';
+import { insertRow, restore, softDelete, type WriteContext } from '../src/db/write';
 
 const userId = '0199a6f0-0000-7000-8000-000000000001';
 const BOGOTA = 'America/Bogota';
@@ -280,5 +290,300 @@ describe('HU-02 transferencias (CU-06)', () => {
     expect(transferSavedMessage(ctx.db, transfer(cash, dollars, 100_000_00, 25_00))).toBe(
       'Transferencia guardada: $ 100.000 de Efectivo a Dolares (llegan US$ 25,00)',
     );
+  });
+});
+
+describe('HU-04 editar, eliminar y deshacer (CU-09)', () => {
+  const created = (result: ReturnType<typeof createTransaction>) => {
+    if (!result.ok) throw new Error(result.errors.join());
+    return result.id;
+  };
+  const balanceOf = (ctx: WriteContext, accountId: string) =>
+    listAccounts(ctx.db, { includeArchived: true }).find((a) => a.id === accountId)?.balanceMinor;
+  const advance = (ctx: WriteContext, ms = 60_000) =>
+    (ctx.clock as ReturnType<typeof testClock>).advance(ms);
+
+  it('HU-04 editar monto, cuenta, categoría, fecha y nota guarda los cambios y recalcula los dos saldos', async () => {
+    const ctx = await context();
+    const cash = account(ctx);
+    const savings = account(ctx, 'Ahorro');
+    const tx = created(createTransaction(ctx, expense(cash, id('food.groceries')), BOGOTA));
+    expect(balanceOf(ctx, cash)).toBe(107_500_00);
+    expect(
+      updateTransaction(
+        ctx,
+        tx,
+        {
+          kind: 'expense',
+          amountMinor: 20_000_00,
+          accountId: savings,
+          categoryId: id('food.restaurants'),
+          occurredOn: '2026-09-30',
+          note: 'Almuerzo',
+        },
+        BOGOTA,
+      ),
+    ).toEqual({ ok: true, id: tx });
+    expect(getTransaction(ctx.db, tx)).toEqual(
+      expect.objectContaining({
+        amountMinor: -20_000_00,
+        accountId: savings,
+        categoryId: id('food.restaurants'),
+        occurredOn: '2026-09-30',
+        note: 'Almuerzo',
+      }),
+    );
+    expect(balanceOf(ctx, cash)).toBe(120_000_00);
+    expect(balanceOf(ctx, savings)).toBe(100_000_00);
+  });
+
+  it('HU-04 editar no cambia version: lo editado en H1 sigue pendiente de subir para T-029', async () => {
+    const ctx = await context();
+    const cash = account(ctx);
+    const tx = created(createTransaction(ctx, expense(cash, null), BOGOTA));
+    const before = getTransaction(ctx.db, tx);
+    advance(ctx);
+    updateTransaction(ctx, tx, { ...expense(cash, null), amountMinor: 1_00, note: '' }, BOGOTA);
+    const after = getTransaction(ctx.db, tx);
+    expect(after?.version).toBe(0);
+    expect(after?.createdAt).toEqual(before?.createdAt);
+    expect(after?.updatedAt.getTime()).toBeGreaterThan(before?.updatedAt.getTime() ?? 0);
+  });
+
+  it('HU-04 editar una transferencia cambia los dos saldos; con un destino de otra moneda el monto de llegada vuelve a ser obligatorio', async () => {
+    const ctx = await context();
+    const cash = account(ctx);
+    const savings = account(ctx, 'Ahorro');
+    const dollars = account(ctx, 'Dolares', 'USD');
+    const base = {
+      kind: 'transfer' as const,
+      amountMinor: 50_000_00,
+      accountId: savings,
+      toAccountId: cash,
+      toAmountMinor: null,
+      occurredOn: '2026-10-01',
+    };
+    const tx = created(createTransaction(ctx, base, BOGOTA));
+    updateTransaction(ctx, tx, { ...base, amountMinor: 30_000_00, note: '' }, BOGOTA);
+    expect(balanceOf(ctx, savings)).toBe(90_000_00);
+    expect(balanceOf(ctx, cash)).toBe(150_000_00);
+
+    expect(updateTransaction(ctx, tx, { ...base, toAccountId: dollars, note: '' }, BOGOTA)).toEqual(
+      {
+        ok: false,
+        errors: ['to_amount_not_positive'],
+      },
+    );
+    updateTransaction(
+      ctx,
+      tx,
+      { ...base, toAccountId: dollars, toAmountMinor: 10_00, note: '' },
+      BOGOTA,
+    );
+    expect(balanceOf(ctx, savings)).toBe(70_000_00);
+    expect(balanceOf(ctx, cash)).toBe(120_000_00);
+    expect(balanceOf(ctx, dollars)).toBe(120_010_00);
+  });
+
+  it('HU-04 al pasar de gasto a ingreso, una categoría de gasto se rechaza (INV-04)', async () => {
+    const ctx = await context();
+    const cash = account(ctx);
+    const tx = created(createTransaction(ctx, expense(cash, id('food.groceries')), BOGOTA));
+    expect(
+      updateTransaction(
+        ctx,
+        tx,
+        { ...expense(cash, id('food.groceries')), kind: 'income', note: '' },
+        BOGOTA,
+      ),
+    ).toEqual({ ok: false, errors: ['INV-04'] });
+    expect(
+      updateTransaction(
+        ctx,
+        tx,
+        { ...expense(cash, id('salary.other')), kind: 'income', note: '' },
+        BOGOTA,
+      ).ok,
+    ).toBe(true);
+    expect(getTransaction(ctx.db, tx)?.amountMinor).toBe(12_500_00);
+  });
+
+  it('HU-04 un movimiento borrado no cuenta en saldos, Recientes, categorías más usadas, última cuenta ni último destino; Deshacer lo devuelve', async () => {
+    const ctx = await context();
+    const cash = account(ctx);
+    const savings = account(ctx, 'Ahorro');
+    const bank = account(ctx, 'Banco');
+    created(
+      createTransaction(
+        ctx,
+        {
+          kind: 'transfer',
+          amountMinor: 1_00,
+          accountId: cash,
+          toAccountId: savings,
+          toAmountMinor: null,
+          occurredOn: '2026-10-01',
+        },
+        BOGOTA,
+      ),
+    );
+    advance(ctx);
+    const tx = created(createTransaction(ctx, expense(bank, id('health.pharmacy')), BOGOTA));
+    advance(ctx);
+    const transfer = created(
+      createTransaction(
+        ctx,
+        {
+          kind: 'transfer',
+          amountMinor: 2_00,
+          accountId: cash,
+          toAccountId: bank,
+          toAmountMinor: null,
+          occurredOn: '2026-10-01',
+        },
+        BOGOTA,
+      ),
+    );
+    const visible = () => ({
+      recent: listRecentTransactions(ctx.db, userId).map((r) => r.id),
+      top: topCategories(ctx.db, userId, 'expense')[0]?.id,
+      bank: balanceOf(ctx, bank),
+    });
+    expect(visible()).toEqual({
+      recent: [transfer, tx, expect.any(String)],
+      top: id('health.pharmacy'),
+      bank: 107_502_00,
+    });
+
+    softDelete(ctx, transactions, tx);
+    softDelete(ctx, transactions, transfer);
+    expect(getTransaction(ctx.db, tx)?.deletedAt).not.toBeNull();
+    expect(visible()).toEqual({
+      recent: [expect.any(String)],
+      top: id('food.groceries'),
+      bank: 120_000_00,
+    });
+    expect(lastUsedAccountId(ctx.db)).toBe(cash);
+    expect(lastTransferDestination(ctx.db, cash)).toBe(savings);
+
+    restore(ctx, transactions, tx);
+    restore(ctx, transactions, transfer);
+    expect(visible()).toEqual({
+      recent: [transfer, tx, expect.any(String)],
+      top: id('health.pharmacy'),
+      bank: 107_502_00,
+    });
+  });
+
+  it('HU-04 Deshacer restaura aunque la cuenta o la categoría se haya archivado entretanto', async () => {
+    const ctx = await context();
+    const cash = account(ctx);
+    account(ctx, 'Ahorro');
+    const tx = created(createTransaction(ctx, expense(cash, id('food.groceries')), BOGOTA));
+    softDelete(ctx, transactions, tx);
+    setAccountArchived(ctx, cash, true);
+    setCategoryArchived(ctx, id('food.groceries'), true);
+    restore(ctx, transactions, tx);
+    expect(getTransaction(ctx.db, tx)).toEqual(
+      expect.objectContaining({
+        deletedAt: null,
+        accountId: cash,
+        categoryId: id('food.groceries'),
+      }),
+    );
+    expect(balanceOf(ctx, cash)).toBe(107_500_00);
+  });
+
+  it('HU-04 INV-05 la moneda de una cuenta sigue bloqueada aunque sus movimientos estén borrados', async () => {
+    const ctx = await context();
+    const cash = account(ctx);
+    const tx = created(createTransaction(ctx, expense(cash, null), BOGOTA));
+    softDelete(ctx, transactions, tx);
+    expect(
+      updateAccount(ctx, cash, {
+        name: 'Efectivo',
+        type: 'cash',
+        currency: 'USD',
+        openingAmountMinor: 120_000_00,
+        icon: '💵',
+        color: 'green',
+      }),
+    ).toEqual({ ok: false, errors: ['currency_locked'] });
+  });
+
+  it('HU-04 INV-06 un movimiento de una cuenta archivada sigue editable sin moverlo; no se puede pasar a una archivada', async () => {
+    const ctx = await context();
+    const cash = account(ctx);
+    const savings = account(ctx, 'Ahorro');
+    const tx = created(createTransaction(ctx, expense(cash, null), BOGOTA));
+    setAccountArchived(ctx, cash, true);
+    expect(
+      updateTransaction(
+        ctx,
+        tx,
+        { ...expense(cash, null), amountMinor: 5_000_00, note: '' },
+        BOGOTA,
+      ).ok,
+    ).toBe(true);
+    const other = created(createTransaction(ctx, expense(savings, null), BOGOTA));
+    expect(updateTransaction(ctx, other, { ...expense(cash, null), note: '' }, BOGOTA)).toEqual({
+      ok: false,
+      errors: ['INV-06'],
+    });
+  });
+
+  it('HU-04 Recientes: los últimos 5 confirmados y no borrados, del más reciente al más antiguo', async () => {
+    const ctx = await context();
+    const cash = account(ctx);
+    const ids: string[] = [];
+    for (const day of [
+      '2026-09-25',
+      '2026-09-26',
+      '2026-09-27',
+      '2026-09-28',
+      '2026-09-29',
+      '2026-09-30',
+    ]) {
+      ids.push(
+        created(createTransaction(ctx, { ...expense(cash, null), occurredOn: day }, BOGOTA)),
+      );
+      advance(ctx);
+    }
+    // Uno por revisar (V2) no aparece.
+    insertRow(ctx, transactions, {
+      kind: 'expense',
+      amountMinor: -1_00,
+      accountId: cash,
+      currency: 'COP',
+      occurredOn: '2026-10-01',
+      categorySource: 'user',
+      source: 'manual',
+      reviewStatus: 'pending_review',
+    });
+    softDelete(ctx, transactions, ids[5] ?? '');
+    expect(listRecentTransactions(ctx.db, userId).map((r) => r.occurredOn)).toEqual([
+      '2026-09-29',
+      '2026-09-28',
+      '2026-09-27',
+      '2026-09-26',
+      '2026-09-25',
+    ]);
+  });
+
+  it('HU-04 transactionValues devuelve el movimiento con el monto en positivo para el formulario', async () => {
+    const ctx = await context();
+    const cash = account(ctx);
+    const tx = created(
+      createTransaction(ctx, { ...expense(cash, id('food.groceries')), note: 'Mercado' }, BOGOTA),
+    );
+    const row = getTransaction(ctx.db, tx);
+    expect(row && transactionValues(row)).toEqual({
+      kind: 'expense',
+      amountMinor: 12_500_00,
+      accountId: cash,
+      categoryId: id('food.groceries'),
+      occurredOn: '2026-10-01',
+      note: 'Mercado',
+    });
   });
 });
