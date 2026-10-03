@@ -1,0 +1,18 @@
+{
+  "sqlite/0000_inicial": {
+    "when": 1790950260612,
+    "sha256": "4421afb68c7d01b94d8b470a63f69743867baf54eaf79482f12c96956d1971bc"
+  },
+  "sqlite/0001_device_profile": {
+    "when": 1790967590704,
+    "sha256": "660da306a4022b2ed0f510997e25a51198a1638897566876187dad1d8c2ef0bb"
+  },
+  "pg/0000_citext": {
+    "when": 1790950164421,
+    "sha256": "03c8a6c68aba706aae96cefdb6ba385dca8782b5799ce7a85051d4a44b1ff44f"
+  },
+  "pg/0001_inicial": {
+    "when": 1790950164749,
+    "sha256": "a4a336f9e62fd0e71e76905f524d79302511e5fb22a96d0cfe7405deb4f9763b"
+  }
+}

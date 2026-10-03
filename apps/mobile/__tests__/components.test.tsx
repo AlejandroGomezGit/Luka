@@ -84,3 +84,9 @@ test('T-044 el campo de texto tiene etiqueta visible y para VoiceOver, y 44 pt d
   await fireEvent.changeText(input, 'Nequi');
   expect(onChangeText).toHaveBeenCalledWith('Nequi');
 });
+
+test('T-044 una fila con un ícono que no es emoji muestra 🏷️, nunca el texto', async () => {
+  await render(<ListRow icon="cart" color="orange" title="Mercado" />);
+  expect(screen.queryByText('cart', { includeHiddenElements: true })).toBeNull();
+  expect(screen.getByText('🏷️', { includeHiddenElements: true })).toBeTruthy();
+});
