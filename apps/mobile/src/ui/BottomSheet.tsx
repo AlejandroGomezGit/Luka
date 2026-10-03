@@ -12,22 +12,35 @@ interface Props {
 
 /** Hoja inferior para elegir una opción sin salir del formulario; tocar fuera o «Cancelar» la cierra. */
 export function BottomSheet({ visible, title, onClose, children }: Props) {
-  const { colors, spacing } = useTheme();
+  const { colors, radius, spacing, typography } = useTheme();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable accessibilityLabel="Cerrar" style={styles.backdrop} onPress={onClose} />
-      <View style={[styles.sheet, { backgroundColor: colors.background }]}>
+      <Pressable
+        accessibilityLabel="Cerrar"
+        style={[styles.backdrop, { backgroundColor: colors.scrim }]}
+        onPress={onClose}
+      />
+      <View
+        style={[
+          styles.sheet,
+          {
+            backgroundColor: colors.background,
+            borderTopLeftRadius: radius.card,
+            borderTopRightRadius: radius.card,
+          },
+        ]}
+      >
         <View style={[styles.header, { padding: spacing.md }]}>
-          <Text accessibilityRole="header" style={[styles.title, { color: colors.text }]}>
+          <Text accessibilityRole="header" style={[typography.headline, { color: colors.text }]}>
             {title}
           </Text>
           <Pressable accessibilityRole="button" onPress={onClose} hitSlop={12}>
-            <Text style={[styles.title, { color: colors.accent }]}>Cancelar</Text>
+            <Text style={[typography.headline, { color: colors.accentText }]}>Cancelar</Text>
           </Pressable>
         </View>
         <Screen
           contentContainerStyle={{
-            paddingHorizontal: spacing.lg,
+            paddingHorizontal: spacing.md,
             paddingBottom: spacing.lg,
             gap: spacing.sm,
           }}
@@ -40,8 +53,7 @@ export function BottomSheet({ visible, title, onClose, children }: Props) {
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: '#00000066' },
-  sheet: { maxHeight: '70%', borderTopLeftRadius: 16, borderTopRightRadius: 16 },
+  backdrop: { flex: 1 },
+  sheet: { maxHeight: '70%' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontSize: 17, fontWeight: '600' },
 });

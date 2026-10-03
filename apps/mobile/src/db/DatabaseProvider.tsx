@@ -4,7 +4,7 @@ import { useMemo, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { deviceClock } from '../clock';
 import { deviceRandom } from '../random';
-import { useTheme } from '../theme';
+import { spacing, typography, useTheme } from '../theme';
 import { expoDb, localDb } from './database';
 import { prepareLocalData } from './prepare';
 import { type LocalSession, LocalSessionProvider } from './session';
@@ -38,7 +38,7 @@ function MigrationError() {
 }
 
 const styles = StyleSheet.create({
-  error: { flex: 1, justifyContent: 'center', gap: 8 },
-  title: { fontSize: 22, fontWeight: '700' },
-  body: { fontSize: 17 },
+  error: { flex: 1, justifyContent: 'center', gap: spacing.sm },
+  title: typography.title,
+  body: typography.body,
 });

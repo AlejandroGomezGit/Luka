@@ -20,6 +20,10 @@ export const themeColors = {
     onAccent: '#FFFFFF',
     alert: '#B3261E',
     separator: '#C6C6C8',
+    // Franja de controles segmentados (como tertiarySystemFill de iOS).
+    fill: '#E3E3E8',
+    // Velo detrás de una hoja inferior.
+    scrim: '#00000066',
   },
   dark: {
     background: '#000000',
@@ -31,6 +35,8 @@ export const themeColors = {
     onAccent: '#000000',
     alert: '#FF8A80',
     separator: '#38383A',
+    fill: '#2C2C2E',
+    scrim: '#000000A6',
   },
 } as const;
 
@@ -41,9 +47,9 @@ export const radius = { card: 20, control: 12, pill: 999 } as const;
 
 /**
  * Tamaños mínimos, nunca fijos, para que crezcan con Dynamic Type: área táctil de 44 pt (Apple) y filas
- * de lista de 58 pt como en las maquetas.
+ * de lista de 58 pt como en las maquetas; el círculo del ícono mide 32 pt antes de Dynamic Type.
  */
-export const sizes = { touch: 44, row: 58 } as const;
+export const sizes = { touch: 44, row: 58, badge: 32 } as const;
 
 /** Escala tipográfica de iOS; el tamaño de Dynamic Type se aplica encima (allowFontScaling). */
 export const typography = {
@@ -55,6 +61,13 @@ export const typography = {
   footnote: { fontSize: 13 },
   amount: { fontSize: 48, fontWeight: '700' },
 } as const satisfies Record<string, TextStyle>;
+
+/**
+ * Cuánto pueden crecer los títulos con Dynamic Type (maxFontSizeMultiplier): con AX5 un título de 34 pt
+ * pasaría de 100 pt y partiría palabras como «Administrar». iOS también limita sus títulos grandes y los
+ * botones de la barra superior (`bar`); con más, «Guardar» se escondía en el menú «…».
+ */
+export const headingScale = { largeTitle: 1.5, title: 2, bar: 1.5 } as const;
 
 /**
  * Tamaños de accesibilidad de Dynamic Type (desde AX1, escala de 1,6 o más): Apple recomienda pasar de

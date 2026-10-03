@@ -47,6 +47,9 @@
     "transformIgnorePatterns": [
       "node_modules/(?!(.pnpm|(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|uuid|standard-navigation))"
     ],
-    "testTimeout": 20000
+    "testTimeout": 20000,
+    "setupFiles": [
+      "./jest.setup.js"
+    ]
   }
 }

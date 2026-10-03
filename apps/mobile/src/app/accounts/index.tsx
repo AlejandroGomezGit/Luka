@@ -1,15 +1,17 @@
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { type AccountWithBalance, listAccounts } from '../../db/accounts';
 import { useLocalSession } from '../../db/session';
 import { useTheme } from '../../theme';
 import { AccountList } from '../../ui/AccountList';
+import { Button } from '../../ui/Button';
+import { GroupedCard } from '../../ui/GroupedCard';
+import { SwitchRow } from '../../ui/ListRow';
 import { Screen } from '../../ui/Screen';
 
 export default function AccountsScreen() {
   const { db } = useLocalSession();
-  const { colors, spacing } = useTheme();
+  const { spacing } = useTheme();
   const [includeArchived, setIncludeArchived] = useState(false);
   const [accounts, setAccounts] = useState<AccountWithBalance[]>([]);
 
@@ -20,30 +22,17 @@ export default function AccountsScreen() {
   );
 
   return (
-    <Screen contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
+    <Screen contentContainerStyle={{ padding: spacing.md, gap: spacing.lg }}>
       <Stack.Screen options={{ title: 'Cuentas', headerLargeTitle: true }} />
-      <View style={[styles.row, { gap: spacing.sm }]}>
-        <Text style={[styles.text, { color: colors.text }]}>Mostrar archivadas</Text>
-        <Switch
-          accessibilityLabel="Mostrar archivadas"
+      <Button label="Nueva cuenta" icon="+" onPress={() => router.push('/accounts/new')} />
+      <GroupedCard>
+        <SwitchRow
+          title="Mostrar archivadas"
           value={includeArchived}
           onValueChange={setIncludeArchived}
         />
-      </View>
-      <Pressable accessibilityRole="button" onPress={() => router.push('/accounts/new')}>
-        <Text style={[styles.text, { color: colors.accent }]}>Nueva cuenta</Text>
-      </Pressable>
+      </GroupedCard>
       <AccountList accounts={accounts} onSelect={(id) => router.push(`/accounts/${id}`)} />
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  text: { fontSize: 17 },
-});

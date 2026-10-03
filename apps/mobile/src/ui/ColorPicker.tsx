@@ -1,6 +1,6 @@
 import { COLOR_TOKENS } from '@luka/domain';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { useTheme } from '../theme';
+import { radius, useTheme } from '../theme';
 import { colorFor } from './palette';
 
 interface Props {
@@ -13,12 +13,12 @@ interface Props {
  * VoiceOver lee el nombre del color, nunca depende solo del color.
  */
 export function ColorPicker({ value, onChange }: Props) {
-  const { colors, scheme, spacing } = useTheme();
+  const { colors, scheme, sizes, spacing, typography } = useTheme();
   const { fontScale } = useWindowDimensions();
-  const cell = Math.round(44 * Math.min(Math.max(1, fontScale), 2));
+  const cell = Math.round(sizes.touch * Math.min(Math.max(1, fontScale), 2));
   return (
     <View style={{ gap: spacing.sm }}>
-      <Text accessibilityRole="header" style={[styles.label, { color: colors.text }]}>
+      <Text accessibilityRole="header" style={[typography.headline, { color: colors.text }]}>
         Color
       </Text>
       <ScrollView
@@ -61,7 +61,11 @@ export function ColorPicker({ value, onChange }: Props) {
 }
 
 const styles = StyleSheet.create({
-  label: { fontSize: 17, fontWeight: '600' },
-  cell: { alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderRadius: 999 },
-  swatch: { borderRadius: 999 },
+  cell: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderRadius: radius.pill,
+  },
+  swatch: { borderRadius: radius.pill },
 });

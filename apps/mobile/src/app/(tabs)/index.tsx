@@ -1,11 +1,11 @@
 import { today } from '@luka/domain';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { deviceClock, deviceTimeZone } from '../../clock';
 import { type AccountWithBalance, listActiveAccounts } from '../../db/accounts';
 import { useLocalSession } from '../../db/session';
-import { useTheme } from '../../theme';
+import { headingScale, isAccessibilitySize, useTheme } from '../../theme';
 import { AccountList } from '../../ui/AccountList';
 import { Button } from '../../ui/Button';
 import { GroupedCard } from '../../ui/GroupedCard';
@@ -19,6 +19,7 @@ import { Screen } from '../../ui/Screen';
 export default function Home() {
   const { db } = useLocalSession();
   const { colors, spacing, typography } = useTheme();
+  const { fontScale } = useWindowDimensions();
   const [accounts, setAccounts] = useState<AccountWithBalance[] | null>(null);
 
   useFocusEffect(
@@ -30,12 +31,22 @@ export default function Home() {
 
   return (
     <Screen contentContainerStyle={{ padding: spacing.md, gap: spacing.lg }}>
-      <View style={[styles.header, { gap: spacing.sm }]}>
+      {/* Con tamaños de accesibilidad, «Agregar» pasa debajo del título para que nada se aplaste. */}
+      <View
+        style={[
+          isAccessibilitySize(fontScale) ? styles.column : styles.header,
+          { gap: spacing.sm },
+        ]}
+      >
         <View style={styles.flex}>
           <Text style={[typography.subhead, styles.strong, { color: colors.muted }]}>
             Hoy es {today(deviceClock, deviceTimeZone())}
           </Text>
-          <Text accessibilityRole="header" style={[typography.largeTitle, { color: colors.text }]}>
+          <Text
+            accessibilityRole="header"
+            maxFontSizeMultiplier={headingScale.largeTitle}
+            style={[typography.largeTitle, { color: colors.text }]}
+          >
             Tus gastos
           </Text>
         </View>
@@ -89,7 +100,8 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end' },
+  header: { flexDirection: 'row', alignItems: 'flex-end' },
+  column: { flexDirection: 'column', alignItems: 'stretch' },
   flex: { flexGrow: 1, flexShrink: 1 },
   strong: { fontWeight: '600' },
 });

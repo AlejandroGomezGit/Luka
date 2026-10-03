@@ -1,6 +1,6 @@
 import { Children, Fragment, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../theme';
+import { headingScale, useTheme } from '../theme';
 
 interface Props {
   /** Título de la sección, encima de la tarjeta; o un encabezado propio en `header`. */
@@ -20,7 +20,11 @@ export function GroupedCard({ title, header, action, children }: Props) {
       {(title ?? header ?? action) && (
         <View style={[styles.header, { gap: spacing.sm, paddingHorizontal: spacing.xs }]}>
           {header ?? (
-            <Text accessibilityRole="header" style={[typography.title, { color: colors.text }]}>
+            <Text
+              accessibilityRole="header"
+              maxFontSizeMultiplier={headingScale.title}
+              style={[typography.title, { color: colors.text }]}
+            >
               {title}
             </Text>
           )}

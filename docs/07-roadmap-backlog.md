@@ -15,17 +15,17 @@ El diagrama no se exporta a Markdown, así que esta tabla lleva los mismos nombr
 | Hito | Nombre | Alcance | Puerta de calidad | Issues |
 | --- | --- | --- | --- | --- |
 | H0 | Cimientos | Monorepo, CI, Docker Compose y esqueletos | Pipeline en verde con una prueba por paquete; docker compose up funciona | T-001 a T-009 |
-| H1 | Núcleo local | App sin servidor: cuentas, movimientos y resumen | HU-02 a HU-08 con sus pruebas; la app funciona completa sin red | T-010 a T-018 |
+| H1 | Núcleo local | App sin servidor: cuentas, movimientos y resumen | HU-02 a HU-08 con sus pruebas; la app funciona completa sin red | T-010 a T-018 y T-044 |
 | H2 | API y autenticación | Registro, sesión, perfil, dispositivos y borrado | HU-01 y HU-10 en verde; aislamiento entre usuarios probado (AM-03) | T-019 a T-026 |
 | H3 | Sincronización | Motor propio, reloj híbrido, conflictos y simulador | Simulación de 1 000 semillas sin divergencia (RNF-05) y E2E sin red | T-027 a T-034 |
-| H4 | Endurecimiento y TestFlight | Adjuntos, observabilidad, seguridad y staging | RNF-01 a RNF-14 verificados; MVP estable en TestFlight para uso propio | T-035 a T-042 |
+| H4 | Endurecimiento y TestFlight | Adjuntos, observabilidad, seguridad y staging | RNF-01 a RNF-14 verificados; MVP estable en TestFlight para uso propio | T-035 a T-042 y T-045 |
 | H5 | V2 | Captura de mensajes, presupuestos, CSV y categorizador | Requisitos V2 de prioridad Must en verde y panel de operación activo | Por definir |
 | H6 | Lanzamiento en la App Store | Trámites, privacidad, revisión y liberación por fases | Lista de App Store completa y decisión de quién publica tomada y validada | Por definir |
 | H7 | V3 | Recibos, PDF, banco y suscripciones | Conexión bancaria verificada si los bancos ya habilitaron el acceso, y consentimientos activos en producción | Por definir |
 
 ## Backlog inicial
 
-Son 43 issues para los hitos 0 a 4, es decir, todo el MVP (T-043 se agregó al cerrar el H0); V2 y V3 se mantienen como épicas hasta que se acerquen. Cada issue apunta a la historia, el caso de uso o el requisito que lo justifica, y Claude Code puede crearlos en GitHub con `gh issue create` a partir de esta tabla.
+Son 45 issues para los hitos 0 a 4, es decir, todo el MVP (T-043 se agregó al cerrar el H0; T-044 y T-045, con las maquetas de `docs/diseno/`, durante el H1); V2 y V3 se mantienen como épicas hasta que se acerquen. Cada issue apunta a la historia, el caso de uso o el requisito que lo justifica, y Claude Code puede crearlos en GitHub con `gh issue create` a partir de esta tabla.
 
 | ID | Issue | Hito | Etiquetas | Referencias |
 | --- | --- | --- | --- | --- |
@@ -47,6 +47,7 @@ Son 43 issues para los hitos 0 a 4, es decir, todo el MVP (T-043 se agregó al c
 | T-016 | Lista de movimientos con paginación por llave y filtros | H1 | `feature` `mobile` | CU-10, HU-05 |
 | T-017 | Resumen mensual | H1 | `feature` `mobile` | CU-18, HU-08 |
 | T-018 | Etiquetas y foto del recibo en el dispositivo | H1 | `feature` `mobile` | CU-11, HU-06 |
+| T-044 | Base de diseño: tokens y componentes | H1 | `feature` `mobile` `accessibility` | RNF-13, `docs/diseno/` |
 | T-019 | Registro, inicio de sesión y refresco con Argon2id y JWT | H2 | `feature` `api` `security` | CU-01, HU-01 |
 | T-020 | Sign in with Apple | H2 | `feature` `api` `mobile` | CU-01 |
 | T-021 | Recuperación de contraseña por correo | H2 | `feature` `api` | RF-01 |
@@ -72,6 +73,7 @@ Son 43 issues para los hitos 0 a 4, es decir, todo el MVP (T-043 se agregó al c
 | T-040 | Terraform y despliegue de staging | H4 | `infra` | Documento 3 |
 | T-041 | Builds de TestFlight con EAS | H4 | `ci` `mobile` | Documento 6 |
 | T-042 | Manifiesto de privacidad y revisión de dependencias | H4 | `chore` `mobile` `security` | Documento 5 |
+| T-045 | Pulido visual | H4 | `feature` `mobile` | `docs/diseno/` |
 
 ## Épicas de V2, lanzamiento y V3
 
@@ -165,3 +167,12 @@ El riesgo que más puede cambiar el plan es quién publica la app en la App Stor
 | R-13 | La automatización de Atajos no corre sola o iOS cambia cómo funciona | La captura automática pierde su gracia | Validarla en un iPhone real en el H5; si siempre pide confirmación, queda como un atajo de un toque y se refuerza pegar o compartir | H5 |
 | R-14 | Las versiones recientes del stack cambian sus API respecto de lo que se conoce (en el H0: NestJS 12 en ESM, `render` asíncrono en React Native Testing Library 14, `types` vacío por defecto en TypeScript 6, scripts de instalación bloqueados en pnpm 12 y MinIO sin imágenes) | Errores sutiles o configuraciones que no aplican sin avisar | Consultar la documentación de la versión instalada y no la memoria; versiones fijadas en el archivo de bloqueo y `expo install` en la app; las cifras se reportan siempre desde la salida real | Cierre de cada hito |
 | R-15 | El plan gratuito de GitHub no permite proteger ramas ni usar CodeQL en repositorios privados | Un PR con el CI en rojo se puede fusionar y falta el análisis estático (RNF-11, documento 5) | Publicar el repositorio en cuanto el README, los ADRs y los diagramas estén listos (#9), o pasar a GitHub Pro (ver R-08); mientras tanto, no fusionar nada con el CI en rojo | Cierre de cada hito |
+
+## Deuda técnica
+
+Atajos tomados a propósito, con el momento en que se pagan. Se revisan al cierre de cada hito.
+
+| ID | Deuda | Por qué se tomó | Se paga |
+| --- | --- | --- | --- |
+| DT-01 | La barra de pestañas importa `NativeTabs` desde `expo-router/unstable-native-tabs` | En SDK 57 es la única vía para la barra nativa de iOS 26; funciona en Expo Go | Al subir a SDK 58: importar desde `expo-router/native-tabs` (estable) |
+| DT-02 | `Screen` suma a mano el área segura inferior al relleno del contenido | Con las pestañas nativas, el ajuste automático de márgenes no reserva la barra flotante: en el simulador la lista terminaba 83 pt debajo de ella | Al subir a SDK 58 o React Native: comprobar si el ajuste automático ya la reserva y, si es así, quitar el relleno |

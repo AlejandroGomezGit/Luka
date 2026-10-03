@@ -10,7 +10,7 @@ import {
   parseAmount,
 } from '@luka/domain';
 import { type Ref, useImperativeHandle, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { AccountFormValues } from '../db/accounts';
 import { useTheme } from '../theme';
 import { accountErrorMessage } from './accountErrors';
@@ -21,11 +21,13 @@ import {
   ACCOUNT_TYPE_ORDER,
   CURRENCY_LABELS,
 } from './accountTypes';
+import { Button } from './Button';
+import { Chip } from './Chip';
 import { ColorPicker } from './ColorPicker';
 import { EmojiField } from './EmojiField';
 import type { FormHandle } from './FormHandle';
-import { colorFor } from './palette';
 import { Screen } from './Screen';
+import { TextField } from './TextField';
 
 interface Props {
   ref?: Ref<FormHandle>;
@@ -46,7 +48,7 @@ const amountText = (minor: number, currency: CurrencyCode) =>
  * superior de la pantalla. No pide número de cuenta ni de tarjeta.
  */
 export function AccountForm({ ref, initial, errors, onSubmit, archived, onToggleArchived }: Props) {
-  const { colors, scheme, spacing } = useTheme();
+  const { colors, spacing, typography } = useTheme();
   // Un ícono guardado que no es emoji (datos antiguos) empieza vacío.
   const [values, setValues] = useState({
     ...initial,
@@ -72,7 +74,7 @@ export function AccountForm({ ref, initial, errors, onSubmit, archived, onToggle
       .map((code) => ({ code, ...accountErrorMessage(code, values.currency) }))
       .filter((error) => error.field === field)
       .map((error) => (
-        <Text key={error.code} style={[styles.error, { color: colorFor('red', scheme) }]}>
+        <Text key={error.code} style={[typography.subhead, { color: colors.alert }]}>
           {error.message}
         </Text>
       ));
@@ -84,85 +86,65 @@ export function AccountForm({ ref, initial, errors, onSubmit, archived, onToggle
     setValues({ ...values, type, ...(untouched ? ACCOUNT_DEFAULTS[type] : {}) });
   };
 
-  const chip = (
-    key: string,
-    label: string,
-    selected: boolean,
-    onPress: () => void,
-    hint?: string,
-  ) => (
-    <Pressable
-      key={key}
-      accessibilityRole="radio"
-      accessibilityLabel={label}
-      accessibilityHint={hint}
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={[styles.chip, { borderColor: selected ? colors.accent : colors.muted }]}
-    >
-      <Text style={[styles.text, { color: colors.text }]}>{label}</Text>
-      {hint && <Text style={[styles.hint, { color: colors.muted }]}>{hint}</Text>}
-    </Pressable>
-  );
-
   return (
-    <Screen contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
-      <Text style={[styles.label, { color: colors.text }]}>Nombre</Text>
-      <View style={[styles.row, { gap: spacing.sm }]}>
-        <EmojiField
-          value={values.icon}
-          color={values.color}
-          onChange={(icon) => setValues({ ...values, icon })}
-        />
-        <TextInput
-          accessibilityLabel="Nombre"
-          value={values.name}
-          onChangeText={(name) => setValues({ ...values, name })}
-          maxLength={MAX_ACCOUNT_NAME}
-          style={[styles.input, styles.flex, { color: colors.text, borderColor: colors.muted }]}
-        />
-      </View>
+    <Screen contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+      <TextField
+        label="Nombre"
+        leading={
+          <EmojiField
+            value={values.icon}
+            color={values.color}
+            onChange={(icon) => setValues({ ...values, icon })}
+          />
+        }
+        value={values.name}
+        onChangeText={(name) => setValues({ ...values, name })}
+        maxLength={MAX_ACCOUNT_NAME}
+      />
       {errorsFor('name')}
       {errorsFor('icon')}
 
-      <Text accessibilityRole="header" style={[styles.label, { color: colors.text }]}>
+      <Text accessibilityRole="header" style={[typography.headline, { color: colors.text }]}>
         Tipo
       </Text>
       <View accessibilityRole="radiogroup" style={[styles.wrap, { gap: spacing.sm }]}>
-        {ACCOUNT_TYPE_ORDER.map((type) =>
-          chip(
-            type,
-            ACCOUNT_TYPE_LABELS[type],
-            values.type === type,
-            () => chooseType(type),
-            ACCOUNT_TYPE_HINTS[type],
-          ),
-        )}
+        {ACCOUNT_TYPE_ORDER.map((type) => (
+          <Chip
+            key={type}
+            label={ACCOUNT_TYPE_LABELS[type]}
+            selected={values.type === type}
+            onPress={() => chooseType(type)}
+            {...(ACCOUNT_TYPE_HINTS[type] ? { hint: ACCOUNT_TYPE_HINTS[type] } : {})}
+          />
+        ))}
       </View>
       {errorsFor('type')}
 
-      <Text accessibilityRole="header" style={[styles.label, { color: colors.text }]}>
+      <Text accessibilityRole="header" style={[typography.headline, { color: colors.text }]}>
         Moneda
       </Text>
       <View accessibilityRole="radiogroup" style={[styles.wrap, { gap: spacing.sm }]}>
-        {(Object.keys(MINOR_UNITS) as CurrencyCode[]).map((currency) =>
-          chip(currency, CURRENCY_LABELS[currency], values.currency === currency, () => {
-            setValues({ ...values, currency });
-            setAmount(formatAmountInput(amount, currency));
-          }),
-        )}
+        {(Object.keys(MINOR_UNITS) as CurrencyCode[]).map((currency) => (
+          <Chip
+            key={currency}
+            label={CURRENCY_LABELS[currency]}
+            selected={values.currency === currency}
+            onPress={() => {
+              setValues({ ...values, currency });
+              setAmount(formatAmountInput(amount, currency));
+            }}
+          />
+        ))}
       </View>
       {errorsFor('currency')}
 
-      <Text style={[styles.label, { color: colors.text }]}>{amountLabel}</Text>
-      <TextInput
-        accessibilityLabel={amountLabel}
+      <TextField
+        label={amountLabel}
         value={amount}
         onChangeText={(text) => setAmount(formatAmountInput(text, values.currency))}
         keyboardType={values.currency === 'COP' ? 'number-pad' : 'decimal-pad'}
-        style={[styles.input, { color: colors.text, borderColor: colors.muted }]}
       />
-      <Text style={[styles.hint, { color: colors.muted }]}>
+      <Text style={[typography.subhead, { color: colors.muted }]}>
         {isCard ? 'Lo que debes hoy en la tarjeta. ' : ''}Puedes corregirlo después; cambia el saldo
         de la cuenta.
       </Text>
@@ -172,15 +154,11 @@ export function AccountForm({ ref, initial, errors, onSubmit, archived, onToggle
       {errorsFor('color')}
 
       {onToggleArchived && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={archived ? 'Desarchivar' : 'Archivar'}
+        <Button
+          label={archived ? 'Desarchivar' : 'Archivar'}
+          variant="text"
           onPress={onToggleArchived}
-        >
-          <Text style={[styles.secondary, { color: colors.accent }]}>
-            {archived ? 'Desarchivar' : 'Archivar'}
-          </Text>
-        </Pressable>
+        />
       )}
       {errorsFor('archive')}
     </Screen>
@@ -188,14 +166,5 @@ export function AccountForm({ ref, initial, errors, onSubmit, archived, onToggle
 }
 
 const styles = StyleSheet.create({
-  label: { fontSize: 17, fontWeight: '600' },
-  text: { fontSize: 17 },
-  hint: { fontSize: 15 },
-  row: { flexDirection: 'row', alignItems: 'center' },
   wrap: { flexDirection: 'row', flexWrap: 'wrap' },
-  flex: { flex: 1 },
-  input: { fontSize: 17, borderWidth: 1, borderRadius: 8, padding: 12 },
-  chip: { borderWidth: 2, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14 },
-  error: { fontSize: 15 },
-  secondary: { fontSize: 17, textAlign: 'center', padding: 12 },
 });
