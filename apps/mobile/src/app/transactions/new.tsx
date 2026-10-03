@@ -15,11 +15,16 @@ import type { FormHandle } from '../../ui/FormHandle';
 import { HeaderButton } from '../../ui/HeaderButton';
 import { TransactionForm } from '../../ui/TransactionForm';
 
-/** Registrar un gasto o ingreso (HU-03): «Guardar» registra y deja el formulario listo para otro. */
+/**
+ * Registrar un gasto o ingreso (HU-03): «Guardar» registra y deja el formulario listo para otro. A la
+ * izquierda dice «Cancelar» mientras no se haya guardado nada y «Listo» después.
+ */
 export default function NewTransactionScreen() {
   const session = useLocalSession();
   const form = useRef<FormHandle>(null);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [kind, setKind] = useState<'expense' | 'income'>('expense');
   const accounts = useMemo(() => listActiveAccounts(session.db), [session.db]);
   const initialAccountId = lastUsedAccountId(session.db);
   const todayDate = today(session.clock, deviceTimeZone());
@@ -29,11 +34,14 @@ export default function NewTransactionScreen() {
     <>
       <Stack.Screen
         options={{
-          title: 'Nuevo movimiento',
-          headerLeft: () => <HeaderButton label="Listo" onPress={() => router.back()} />,
+          title: kind === 'expense' ? 'Nuevo gasto' : 'Nuevo ingreso',
+          headerLeft: () => (
+            <HeaderButton label={saved ? 'Listo' : 'Cancelar'} onPress={() => router.back()} />
+          ),
           headerRight: () => (
             <HeaderButton
               label="Guardar"
+              prominent
               disabled={saving}
               onPress={() => form.current?.submit()}
             />
@@ -48,9 +56,11 @@ export default function NewTransactionScreen() {
         topCategories={(kind) => topCategories(session.db, session.userId, kind)}
         allCategories={(kind) => listCategories(session.db, kind, { includeArchived: false })}
         onSavingChange={setSaving}
+        onKindChange={setKind}
         onSubmit={(values) => {
           const result = createTransaction(session, values, deviceTimeZone());
           if (!result.ok) return result;
+          setSaved(true);
           const currency = (accounts.find((a) => a.id === values.accountId)?.currency ??
             'COP') as CurrencyCode;
           return {
