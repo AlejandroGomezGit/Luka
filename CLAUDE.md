@@ -64,6 +64,7 @@ TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con ex
 - Antes de empezar un issue, lee el documento correspondiente y resume el plan en pocas líneas. Si algo es ambiguo o grande, pregunta antes de escribir código.
 - Escribe primero la prueba del criterio de aceptación cuando sea posible.
 - Al terminar, ejecuta lint, typecheck y las pruebas y reporta el resultado real, sin suponerlo.
+- Antes de cada commit corre lint, tipos y pruebas del paquete afectado, encadenados para que el commit solo ocurra si todos pasan (por ejemplo `pnpm turbo run lint typecheck test --filter <paquete>... && git commit …`). Nunca hagas push de un commit que no compile.
 - Si cambia una decisión de arquitectura, crea un ADR en docs/adr/; si cambia un comportamiento, actualiza el documento afectado en el mismo PR.
 - Si un mensaje mío trae algo entre corchetes sin llenar (por ejemplo «[todo bien / vi esto: ___]»), no ejecutes la acción que depende de eso (mergear, push a main) y pregúntame.
 - Push a ramas de feature y abrir el PR no necesitan confirmación. Mergear y cualquier push a main requieren mi OK explícito.
