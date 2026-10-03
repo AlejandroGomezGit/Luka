@@ -2,22 +2,35 @@ import { useColorScheme } from 'react-native';
 
 export type Scheme = 'light' | 'dark';
 
-// Contraste AA o mejor (RNF-13) en ambos esquemas.
+/**
+ * Colores de la base de diseño (T-044, maquetas en docs/diseno/); en oscuro, los del sistema de iOS.
+ * Contraste verificado en __tests__/theme.test.ts (RNF-13):
+ * - text, muted (texto secundario), accentText (enlaces y texto pequeño) y alert: 4,5:1 sobre el fondo
+ *   y la tarjeta.
+ * - accent: botones y rellenos, 3:1 con el fondo; onAccent es el texto encima, 4,5:1.
+ */
 export const themeColors = {
-  // surface: fondo de tarjetas y campos agrupados, con el mismo contraste para text, muted y accent.
   light: {
-    background: '#FFFFFF',
-    surface: '#F1F3F5',
-    text: '#111827',
-    muted: '#4B5563',
-    accent: '#0F766E',
+    background: '#F2F2F7',
+    card: '#FFFFFF',
+    text: '#1C1C1E',
+    muted: '#6C6C70',
+    accent: '#0E7C66',
+    accentText: '#0B6350',
+    onAccent: '#FFFFFF',
+    alert: '#B3261E',
+    separator: '#C6C6C8',
   },
   dark: {
-    background: '#0B0F14',
-    surface: '#1A2028',
-    text: '#F3F4F6',
-    muted: '#9CA3AF',
-    accent: '#2DD4BF',
+    background: '#000000',
+    card: '#1C1C1E',
+    text: '#FFFFFF',
+    muted: '#AEAEB2',
+    accent: '#3DD6B5',
+    accentText: '#3DD6B5',
+    onAccent: '#000000',
+    alert: '#FF8A80',
+    separator: '#38383A',
   },
 } as const;
 
