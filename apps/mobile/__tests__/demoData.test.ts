@@ -52,3 +52,53 @@ test('HU-05 el cargador se niega a correr si la base ya tiene datos', async () =
   });
   expect(ctx.db.select({ n: count() }).from(transactions).get()?.n).toBe(0);
 });
+
+describe('HU-05 datos de prueba creíbles (también para el resumen de T-017)', () => {
+  async function loaded() {
+    const ctx = await context();
+    loadDemoData(ctx, 'America/Bogota');
+    const rows = ctx.db.select().from(transactions).all();
+    const byName = new Map(listActiveAccounts(ctx.db).map((a) => [a.name, a]));
+    return { ctx, rows, byName };
+  }
+
+  it('HU-05 ninguna cuenta de débito queda en negativo y la tarjeta debe a lo sumo un mes de gastos', async () => {
+    const { rows, byName } = await loaded();
+    for (const name of ['Efectivo', 'Ahorros', 'Dólares']) {
+      expect({ name, positive: (byName.get(name)?.balanceMinor ?? -1) > 0 }).toEqual({
+        name,
+        positive: true,
+      });
+    }
+    const card = byName.get('Visa');
+    const cardId = card?.id;
+    const monthly = new Map<string, number>();
+    for (const r of rows.filter((r) => r.kind === 'expense' && r.accountId === cardId)) {
+      const month = r.occurredOn.slice(0, 7);
+      monthly.set(month, (monthly.get(month) ?? 0) - r.amountMinor);
+    }
+    const debt = -(card?.balanceMinor ?? 0);
+    expect(debt).toBeGreaterThanOrEqual(0);
+    expect(debt).toBeLessThanOrEqual(Math.max(...monthly.values()));
+  });
+
+  it('HU-05 cada mes los ingresos en pesos cubren los gastos en pesos', async () => {
+    const { rows } = await loaded();
+    const months = new Map<string, { income: number; expense: number }>();
+    for (const r of rows.filter((r) => r.currency === 'COP' && r.kind !== 'transfer')) {
+      const month = months.get(r.occurredOn.slice(0, 7)) ?? { income: 0, expense: 0 };
+      if (r.kind === 'income') month.income += r.amountMinor;
+      else month.expense -= r.amountMinor;
+      months.set(r.occurredOn.slice(0, 7), month);
+    }
+    expect(months.size).toBeGreaterThanOrEqual(24);
+    for (const [month, { income, expense }] of months) {
+      expect({ month, covered: income >= expense }).toEqual({ month, covered: true });
+    }
+  });
+
+  it('HU-05 los gastos en pesos son enteros, sin centavos', async () => {
+    const { rows } = await loaded();
+    expect(rows.filter((r) => r.currency === 'COP' && r.amountMinor % 100 !== 0)).toEqual([]);
+  });
+});

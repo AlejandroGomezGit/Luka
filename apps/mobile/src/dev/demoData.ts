@@ -24,7 +24,27 @@ const EXPENSES = [
 
 export type DemoResult = { ok: true; transactions: number } | { ok: false; reason: string };
 
-/** Crea 4 cuentas y `total` movimientos válidos en los últimos dos años; se niega si ya hay datos. */
+const MONTHS = 24;
+
+/** Primer día de cada uno de los últimos `MONTHS` meses y el último día con datos (hoy en el mes actual). */
+function monthSpans(end: string) {
+  const [year, month] = end.split('-').map(Number) as [number, number];
+  return Array.from({ length: MONTHS }, (_, i) => {
+    const first = new Date(Date.UTC(year, month - 1 - (MONTHS - 1 - i), 1));
+    const start = first.toISOString().slice(0, 10);
+    const lastOfMonth = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0));
+    const last = lastOfMonth.toISOString().slice(0, 10);
+    return { start, last: last > end ? end : last };
+  });
+}
+
+/**
+ * Crea 4 cuentas y `total` movimientos creíbles en los últimos 24 meses; se niega si ya hay datos. Cada
+ * mes: salario el día 1 en Ahorros, que cubre con un 15 % de margen lo que sale de Ahorros y lo gastado;
+ * Efectivo recibe ese día lo que se gastará en efectivo; la Visa se paga el día 1 con lo gastado el mes
+ * anterior; una compra de US$ 100 y dos suscripciones en dólares. Los demás son gastos de $ 2.000 a
+ * $ 40.000 repartidos por día. Así los saldos quedan positivos y la tarjeta debe a lo sumo un mes.
+ */
 export function loadDemoData(ctx: WriteContext, timeZone: string, total = 10_000): DemoResult {
   const hasData =
     (ctx.db.select({ n: count() }).from(accounts).get()?.n ?? 0) > 0 ||
@@ -53,69 +73,111 @@ export function loadDemoData(ctx: WriteContext, timeZone: string, total = 10_000
   const savings = account('Ahorros', 'savings', 'COP', 5_000_000_00, '🐷');
   const card = account('Visa', 'credit_card', 'COP', 0, '💳');
   const dollars = account('Dólares', 'cash', 'USD', 200_00, '💵');
+  const cat = (key: string) => predefinedCategoryId(ctx.userId, key);
 
-  const end = today(ctx.clock, timeZone);
+  const months = monthSpans(today(ctx.clock, timeZone));
+  // Por mes: salario, recarga de efectivo, compra de dólares y dos suscripciones; pago de la Visa
+  // desde el segundo mes.
+  const fixed = MONTHS * 5 + (MONTHS - 1);
+  const days = months.flatMap((m) => {
+    const out: string[] = [];
+    for (let d = m.start; d <= m.last; d = addDays(d, 1)) out.push(d);
+    return out;
+  });
+  const expenses = Array.from({ length: total - fixed }, (_, k) => {
+    const [key, note] = EXPENSES[k % EXPENSES.length] ?? EXPENSES[0];
+    return {
+      occurredOn: days[Math.floor((k * days.length) / (total - fixed))] ?? months[0]?.start ?? '',
+      // Pesos enteros, de $ 2.000 a $ 40.000, como se escriben en COP.
+      amountMinor: (2_000 + ((k * 7_919) % 380) * 100) * 100,
+      accountId: k % 3 === 0 ? card : cash,
+      key,
+      note: `${note} ${String(k)}`,
+    };
+  });
+  const spent = (from: string, to: string, accountId: string) =>
+    expenses
+      .filter((e) => e.accountId === accountId && e.occurredOn >= from && e.occurredOn <= to)
+      .reduce((sum, e) => sum + e.amountMinor, 0);
+
   const start = ctx.clock.now() - total;
+  let n = 0;
   ctx.db.transaction((tx) => {
-    for (let i = 0; i < total; i++) {
-      // Un milisegundo por movimiento: ids UUID v7 distintos y ordenados.
-      const write = { ...ctx, db: tx, clock: { now: () => start + i } };
-      // Repartidos en dos años: unos 14 por día, del más reciente al más antiguo.
-      const occurredOn = addDays(end, -Math.floor((i * 730) / total));
-      const base = {
+    // Un milisegundo por movimiento: ids UUID v7 distintos y ordenados.
+    const write = () => {
+      const at = start + n++;
+      return { ...ctx, db: tx, clock: { now: () => at } };
+    };
+    const base = { categorySource: 'user', source: 'manual', reviewStatus: 'confirmed' } as const;
+    const transfer = (
+      occurredOn: string,
+      from: string,
+      to: string,
+      out: number,
+      arrives: number,
+      note: string,
+    ) =>
+      insertRow(write(), transactions, {
+        ...base,
         occurredOn,
-        categorySource: 'user',
-        source: 'manual',
-        reviewStatus: 'confirmed',
-      } as const;
-      // Un salario cada mes, más o menos.
-      if (i % Math.floor(total / 24) === 0) {
-        insertRow(write, transactions, {
+        kind: 'transfer',
+        amountMinor: -out,
+        accountId: from,
+        currency: from === dollars ? 'USD' : 'COP',
+        toAccountId: to,
+        toAmountMinor: arrives,
+        note,
+      });
+    months.forEach((m, i) => {
+      const cashTopUp = spent(m.start, m.last, cash);
+      const previous = months[i - 1];
+      const cardPayment = previous ? spent(previous.start, previous.last, card) : 0;
+      const usdBuy = 400_000_00;
+      // Cubre lo que sale de Ahorros y, aunque el pago de la Visa sea del mes anterior, lo gastado este mes.
+      const cardSpent = Math.max(cardPayment, spent(m.start, m.last, card));
+      const salary = Math.ceil(((cashTopUp + cardSpent + usdBuy) * 1.15) / 100_000_00) * 100_000_00;
+      insertRow(write(), transactions, {
+        ...base,
+        occurredOn: m.start,
+        kind: 'income',
+        amountMinor: salary,
+        accountId: savings,
+        currency: 'COP',
+        categoryId: cat('salary.other'),
+        note: 'Salario',
+      });
+      transfer(m.start, savings, cash, cashTopUp, cashTopUp, 'Retiro para el mes');
+      if (previous) transfer(m.start, savings, card, cardPayment, cardPayment, 'Pago de tarjeta');
+      transfer(m.last, savings, dollars, usdBuy, 100_00, 'Compra de dólares');
+      for (const [amount, note] of [
+        [9_99, 'Streaming'],
+        [15_00, 'Nube'],
+      ] as const) {
+        insertRow(write(), transactions, {
           ...base,
-          kind: 'income',
-          amountMinor: 3_200_000_00,
-          accountId: savings,
-          currency: 'COP',
-          categoryId: predefinedCategoryId(ctx.userId, 'salary.other'),
-          note: 'Salario',
-        });
-      } else if (i % 25 === 0) {
-        insertRow(write, transactions, {
-          ...base,
-          kind: 'transfer',
-          amountMinor: -400_000_00,
-          accountId: cash,
-          currency: 'COP',
-          toAccountId: dollars,
-          toAmountMinor: 100_00,
-          note: 'Compra de dólares',
-        });
-      } else if (i % 20 === 0) {
-        insertRow(write, transactions, {
-          ...base,
-          kind: 'transfer',
-          amountMinor: -200_000_00,
-          accountId: savings,
-          currency: 'COP',
-          toAccountId: card,
-          toAmountMinor: 200_000_00,
-          note: 'Pago de tarjeta',
-        });
-      } else {
-        const [key, note] = EXPENSES[i % EXPENSES.length] ?? EXPENSES[0];
-        insertRow(write, transactions, {
-          ...base,
+          occurredOn: m.last,
           kind: 'expense',
-          // Pesos enteros, sin centavos, como se escriben en COP.
-          amountMinor: -(5_000 + ((i * 7_919) % 95_000)) * 100,
-          accountId: i % 3 === 0 ? card : cash,
-          currency: 'COP',
-          categoryId: predefinedCategoryId(ctx.userId, key),
-          note: `${note} ${String(i)}`,
+          amountMinor: -amount,
+          accountId: dollars,
+          currency: 'USD',
+          categoryId: cat('subscriptions.other'),
+          note,
         });
       }
-    }
+      for (const e of expenses.filter((x) => x.occurredOn >= m.start && x.occurredOn <= m.last)) {
+        insertRow(write(), transactions, {
+          ...base,
+          occurredOn: e.occurredOn,
+          kind: 'expense',
+          amountMinor: -e.amountMinor,
+          accountId: e.accountId,
+          currency: 'COP',
+          categoryId: cat(e.key),
+          note: e.note,
+        });
+      }
+    });
   });
   backfillTransactionSearch(ctx.db);
-  return { ok: true, transactions: total };
+  return { ok: true, transactions: n };
 }
