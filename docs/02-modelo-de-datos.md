@@ -169,8 +169,8 @@ La base de datos rechaza los estados imposibles y la capa de dominio los valida 
 | INV-02 | Una transferencia exige `to_account_id` distinto de `account_id` y `to_amount_minor` positivo; los demás tipos los dejan nulos | Dominio, API, `CHECK` |
 | INV-03 | Si ambas cuentas tienen la misma moneda, `to_amount_minor` es igual a `-amount_minor` | Dominio, API |
 | INV-04 | La categoría coincide con el tipo: `expense` con categorías de gasto e `income` con categorías de ingreso, y siempre es una subcategoría, nunca la principal; transferencias y ajustes no llevan categoría | Dominio, API |
-| INV-05 | `currency` del movimiento es la de su cuenta al crearlo, y la moneda de una cuenta con movimientos no cambia | Dominio, API |
-| INV-06 | Una cuenta archivada no acepta movimientos nuevos, pero conserva los existentes | Dominio, API |
+| INV-05 | `currency` del movimiento es la de su cuenta al crearlo, y la moneda de una cuenta con movimientos no cambia; cuentan también los borrados, porque «Deshacer» o la sincronización pueden devolverlos | Dominio, API |
+| INV-06 | Una cuenta archivada no acepta movimientos nuevos, pero conserva los existentes: un movimiento que ya estaba en ella sigue editable mientras no cambie de cuenta; pasarlo a otra cuenta archivada se rechaza | Dominio, API |
 | INV-07 | Las categorías con `system_key` no se eliminan: solo se renombran o se archivan | Dominio, API |
 | INV-08 | Ningún dato de otro `user_id` se lee ni se escribe | Filtros de la API y seguridad a nivel de fila |
 | INV-09 | Un movimiento «por revisar» no entra en saldos, presupuestos ni reportes hasta que se confirma | Dominio, API |

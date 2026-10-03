@@ -1,13 +1,18 @@
-/** Movimientos: registrar un gasto, ingreso (HU-03, CU-08) o transferencia (CU-06) y las ayudas del formulario. */
+/**
+ * Movimientos: registrar un gasto, ingreso (HU-03, CU-08) o transferencia (CU-06), editarlos (HU-04,
+ * CU-09) y las ayudas del formulario. Borrar y deshacer usan softDelete y restore de write.ts.
+ */
 import {
   type AccountRef,
   buildTransaction,
   type CategoryKind,
+  editContext,
   type CurrencyCode,
   formatMoney,
   generalCategoryId,
   predefinedCategoryId,
   today,
+  type TransactionContext,
   type TransactionInput,
   type TransactionInputError,
 } from '@luka/domain';
@@ -16,53 +21,172 @@ import { and, count, desc, eq, isNotNull, isNull, max } from 'drizzle-orm';
 import { type AccountRow, getAccount, listActiveAccounts } from './accounts';
 import { getCategory } from './categories';
 import type { LocalDb } from './types';
-import { insertRow, notDeleted, type WriteContext } from './write';
+import { insertRow, notDeleted, updateRow, type WriteContext } from './write';
 
 export type TransactionResult =
   { ok: true; id: string } | { ok: false; errors: TransactionInputError[] };
 
-/**
- * Guarda un movimiento escrito por la persona: origen manual, categoría puesta por la persona y
- * confirmado. «Hoy» sale del reloj inyectado en la zona horaria del dispositivo.
- */
+export type TransactionRow = typeof transactions.$inferSelect;
+
+/** Lo que escribe la persona en el formulario: el movimiento con el monto en positivo y su nota. */
+export type TransactionValues = TransactionInput & { note: string };
+
 const accountRef = (account: AccountRow): AccountRef => ({
   id: account.id,
   currency: account.currency as CurrencyCode,
   archivedAt: account.archivedAt?.getTime() ?? null,
 });
 
-export function createTransaction(
-  ctx: WriteContext,
-  input: TransactionInput & { note?: string },
-  timeZone: string,
-): TransactionResult {
-  const account = getAccount(ctx.db, input.accountId);
+/** Lee de la base lo que las invariantes necesitan: cuentas de origen y destino, y categoría. */
+function contextFor(
+  db: LocalDb,
+  input: TransactionInput,
+): { ok: true; ctx: TransactionContext } | { ok: false; errors: TransactionInputError[] } {
+  const account = getAccount(db, input.accountId);
   if (!account) return { ok: false, errors: ['INV-06'] };
-  const toAccount = input.kind === 'transfer' ? getAccount(ctx.db, input.toAccountId) : undefined;
+  const toAccount = input.kind === 'transfer' ? getAccount(db, input.toAccountId) : undefined;
   if (input.kind === 'transfer' && !toAccount) return { ok: false, errors: ['INV-02'] };
   const categoryId = input.kind === 'transfer' ? null : input.categoryId;
-  const category = categoryId ? getCategory(ctx.db, categoryId) : undefined;
-  const result = buildTransaction(
-    input,
-    {
+  const category = categoryId ? getCategory(db, categoryId) : undefined;
+  return {
+    ok: true,
+    ctx: {
       account: accountRef(account),
       toAccount: toAccount ? accountRef(toAccount) : null,
       category: category
         ? { kind: category.kind, systemKey: category.systemKey, parentId: category.parentId }
         : null,
     },
-    today(ctx.clock, timeZone),
-  );
+  };
+}
+
+const cleanNote = (note: string | undefined) => (note?.trim() ? note.trim() : null);
+
+export function getTransaction(db: LocalDb, id: string): TransactionRow | undefined {
+  return db.select().from(transactions).where(eq(transactions.id, id)).get();
+}
+
+/**
+ * Guarda un movimiento escrito por la persona: origen manual, categoría puesta por la persona y
+ * confirmado. «Hoy» sale del reloj inyectado en la zona horaria del dispositivo.
+ */
+export function createTransaction(
+  ctx: WriteContext,
+  input: TransactionInput & { note?: string },
+  timeZone: string,
+): TransactionResult {
+  const read = contextFor(ctx.db, input);
+  if (!read.ok) return read;
+  const result = buildTransaction(input, read.ctx, today(ctx.clock, timeZone));
   if (!result.ok) return result;
   const id = insertRow(ctx, transactions, {
     ...result.transaction,
     occurredOn: input.occurredOn,
-    note: input.note?.trim() ? input.note.trim() : null,
+    note: cleanNote(input.note),
     categorySource: 'user',
     source: 'manual',
     reviewStatus: 'confirmed',
   });
   return { ok: true, id };
+}
+
+/**
+ * Edita un movimiento (HU-04, CU-09) con las mismas reglas que al crearlo, salvo que puede seguir en una
+ * cuenta que se archivó después (editContext, INV-06). Una transferencia sigue siendo transferencia y un
+ * gasto o ingreso no se convierte en ella. `version` no cambia: queda pendiente para T-029.
+ */
+export function updateTransaction(
+  ctx: WriteContext,
+  id: string,
+  input: TransactionInput & { note?: string },
+  timeZone: string,
+): TransactionResult {
+  const existing = getTransaction(ctx.db, id);
+  if (!existing || (existing.kind === 'transfer') !== (input.kind === 'transfer')) {
+    throw new Error(
+      'Solo se edita un movimiento existente, sin convertirlo en transferencia ni al revés',
+    );
+  }
+  const read = contextFor(ctx.db, input);
+  if (!read.ok) return read;
+  const result = buildTransaction(
+    input,
+    editContext(read.ctx, { accountId: existing.accountId, toAccountId: existing.toAccountId }),
+    today(ctx.clock, timeZone),
+  );
+  if (!result.ok) return result;
+  updateRow(ctx, transactions, id, {
+    ...result.transaction,
+    occurredOn: input.occurredOn,
+    note: cleanNote(input.note),
+  });
+  return { ok: true, id };
+}
+
+/** Valores del formulario para editar un movimiento: el monto en positivo, como lo escribe la persona. */
+export function transactionValues(row: TransactionRow): TransactionValues {
+  const base = {
+    amountMinor: Math.abs(row.amountMinor),
+    accountId: row.accountId,
+    occurredOn: row.occurredOn,
+    note: row.note ?? '',
+  };
+  return row.kind === 'transfer' && row.toAccountId
+    ? { kind: 'transfer', ...base, toAccountId: row.toAccountId, toAmountMinor: row.toAmountMinor }
+    : { kind: row.kind === 'income' ? 'income' : 'expense', ...base, categoryId: row.categoryId };
+}
+
+/** Un movimiento como lo muestra la lista: montos, cuentas, categoría y fecha. */
+export interface TransactionListItem {
+  id: string;
+  kind: TransactionRow['kind'];
+  amountMinor: number;
+  currency: CurrencyCode;
+  toAmountMinor: number | null;
+  toCurrency: CurrencyCode | null;
+  occurredOn: string;
+  accountName: string;
+  toAccountName: string | null;
+  category: Pick<TopCategory, 'label' | 'accessibilityLabel' | 'icon' | 'color'> | null;
+}
+
+/**
+ * «Recientes» en Inicio (HU-04): los últimos movimientos confirmados y no borrados, del más reciente al
+ * más antiguo por fecha y, en el mismo día, por hora de registro.
+ */
+export function listRecentTransactions(
+  db: LocalDb,
+  userId: string,
+  limit = 5,
+): TransactionListItem[] {
+  return db
+    .select()
+    .from(transactions)
+    .where(and(notDeleted(transactions), eq(transactions.reviewStatus, 'confirmed')))
+    .orderBy(desc(transactions.occurredOn), desc(transactions.createdAt))
+    .limit(limit)
+    .all()
+    .map((row) => {
+      const account = getAccount(db, row.accountId);
+      const toAccount = row.toAccountId ? getAccount(db, row.toAccountId) : undefined;
+      const sub = row.categoryId ? getCategory(db, row.categoryId) : undefined;
+      const main = sub?.parentId ? getCategory(db, sub.parentId) : undefined;
+      return {
+        id: row.id,
+        kind: row.kind,
+        amountMinor: row.amountMinor,
+        currency: row.currency as CurrencyCode,
+        toAmountMinor: row.toAmountMinor,
+        toCurrency: (toAccount?.currency ?? null) as CurrencyCode | null,
+        occurredOn: row.occurredOn,
+        accountName: account?.name ?? '',
+        toAccountName: toAccount?.name ?? null,
+        category:
+          sub && main
+            ? { ...categoryLabels(userId, sub, main), icon: sub.icon, color: sub.color }
+            : null,
+      };
+    });
 }
 
 /** La cuenta del movimiento más reciente; si está archivada o no hay movimientos, la primera activa. */

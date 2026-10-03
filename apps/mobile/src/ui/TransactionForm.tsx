@@ -5,6 +5,7 @@ import {
   type CurrencyCode,
   formatAmountInput,
   formatMoney,
+  isEmoji,
   localDateFromParts,
   parseAmount,
   type TransactionInputError,
@@ -21,7 +22,7 @@ import {
 } from 'react-native';
 import type { AccountWithBalance } from '../db/accounts';
 import type { CategoryNode } from '../db/categories';
-import type { TopCategory } from '../db/transactions';
+import type { TopCategory, TransactionValues } from '../db/transactions';
 import {
   isAccessibilitySize,
   radius,
@@ -33,38 +34,34 @@ import {
 import { AccountList } from './AccountList';
 import { AccountRow } from './AccountRow';
 import { BottomSheet } from './BottomSheet';
+import { FALLBACK_EMOJI } from './CategoryLabel';
 import { Chip, SegmentedControl } from './Chip';
 import type { FormHandle } from './FormHandle';
-import { balanceText } from './money';
+import { Button } from './Button';
+import { amountText, balanceText } from './money';
 import { colorFor } from './palette';
 import { Screen } from './Screen';
 import { TextField } from './TextField';
 import { transactionErrorMessage } from './transactionErrors';
 
 export type Kind = 'expense' | 'income' | 'transfer';
-
-interface ValuesBase {
-  amountMinor: number;
-  /** Cuenta del gasto o ingreso; en una transferencia, la de origen. */
-  accountId: string;
-  occurredOn: string;
-  note: string;
-}
-
-export type TransactionValues =
-  | (ValuesBase & { kind: 'expense' | 'income'; categoryId: string | null })
-  | (ValuesBase & {
-      kind: 'transfer';
-      toAccountId: string;
-      /** Solo con monedas distintas; con la misma moneda llega lo mismo que sale. */
-      toAmountMinor: number | null;
-    });
+export type { TransactionValues };
 
 export type SubmitResult =
   { ok: true; message: string } | { ok: false; errors: TransactionInputError[] };
 
 interface Props {
   ref?: Ref<FormHandle>;
+  /** «edit» abre con `initial`, no ofrece cambiar a o desde transferencia y muestra «Eliminar movimiento». */
+  mode?: 'create' | 'edit';
+  initial?: TransactionValues;
+  onDelete?: () => void;
+  /** Nombre de una categoría que ya no se ofrece (archivada), para mostrar la del movimiento. */
+  categoryName?: (id: string) => string | null;
+  /**
+   * Cuentas activas y, al editar, también la archivada del movimiento: se muestra con «(archivada)» pero
+   * las hojas solo ofrecen las activas.
+   */
   accounts: readonly AccountWithBalance[];
   initialAccountId: string;
   /** Fecha local de hoy (AAAA-MM-DD), calculada con el reloj inyectado. */
@@ -103,18 +100,35 @@ const integerPart = (text: string) => text.split(',')[0] ?? '';
  */
 export function TransactionForm(props: Props) {
   const { ref, accounts, initialAccountId, today, onSubmit, onSavingChange, onKindChange } = props;
+  const { initial, mode = 'create' } = props;
+  const editing = mode === 'edit';
   const { colors, scheme, spacing } = useTheme();
   // Con tamaños de accesibilidad, la cuenta y la fecha se apilan para que el nombre quepa.
   const stacked = isAccessibilitySize(useWindowDimensions().fontScale);
-  const [kind, setKind] = useState<Kind>('expense');
-  const [amount, setAmount] = useState('');
+  const currencyOf = (id: string | null) =>
+    (accounts.find((a) => a.id === id)?.currency ?? 'COP') as CurrencyCode;
+  const [kind, setKind] = useState<Kind>(initial?.kind ?? 'expense');
+  const [amount, setAmount] = useState(
+    initial ? amountText(initial.amountMinor, currencyOf(initial.accountId)) : '',
+  );
   const [accountId, setAccountId] = useState(initialAccountId);
-  const [toAccountId, setToAccountId] = useState<string | null>(null);
-  const [toAmount, setToAmount] = useState('');
+  const [toAccountId, setToAccountId] = useState<string | null>(
+    initial?.kind === 'transfer' ? initial.toAccountId : null,
+  );
+  // Con monedas distintas, lo que llegó; con la misma moneda no se pide.
+  const [toAmount, setToAmount] = useState(
+    initial?.kind === 'transfer' &&
+      initial.toAmountMinor !== null &&
+      currencyOf(initial.toAccountId) !== currencyOf(initial.accountId)
+      ? amountText(initial.toAmountMinor, currencyOf(initial.toAccountId))
+      : '',
+  );
   const [amountWidth, setAmountWidth] = useState(0);
-  const [categoryId, setCategoryId] = useState<string | null>(null);
-  const [occurredOn, setOccurredOn] = useState(today);
-  const [note, setNote] = useState('');
+  const [categoryId, setCategoryId] = useState<string | null>(
+    initial && initial.kind !== 'transfer' ? initial.categoryId : null,
+  );
+  const [occurredOn, setOccurredOn] = useState(initial?.occurredOn ?? today);
+  const [note, setNote] = useState(initial?.note ?? '');
   const [showAll, setShowAll] = useState(false);
   const [sheet, setSheet] = useState<'account' | 'toAccount' | 'date' | null>(null);
   const [showPicker, setShowPicker] = useState(false);
@@ -124,24 +138,34 @@ export function TransactionForm(props: Props) {
   const saving = useRef(false);
   const account = accounts.find((a) => a.id === accountId) ?? accounts[0];
   const currency = (account?.currency ?? 'COP') as CurrencyCode;
-  const canTransfer = accounts.length >= 2;
+  // Las hojas solo ofrecen cuentas activas; la archivada del movimiento solo se muestra (INV-06).
+  const activeAccounts = accounts.filter((a) => a.archivedAt === null);
+  const canTransfer = activeAccounts.length >= 2;
   const isTransfer = kind === 'transfer';
   const toAccount = isTransfer ? accounts.find((a) => a.id === toAccountId) : undefined;
   const toCurrency = toAccount?.currency as CurrencyCode | undefined;
   // Con monedas distintas no hay tasa de cambio: la persona escribe cuánto llega.
   const differentCurrency = toCurrency !== undefined && toCurrency !== currency;
   const destinationFor = (fromId: string) =>
-    props.transferDestination?.(fromId) ?? accounts.find((a) => a.id !== fromId)?.id ?? null;
+    props.transferDestination?.(fromId) ?? activeAccounts.find((a) => a.id !== fromId)?.id ?? null;
   const kinds = [
     { value: 'expense' as const, label: 'Gasto' },
     { value: 'income' as const, label: 'Ingreso' },
-    {
-      value: 'transfer' as const,
-      label: 'Transferencia',
-      disabled: !canTransfer,
-      ...(canTransfer ? {} : { hint: NEEDS_TWO_ACCOUNTS }),
-    },
+    // Al editar, un gasto o ingreso no pasa a ser transferencia (HU-04).
+    ...(editing
+      ? []
+      : [
+          {
+            value: 'transfer' as const,
+            label: 'Transferencia',
+            disabled: !canTransfer,
+            ...(canTransfer ? {} : { hint: NEEDS_TWO_ACCOUNTS }),
+          },
+        ]),
   ];
+  // Al editar y cambiar de gasto a ingreso (o al revés), la categoría anterior no sirve: se pide otra.
+  const askCategory =
+    editing && initial !== undefined && kind !== initial.kind && categoryId === null;
   const yesterday = addDays(today, -1);
   const dateLabel = occurredOn === today ? 'Hoy' : occurredOn === yesterday ? 'Ayer' : occurredOn;
 
@@ -195,6 +219,8 @@ export function TransactionForm(props: Props) {
     setErrors([]);
     setMessage(result.message);
     AccessibilityInfo.announceForAccessibility(result.message);
+    // Al editar, la pantalla se cierra al guardar: no hay otro registro que preparar.
+    if (editing) return;
     setAmount('');
     setToAmount('');
     setCategoryId(null);
@@ -216,9 +242,8 @@ export function TransactionForm(props: Props) {
 
   const chooseToAccount = (id: string) => {
     const next = accounts.find((a) => a.id === id);
-    if (next && toCurrency && next.currency !== toCurrency) {
-      setToAmount(formatAmountInput(integerPart(toAmount), next.currency as CurrencyCode));
-    }
+    // Lo que llegaba en otra moneda ya no vale: el monto de llegada se vuelve a pedir.
+    if (next && next.currency !== toCurrency) setToAmount('');
     setToAccountId(id);
     setSheet(null);
   };
@@ -242,7 +267,7 @@ export function TransactionForm(props: Props) {
         ? main.name
         : `${main.name} › ${child.name}`;
     }
-    return '';
+    return categoryId ? (props.categoryName?.(categoryId) ?? '') : '';
   })();
 
   const chooseDate = (date: string) => {
@@ -275,7 +300,8 @@ export function TransactionForm(props: Props) {
           importantForAccessibility="no-hide-descendants"
           style={[styles.text, { color: colors.onAccent }]}
         >
-          {selected ? '✓' : category.icon}
+          {/* Un ícono antiguo que no es emoji se muestra con el de respaldo, como en las listas. */}
+          {selected ? '✓' : isEmoji(category.icon) ? category.icon : FALLBACK_EMOJI}
         </Text>
         <Text style={[styles.text, { color: selected ? colors.onAccent : colors.text }]}>
           {category.label}
@@ -286,8 +312,10 @@ export function TransactionForm(props: Props) {
 
   return (
     <Screen contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
-      <SegmentedControl options={kinds} value={kind} onChange={chooseKind} />
-      {!canTransfer && (
+      {!(editing && isTransfer) && (
+        <SegmentedControl options={kinds} value={kind} onChange={chooseKind} />
+      )}
+      {!canTransfer && !editing && (
         <Text style={[styles.caption, { color: colors.muted }]}>{NEEDS_TWO_ACCOUNTS}</Text>
       )}
 
@@ -395,6 +423,11 @@ export function TransactionForm(props: Props) {
             </Text>
             <Text style={[styles.caption, { color: colors.muted }]}>{categoryPath}</Text>
           </View>
+          {askCategory && (
+            <Text style={[styles.caption, { color: colors.alert }]}>
+              {`Elige una categoría de ${kind === 'income' ? 'ingreso' : 'gasto'}.`}
+            </Text>
+          )}
           <View style={[styles.wrap, { gap: spacing.sm }]}>
             {props.topCategories(kind).map(categoryChip)}
             <Pressable
@@ -451,12 +484,16 @@ export function TransactionForm(props: Props) {
         {message}
       </Text>
 
+      {props.onDelete && (
+        <Button label="Eliminar movimiento" variant="destructive" onPress={props.onDelete} />
+      )}
+
       <BottomSheet
         visible={sheet === 'account'}
         title="Elige la cuenta"
         onClose={() => setSheet(null)}
       >
-        <AccountList accounts={accounts} onSelect={chooseAccount} />
+        <AccountList accounts={activeAccounts} onSelect={chooseAccount} />
       </BottomSheet>
       <BottomSheet
         visible={sheet === 'toAccount'}
@@ -464,7 +501,7 @@ export function TransactionForm(props: Props) {
         onClose={() => setSheet(null)}
       >
         <AccountList
-          accounts={accounts.filter((a) => a.id !== accountId)}
+          accounts={activeAccounts.filter((a) => a.id !== accountId)}
           onSelect={chooseToAccount}
         />
       </BottomSheet>

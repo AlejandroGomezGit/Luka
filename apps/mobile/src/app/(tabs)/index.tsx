@@ -5,27 +5,35 @@ import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { deviceClock, deviceTimeZone } from '../../clock';
 import { type AccountWithBalance, listActiveAccounts } from '../../db/accounts';
 import { useLocalSession } from '../../db/session';
+import { listRecentTransactions, type TransactionListItem } from '../../db/transactions';
 import { headingScale, isAccessibilitySize, useTheme } from '../../theme';
 import { AccountList } from '../../ui/AccountList';
 import { Button } from '../../ui/Button';
 import { GroupedCard } from '../../ui/GroupedCard';
 import { ListRow } from '../../ui/ListRow';
 import { Screen } from '../../ui/Screen';
+import { TransactionRow } from '../../ui/TransactionRow';
+import { useUndo } from '../../undo';
 
 /**
  * Inicio, con encabezado propio (maqueta docs/diseno/Inicio.png): fecha, título grande y «Agregar».
  * Los textos no fijan allowFontScaling={false}: siguen el tamaño de Dynamic Type.
  */
 export default function Home() {
-  const { db } = useLocalSession();
+  const session = useLocalSession();
+  const { db } = session;
+  const { revision } = useUndo();
   const { colors, spacing, typography } = useTheme();
   const { fontScale } = useWindowDimensions();
   const [accounts, setAccounts] = useState<AccountWithBalance[] | null>(null);
+  const [recent, setRecent] = useState<TransactionListItem[]>([]);
 
+  // También vuelve a leer al borrar o deshacer (revision), aunque Inicio ya esté a la vista.
   useFocusEffect(
     useCallback(() => {
       setAccounts(listActiveAccounts(db));
-    }, [db]),
+      setRecent(listRecentTransactions(db, session.userId));
+    }, [db, session.userId, revision]),
   );
   const hasAccounts = accounts === null || accounts.length > 0;
 
@@ -74,6 +82,24 @@ export default function Home() {
           accounts={accounts}
           onSelect={(id) => router.push(`/accounts/${id}`)}
         />
+      )}
+      {accounts && accounts.length > 0 && (
+        <GroupedCard title="Recientes">
+          {recent.length === 0 ? (
+            <Text style={[typography.body, { padding: spacing.md, color: colors.muted }]}>
+              Aún no tienes movimientos
+            </Text>
+          ) : (
+            recent.map((item) => (
+              <TransactionRow
+                key={item.id}
+                item={item}
+                today={today(session.clock, deviceTimeZone())}
+                onPress={(id) => router.push(`/transactions/${id}`)}
+              />
+            ))
+          )}
+        </GroupedCard>
       )}
       <GroupedCard title="Administrar">
         <ListRow

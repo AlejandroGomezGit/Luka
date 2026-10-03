@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { type AccountRef, type TransactionContext } from './invariants.js';
-import { buildTransaction, type TransactionInput } from './transaction-input.js';
+import { buildTransaction, editContext, type TransactionInput } from './transaction-input.js';
 
 const cash = { id: 'cash', currency: 'COP' as const, archivedAt: null };
 const groceries = { kind: 'expense' as const, systemKey: 'food.groceries', parentId: 'food' };
@@ -156,6 +156,59 @@ describe('HU-02 transferencias (CU-06)', () => {
       errors: ['INV-06'],
     });
     expect(buildTransaction(transfer, between({ ...bank, archivedAt: 1 }, cash), today)).toEqual({
+      ok: false,
+      errors: ['INV-06'],
+    });
+  });
+});
+
+describe('HU-04 editar un movimiento existente (CU-09)', () => {
+  const archivedCash = { ...cash, archivedAt: 1 };
+  const bank = { id: 'bank', currency: 'COP' as const, archivedAt: null };
+
+  it('HU-04 INV-06 un movimiento de una cuenta archivada sigue editable si no se cambia esa cuenta', () => {
+    const edited = editContext(
+      { ...ctx, account: archivedCash },
+      { accountId: 'cash', toAccountId: null },
+    );
+    expect(buildTransaction({ ...input, amountMinor: 9_000_00 }, edited, today)).toEqual({
+      ok: true,
+      transaction: expect.objectContaining({ accountId: 'cash', amountMinor: -9_000_00 }),
+    });
+  });
+
+  it('HU-04 INV-06 pasar un movimiento a una cuenta archivada se rechaza', () => {
+    const edited = editContext(
+      { ...ctx, account: archivedCash },
+      { accountId: 'bank', toAccountId: null },
+    );
+    expect(buildTransaction(input, edited, today)).toEqual({ ok: false, errors: ['INV-06'] });
+  });
+
+  it('HU-04 INV-06 en una transferencia, el destino archivado se conserva si no cambia', () => {
+    const transfer: TransactionInput = {
+      kind: 'transfer',
+      amountMinor: 50_000_00,
+      accountId: 'bank',
+      toAccountId: 'cash',
+      toAmountMinor: null,
+      occurredOn: today,
+    };
+    const base = { account: bank, toAccount: archivedCash, category: null };
+    expect(
+      buildTransaction(
+        transfer,
+        editContext(base, { accountId: 'bank', toAccountId: 'cash' }),
+        today,
+      ).ok,
+    ).toBe(true);
+    expect(
+      buildTransaction(
+        transfer,
+        editContext(base, { accountId: 'bank', toAccountId: 'usd' }),
+        today,
+      ),
+    ).toEqual({
       ok: false,
       errors: ['INV-06'],
     });

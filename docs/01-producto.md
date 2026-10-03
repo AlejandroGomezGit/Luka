@@ -274,28 +274,31 @@ Se detallan los cinco casos de uso que más condicionan la arquitectura: iniciar
 ### CU-09 Editar o eliminar un movimiento
 
 - **Actor:** Usuario. **Requisitos:** RF-09, RNF-04.
-- **Precondiciones:** el movimiento existe en la base local. No requiere conexión.
-- **Disparador:** el usuario abre un movimiento desde la lista y lo modifica o toca «Eliminar».
+- **Precondiciones:** el movimiento existe en la base local y no está borrado. No requiere conexión.
+- **Disparador:** el usuario toca un movimiento en «Recientes» de Inicio (los últimos 5 confirmados y no borrados; sin movimientos dice «Aún no tienes movimientos») o, desde T-016, en la lista de movimientos. Cada fila muestra categoría, fecha, cuenta y monto con signo; una transferencia muestra «Efectivo → Dolares» y, con monedas distintas, los dos montos. VoiceOver lee tipo, monto, categoría, cuenta y fecha, con la pista «Toca para editar».
 
 **Flujo principal**
 
-1. La app muestra el movimiento con todos sus campos editables.
-2. El usuario cambia uno o más campos y guarda, o confirma la eliminación.
-3. La app guarda el cambio localmente con una nueva marca `updated_at`; una eliminación solo marca el movimiento como borrado.
-4. La app recalcula saldos y resumen.
-5. La app encola la operación para sincronizar (CU-21).
+1. La app abre el formulario de CU-08 (o CU-06) con los valores del movimiento. La barra superior dice «Editar gasto», «Editar ingreso» o «Editar transferencia», con «Cancelar» y «Guardar».
+2. El usuario cambia monto, cuenta, categoría, fecha o nota y toca «Guardar»; o toca «Eliminar movimiento», un botón destructivo al final del formulario.
+3. Al guardar, la app valida con las reglas de CU-08 y CU-06, guarda el cambio con una nueva marca `updated_at` y vuelve a la pantalla anterior. Al eliminar no pide confirmación: marca `deleted_at` (borrado lógico) y vuelve.
+4. La app recalcula saldos y resumen; en una transferencia cambian los dos saldos.
+5. La app encola la operación para sincronizar (CU-21, desde T-029; en el H1 lo editado queda pendiente con `version` 0).
 
 **Flujos alternativos**
 
-- Tras eliminar, aparece un aviso «Deshacer» durante unos segundos.
-- Si el movimiento vino de una importación, la app avisa que cambiarlo puede generar un duplicado al reimportar.
+- Tras eliminar aparece el aviso «Movimiento eliminado. Puedes deshacerlo.», que se anuncia al lector de pantalla y queda encima de la barra de pestañas sin tapar «Agregar». En uso normal dura 8 segundos; con VoiceOver activo o con un tamaño de texto de accesibilidad no se cierra solo, y siempre se puede cerrar. «Deshacer» recupera solo el último borrado, aunque su cuenta o categoría se hayan archivado entretanto. Si se cierra la app, el borrado queda hecho.
+- Un gasto puede pasar a ingreso y al revés: la categoría anterior se borra y se pide una del nuevo tipo. Una transferencia no cambia de tipo, y un gasto o ingreso no se convierte en transferencia.
+- Un movimiento de una cuenta o categoría archivada sigue editable y la muestra con «(archivada)»; las hojas para elegir no ofrecen archivadas (INV-06).
+- Si al editar una transferencia el destino pasa a otra moneda, el monto de llegada se vuelve a pedir.
+- Si el movimiento vino de una importación (V2), la app avisa que cambiarlo puede generar un duplicado al reimportar.
 
 **Errores**
 
-- Los mismos de CU-08 para monto, cuenta y almacenamiento.
+- Los mismos de CU-08 y CU-06 para monto, cuenta, categoría y almacenamiento.
 - Si otro dispositivo cambió el mismo movimiento, el conflicto se resuelve al sincronizar (CU-22).
 
-**Postcondiciones:** el cambio persiste en el dispositivo y la cola tiene una operación nueva.
+**Postcondiciones:** el cambio persiste en el dispositivo y la cola tiene una operación nueva (desde T-029).
 
 ### CU-21 Sincronizar cambios
 

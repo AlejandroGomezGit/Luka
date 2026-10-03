@@ -6,8 +6,11 @@ interface Props {
   onPress: () => void;
   /** Símbolo delante del texto, por ejemplo «+»; VoiceOver lee solo `label`. */
   icon?: string;
-  /** principal: relleno con el acento; secundario: acento suave; texto: solo el texto. */
-  variant?: 'primary' | 'secondary' | 'text';
+  /**
+   * principal: relleno con el acento; destructivo: relleno con el color de alerta (borrar); secundario:
+   * acento suave; texto: solo el texto.
+   */
+  variant?: 'primary' | 'destructive' | 'secondary' | 'text';
   disabled?: boolean;
   accessibilityHint?: string;
 }
@@ -22,11 +25,13 @@ export function Button({
   accessibilityHint,
 }: Props) {
   const { colors, radius, sizes, spacing, typography } = useTheme();
-  const primary = variant === 'primary';
+  const primary = variant === 'primary' || variant === 'destructive';
   const background = primary
     ? disabled
       ? colors.muted
-      : colors.accent
+      : variant === 'destructive'
+        ? colors.alert
+        : colors.accent
     : variant === 'secondary'
       ? `${colors.accent}26`
       : 'transparent';
