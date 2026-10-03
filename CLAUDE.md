@@ -53,7 +53,7 @@ TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con ex
 - Conventional Commits; ramas feat/, fix/, chore/, docs/ o ci/; un issue por rama y por pull request.
 - Sin any.
 - Toda dependencia nueva, incluso de tipos o de desarrollo, se aprueba antes de instalarla y se lista en el PR con su motivo y su licencia.
-- Las migraciones ya aplicadas no se editan: se crea una nueva.
+- Una migración que ya está en un commit nunca se edita ni se regenera: se crea otra. Regenerarla con drizzle-kit le cambia la hora y Drizzle, que solo compara esa hora, la vuelve a aplicar en las bases que ya la tenían. Cada migración nueva se agrega a migrations.lock.json en el mismo PR; una prueba compara los SQL y el journal con esa lista.
 - Cada criterio de aceptación tiene una prueba cuyo nombre incluye el id de la historia (por ejemplo HU-03).
 - Cobertura de packages/domain: 80 % o más.
 - Toda pantalla nueva de la app usa el componente Screen (apps/mobile/src/ui/Screen.tsx): vuelve a montar el contenido cuando cambia Dynamic Type, porque React Native no vuelve a medir el texto y lo deja cortado (#39).
@@ -68,7 +68,8 @@ TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con ex
 - Si cambia una decisión de arquitectura, crea un ADR en docs/adr/; si cambia un comportamiento, actualiza el documento afectado en el mismo PR.
 - Si un mensaje mío trae algo entre corchetes sin llenar (por ejemplo «[todo bien / vi esto: ___]»), no ejecutes la acción que depende de eso (mergear, push a main) y pregúntame.
 - Push a ramas de feature y abrir el PR no necesitan confirmación. Mergear y cualquier push a main requieren mi OK explícito.
-- Para experimentos en la app (código temporal, pruebas de diseño) usa el simulador iPhone 17 con un git worktree aparte y un Metro propio en otro puerto (por ejemplo 8082). No toques el iPhone 17 Pro ni el Metro que yo tenga corriendo.
+- Trabaja siempre en un git worktree aparte (por ejemplo ../Luka-dev). Mi Metro sirve la carpeta principal y solo debe ver lo que ya está en un commit; así un estado intermedio (por ejemplo, una migración a medio generar) nunca llega a mi simulador.
+- Para experimentos en la app (código temporal, pruebas de diseño) usa el simulador iPhone 17 con tu worktree y un Metro propio en otro puerto (por ejemplo 8082). No toques el iPhone 17 Pro ni el Metro que yo tenga corriendo.
 
 ## Seguridad
 

@@ -31,7 +31,8 @@ function MigrationError() {
         No se pudo preparar tus datos
       </Text>
       <Text style={[styles.body, { color: colors.muted }]}>
-        Cierra la app y vuelve a abrirla. Si el problema sigue, reinstálala desde TestFlight.
+        Cierra la app y vuelve a abrirla. Si el problema sigue, no la reinstales todavía:
+        reinstalarla borra los datos guardados en este iPhone que aún no se han sincronizado.
       </Text>
     </View>
   );
