@@ -16,6 +16,16 @@ import { TransactionRow } from '../../ui/TransactionRow';
 import { useUndo } from '../../undo';
 
 /**
+ * Solo en desarrollo: con __DEV__ en false el require desaparece del bundle de producción, y el build lo
+ * comprueba buscando la marca del cargador en dist.
+ */
+const DemoDataButton = __DEV__
+  ? // eslint-disable-next-line @typescript-eslint/no-require-imports
+    (require('../../dev/DemoDataButton') as typeof import('../../dev/DemoDataButton'))
+      .DemoDataButton
+  : null;
+
+/**
  * Inicio, con encabezado propio (maqueta docs/diseno/Inicio.png): fecha, título grande y «Agregar».
  * Los textos no fijan allowFontScaling={false}: siguen el tamaño de Dynamic Type.
  */
@@ -29,12 +39,11 @@ export default function Home() {
   const [recent, setRecent] = useState<TransactionListItem[]>([]);
 
   // También vuelve a leer al borrar o deshacer (revision), aunque Inicio ya esté a la vista.
-  useFocusEffect(
-    useCallback(() => {
-      setAccounts(listActiveAccounts(db));
-      setRecent(listRecentTransactions(db, session.userId));
-    }, [db, session.userId, revision]),
-  );
+  const reload = useCallback(() => {
+    setAccounts(listActiveAccounts(db));
+    setRecent(listRecentTransactions(db, session.userId));
+  }, [db, session.userId, revision]);
+  useFocusEffect(reload);
   const hasAccounts = accounts === null || accounts.length > 0;
 
   return (
@@ -84,7 +93,10 @@ export default function Home() {
         />
       )}
       {accounts && accounts.length > 0 && (
-        <GroupedCard title="Recientes">
+        <GroupedCard
+          title="Recientes"
+          action={{ label: 'Ver todos', onPress: () => router.navigate('/movements') }}
+        >
           {recent.length === 0 ? (
             <Text style={[typography.body, { padding: spacing.md, color: colors.muted }]}>
               Aún no tienes movimientos
@@ -121,6 +133,7 @@ export default function Home() {
           chevron
         />
       </GroupedCard>
+      {DemoDataButton && <DemoDataButton onLoaded={reload} />}
     </Screen>
   );
 }

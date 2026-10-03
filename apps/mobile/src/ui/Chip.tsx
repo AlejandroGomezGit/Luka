@@ -31,8 +31,15 @@ export function Chip({ label, selected, onPress, hint }: ChipProps) {
         },
       ]}
     >
-      <Text style={[typography.body, { color }]}>{label}</Text>
-      {hint && <Text style={[typography.subhead, { color }]}>{hint}</Text>}
+      {/* Con AX5 una palabra larga («Transferencias») se partía: el texto crece hasta 2 veces (DT-03). */}
+      <Text maxFontSizeMultiplier={headingScale.title} style={[typography.body, { color }]}>
+        {label}
+      </Text>
+      {hint && (
+        <Text maxFontSizeMultiplier={headingScale.title} style={[typography.subhead, { color }]}>
+          {hint}
+        </Text>
+      )}
     </Pressable>
   );
 }

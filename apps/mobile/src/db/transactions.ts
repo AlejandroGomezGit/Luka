@@ -6,18 +6,35 @@ import {
   type AccountRef,
   buildTransaction,
   type CategoryKind,
+  containsPattern,
   editContext,
   type CurrencyCode,
   formatMoney,
   generalCategoryId,
+  normalizeText,
   predefinedCategoryId,
   today,
   type TransactionContext,
   type TransactionInput,
   type TransactionInputError,
 } from '@luka/domain';
-import { categories, transactions } from '@luka/schema-sqlite';
-import { and, count, desc, eq, isNotNull, isNull, max } from 'drizzle-orm';
+import { accounts, categories, transactions, transactionSearch } from '@luka/schema-sqlite';
+import {
+  and,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  lte,
+  max,
+  or,
+  type SQL,
+  sql,
+} from 'drizzle-orm';
 import { type AccountRow, getAccount, listActiveAccounts } from './accounts';
 import { getCategory } from './categories';
 import type { LocalDb } from './types';
@@ -79,13 +96,18 @@ export function createTransaction(
   if (!read.ok) return read;
   const result = buildTransaction(input, read.ctx, today(ctx.clock, timeZone));
   if (!result.ok) return result;
-  const id = insertRow(ctx, transactions, {
-    ...result.transaction,
-    occurredOn: input.occurredOn,
-    note: cleanNote(input.note),
-    categorySource: 'user',
-    source: 'manual',
-    reviewStatus: 'confirmed',
+  const note = cleanNote(input.note);
+  const id = ctx.db.transaction((tx) => {
+    const newId = insertRow({ ...ctx, db: tx }, transactions, {
+      ...result.transaction,
+      occurredOn: input.occurredOn,
+      note,
+      categorySource: 'user',
+      source: 'manual',
+      reviewStatus: 'confirmed',
+    });
+    writeSearch(tx, newId, note, null);
+    return newId;
   });
   return { ok: true, id };
 }
@@ -115,10 +137,14 @@ export function updateTransaction(
     today(ctx.clock, timeZone),
   );
   if (!result.ok) return result;
-  updateRow(ctx, transactions, id, {
-    ...result.transaction,
-    occurredOn: input.occurredOn,
-    note: cleanNote(input.note),
+  const note = cleanNote(input.note);
+  ctx.db.transaction((tx) => {
+    updateRow({ ...ctx, db: tx }, transactions, id, {
+      ...result.transaction,
+      occurredOn: input.occurredOn,
+      note,
+    });
+    writeSearch(tx, id, note, existing.merchant);
   });
   return { ok: true, id };
 }
@@ -151,26 +177,189 @@ export interface TransactionListItem {
 }
 
 /**
- * «Recientes» en Inicio (HU-04): los últimos movimientos confirmados y no borrados, del más reciente al
- * más antiguo por fecha y, en el mismo día, por hora de registro.
+ * Texto de búsqueda de un movimiento (HU-05): nota y comercio normalizados en `transaction_search`, una
+ * tabla derivada y solo local que no pasa por write.ts porque nunca se sincroniza.
  */
-export function listRecentTransactions(
+function writeSearch(db: LocalDb, id: string, note: string | null, merchant: string | null) {
+  const content = normalizeText([note, merchant].filter(Boolean).join(' '));
+  db.insert(transactionSearch)
+    .values({ transactionId: id, content })
+    .onConflictDoUpdate({ target: transactionSearch.transactionId, set: { content } })
+    .run();
+}
+
+/**
+ * Completa el texto de búsqueda de los movimientos que no lo tienen (los anteriores a la migración 0002 o
+ * los que lleguen sin él). Idempotente: corre en cada arranque.
+ */
+export function backfillTransactionSearch(db: LocalDb): void {
+  const missing = db
+    .select({ id: transactions.id, note: transactions.note, merchant: transactions.merchant })
+    .from(transactions)
+    .leftJoin(transactionSearch, eq(transactionSearch.transactionId, transactions.id))
+    .where(isNull(transactionSearch.transactionId))
+    .all();
+  if (missing.length === 0) return;
+  db.transaction((tx) => {
+    for (const row of missing) writeSearch(tx, row.id, row.note, row.merchant);
+  });
+}
+
+/** Filtros de la lista de movimientos (HU-05); todos se combinan. */
+export interface TransactionFilters {
+  kind?: 'expense' | 'income' | 'transfer';
+  /** Incluye las transferencias de origen y de destino. */
+  accountId?: string;
+  /** Una principal incluye sus subcategorías. Las transferencias no tienen categoría. */
+  categoryId?: string;
+  /** Fechas locales AAAA-MM-DD, extremos incluidos. */
+  from?: string;
+  to?: string;
+  /**
+   * Monto en valor absoluto y en una moneda: solo mira movimientos en ella (los de cuentas en esa moneda,
+   * INV-05). En transferencias compara el monto que sale.
+   */
+  amount?: { currency: CurrencyCode; minMinor?: number; maxMinor?: number };
+  /** Busca en nota, comercio, categoría (subcategoría o principal) y cuenta, sin tildes ni mayúsculas. */
+  text?: string;
+}
+
+/** Posición en la lista: fecha e id del último movimiento mostrado. */
+export interface ListCursor {
+  occurredOn: string;
+  id: string;
+}
+
+/** Ids de cuentas y categorías cuyo nombre contiene el texto: entran en la misma consulta SQL. */
+function matchingNames(db: LocalDb, text: string) {
+  const needle = normalizeText(text);
+  const accountIds = db
+    .select({ id: accounts.id, name: accounts.name })
+    .from(accounts)
+    .all()
+    .filter((a) => normalizeText(a.name).includes(needle))
+    .map((a) => a.id);
+  const rows = db
+    .select({ id: categories.id, name: categories.name, parentId: categories.parentId })
+    .from(categories)
+    .all();
+  const mains = new Set(
+    rows
+      .filter((c) => c.parentId === null && normalizeText(c.name).includes(needle))
+      .map((c) => c.id),
+  );
+  const categoryIds = rows
+    .filter((c) => normalizeText(c.name).includes(needle) || (c.parentId && mains.has(c.parentId)))
+    .map((c) => c.id);
+  return { accountIds, categoryIds };
+}
+
+function whereFor(db: LocalDb, userId: string, filters: TransactionFilters): SQL | undefined {
+  const conditions: (SQL | undefined)[] = [
+    eq(transactions.userId, userId),
+    notDeleted(transactions),
+    eq(transactions.reviewStatus, 'confirmed'),
+  ];
+  if (filters.kind) conditions.push(eq(transactions.kind, filters.kind));
+  if (filters.accountId) {
+    conditions.push(
+      or(
+        eq(transactions.accountId, filters.accountId),
+        eq(transactions.toAccountId, filters.accountId),
+      ),
+    );
+  }
+  if (filters.categoryId) {
+    const subs = db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(eq(categories.parentId, filters.categoryId))
+      .all()
+      .map((c) => c.id);
+    conditions.push(inArray(transactions.categoryId, [filters.categoryId, ...subs]));
+  }
+  if (filters.from) conditions.push(gte(transactions.occurredOn, filters.from));
+  if (filters.to) conditions.push(lte(transactions.occurredOn, filters.to));
+  if (filters.amount) {
+    const { currency, minMinor, maxMinor } = filters.amount;
+    conditions.push(eq(transactions.currency, currency));
+    if (minMinor !== undefined)
+      conditions.push(sql`abs(${transactions.amountMinor}) >= ${minMinor}`);
+    if (maxMinor !== undefined)
+      conditions.push(sql`abs(${transactions.amountMinor}) <= ${maxMinor}`);
+  }
+  const pattern = filters.text ? containsPattern(filters.text) : null;
+  if (filters.text && pattern) {
+    const { accountIds, categoryIds } = matchingNames(db, filters.text);
+    conditions.push(
+      or(
+        sql`${transactions.id} in (select ${transactionSearch.transactionId} from ${transactionSearch}
+          where ${transactionSearch.content} like ${pattern} escape '\\')`,
+        categoryIds.length > 0 ? inArray(transactions.categoryId, categoryIds) : undefined,
+        accountIds.length > 0 ? inArray(transactions.accountId, accountIds) : undefined,
+        accountIds.length > 0 ? inArray(transactions.toAccountId, accountIds) : undefined,
+      ),
+    );
+  }
+  return and(...conditions);
+}
+
+/**
+ * Consulta de una página de la lista: por fecha descendente y, en el mismo día, por id descendente (UUID
+ * v7, lo último registrado primero). El cursor usa los dos, así que no repite ni salta movimientos.
+ */
+export function transactionListQuery(
   db: LocalDb,
   userId: string,
-  limit = 5,
-): TransactionListItem[] {
+  filters: TransactionFilters,
+  cursor: ListCursor | null,
+  limit: number,
+) {
+  const after = cursor
+    ? or(
+        lt(transactions.occurredOn, cursor.occurredOn),
+        and(eq(transactions.occurredOn, cursor.occurredOn), lt(transactions.id, cursor.id)),
+      )
+    : undefined;
   return db
     .select()
     .from(transactions)
-    .where(and(notDeleted(transactions), eq(transactions.reviewStatus, 'confirmed')))
-    .orderBy(desc(transactions.occurredOn), desc(transactions.createdAt))
-    .limit(limit)
-    .all()
-    .map((row) => {
-      const account = getAccount(db, row.accountId);
-      const toAccount = row.toAccountId ? getAccount(db, row.toAccountId) : undefined;
-      const sub = row.categoryId ? getCategory(db, row.categoryId) : undefined;
-      const main = sub?.parentId ? getCategory(db, sub.parentId) : undefined;
+    .where(and(whereFor(db, userId, filters), after))
+    .orderBy(desc(transactions.occurredOn), desc(transactions.id))
+    .limit(limit);
+}
+
+/** Una página de movimientos (HU-05) y el cursor de la siguiente, o null si no hay más. */
+export function listTransactions(
+  db: LocalDb,
+  userId: string,
+  filters: TransactionFilters,
+  cursor: ListCursor | null,
+  limit = 50,
+): { items: TransactionListItem[]; nextCursor: ListCursor | null } {
+  const rows = transactionListQuery(db, userId, filters, cursor, limit + 1).all();
+  const page = rows.slice(0, limit);
+  const last = page.at(-1);
+  const accountsById = new Map(
+    db
+      .select()
+      .from(accounts)
+      .all()
+      .map((a) => [a.id, a]),
+  );
+  const categoriesById = new Map(
+    db
+      .select()
+      .from(categories)
+      .all()
+      .map((c) => [c.id, c]),
+  );
+  return {
+    items: page.map((row) => {
+      const account = accountsById.get(row.accountId);
+      const toAccount = row.toAccountId ? accountsById.get(row.toAccountId) : undefined;
+      const sub = row.categoryId ? categoriesById.get(row.categoryId) : undefined;
+      const main = sub?.parentId ? categoriesById.get(sub.parentId) : undefined;
       return {
         id: row.id,
         kind: row.kind,
@@ -186,7 +375,33 @@ export function listRecentTransactions(
             ? { ...categoryLabels(userId, sub, main), icon: sub.icon, color: sub.color }
             : null,
       };
-    });
+    }),
+    nextCursor: rows.length > limit && last ? { occurredOn: last.occurredOn, id: last.id } : null,
+  };
+}
+
+/** Cuántos movimientos cumplen los filtros: se anuncia al lector de pantalla al filtrar. */
+export function countTransactions(
+  db: LocalDb,
+  userId: string,
+  filters: TransactionFilters,
+): number {
+  return (
+    db
+      .select({ n: count() })
+      .from(transactions)
+      .where(whereFor(db, userId, filters))
+      .get()?.n ?? 0
+  );
+}
+
+/** «Recientes» en Inicio (HU-04): los primeros de la lista de movimientos, sin filtros. */
+export function listRecentTransactions(
+  db: LocalDb,
+  userId: string,
+  limit = 5,
+): TransactionListItem[] {
+  return listTransactions(db, userId, {}, null, limit).items;
 }
 
 /** La cuenta del movimiento más reciente; si está archivada o no hay movimientos, la primera activa. */

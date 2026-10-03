@@ -7,6 +7,10 @@
     "when": 1790967590704,
     "sha256": "660da306a4022b2ed0f510997e25a51198a1638897566876187dad1d8c2ef0bb"
   },
+  "sqlite/0002_transaction_search": {
+    "when": 1791038182309,
+    "sha256": "b906bf44a52c4db5ce74c2c61aeacdcb2d8b80e87aa80703f738ca7a47142603"
+  },
   "pg/0000_citext": {
     "when": 1790950164421,
     "sha256": "03c8a6c68aba706aae96cefdb6ba385dca8782b5799ce7a85051d4a44b1ff44f"

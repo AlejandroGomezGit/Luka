@@ -112,3 +112,36 @@ describe('migraciones de SQLite', () => {
     expect(() => insertTx(db, { account_id: 'no-existe' })).toThrow(/FOREIGN KEY/);
   });
 });
+
+describe('HU-05 transaction_search: texto de búsqueda derivado y solo local', () => {
+  it('HU-05 la migración 0002 se aplica sobre la versión anterior sin perder movimientos', () => {
+    const db = new DatabaseSync(':memory:');
+    db.exec('PRAGMA foreign_keys = ON');
+    const index = journal.entries.findIndex((entry) => entry.tag.startsWith('0002'));
+    expect(index).toBeGreaterThan(0);
+    migrate(db, 0, index);
+    db.prepare(
+      `insert into accounts (id, user_id, created_at, updated_at, name, type, currency, color, icon)
+       values ('cash', 'u1', ?, ?, 'Efectivo', 'cash', 'COP', 'green', '💵')`,
+    ).run(now, now);
+    insertTx(db, { id: 'antes' });
+    migrate(db, index, index + 1);
+    expect(db.prepare('select count(*) as n from transactions').get()).toEqual({ n: 1 });
+    expect(db.prepare('select count(*) as n from transaction_search').get()).toEqual({ n: 0 });
+  });
+
+  it('HU-05 cada fila pertenece a un movimiento y se borra con él', () => {
+    const db = seeded();
+    insertTx(db, { id: 'cafe' });
+    db.prepare(
+      `insert into transaction_search (transaction_id, content) values ('cafe', 'cafe exito')`,
+    ).run();
+    expect(() =>
+      db
+        .prepare(`insert into transaction_search (transaction_id, content) values ('nada', 'x')`)
+        .run(),
+    ).toThrow(/FOREIGN KEY/);
+    db.prepare(`delete from transactions where id = 'cafe'`).run();
+    expect(db.prepare('select count(*) as n from transaction_search').get()).toEqual({ n: 0 });
+  });
+});

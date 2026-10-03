@@ -50,3 +50,21 @@ export function addDays(date: string, days: number): string {
   const result = new Date(Date.UTC(year, month - 1, day + days));
   return localDateFromParts(result.getUTCFullYear(), result.getUTCMonth(), result.getUTCDate());
 }
+
+export type DateRangePreset = 'this_month' | 'last_month' | 'last_30_days';
+
+/**
+ * Rango de fechas locales de los filtros de movimientos (HU-05), a partir de «hoy» calculado con el reloj
+ * inyectado en la zona horaria del dispositivo. Los extremos están incluidos.
+ */
+export function dateRange(preset: DateRangePreset, today: string): { from: string; to: string } {
+  if (preset === 'last_30_days') return { from: addDays(today, -29), to: today };
+  const [year, month] = today.split('-').map(Number) as [number, number];
+  const monthIndex = preset === 'this_month' ? month - 1 : month - 2;
+  const first = new Date(Date.UTC(year, monthIndex, 1));
+  const last = new Date(Date.UTC(year, monthIndex + 1, 0));
+  return {
+    from: localDateFromParts(first.getUTCFullYear(), first.getUTCMonth(), 1),
+    to: localDateFromParts(last.getUTCFullYear(), last.getUTCMonth(), last.getUTCDate()),
+  };
+}

@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   addDays,
   type Clock,
+  dateRange,
   isLocalDate,
   localDateFromParts,
   toLocalDate,
@@ -49,5 +50,26 @@ describe('fechas locales para movimientos', () => {
   it('localDateFromParts arma AAAA-MM-DD con los componentes locales del selector de fecha', () => {
     expect(localDateFromParts(2026, 9, 1)).toBe('2026-10-01');
     expect(localDateFromParts(2026, 0, 5)).toBe('2026-01-05');
+  });
+});
+
+describe('HU-05 rangos de fecha de los filtros', () => {
+  it('HU-05 este mes, el mes pasado y los últimos 30 días, con cambio de mes y de año', () => {
+    expect(dateRange('this_month', '2026-10-01')).toEqual({ from: '2026-10-01', to: '2026-10-31' });
+    expect(dateRange('last_month', '2026-10-01')).toEqual({ from: '2026-09-01', to: '2026-09-30' });
+    expect(dateRange('last_month', '2026-01-15')).toEqual({ from: '2025-12-01', to: '2025-12-31' });
+    expect(dateRange('this_month', '2028-02-10')).toEqual({ from: '2028-02-01', to: '2028-02-29' });
+    expect(dateRange('last_30_days', '2026-10-01')).toEqual({
+      from: '2026-09-02',
+      to: '2026-10-01',
+    });
+  });
+
+  it('HU-05 a las 21:00 en Bogotá del 30 de septiembre «este mes» todavía es septiembre', () => {
+    // 1 de octubre a las 02:00 UTC = 30 de septiembre a las 21:00 en Bogotá.
+    const clock = { now: () => Date.UTC(2026, 9, 1, 2) };
+    const local = today(clock, 'America/Bogota');
+    expect(local).toBe('2026-09-30');
+    expect(dateRange('this_month', local)).toEqual({ from: '2026-09-01', to: '2026-09-30' });
   });
 });

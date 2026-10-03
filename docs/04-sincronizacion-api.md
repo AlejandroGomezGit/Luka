@@ -4,7 +4,7 @@ El dispositivo envía operaciones idempotentes desde una cola local y recibe cam
 
 ## Garantías de la sincronización
 
-El motor promete cinco cosas y declara tres límites; las pruebas de la última sección existen para demostrar las promesas.
+El motor promete cinco cosas y declara cuatro límites; las pruebas de la última sección existen para demostrar las promesas.
 
 **Lo que garantiza**
 
@@ -19,6 +19,7 @@ El motor promete cinco cosas y declara tres límites; las pruebas de la última 
 - **No es en tiempo real.** Un cambio llega a otro dispositivo en su siguiente sincronización: al abrir la app, al volver la red o al refrescar. En V2 una notificación silenciosa puede disparar la sincronización.
 - **No mezcla texto.** Si dos dispositivos editan la misma nota, gana una de las dos versiones completas; no se combinan frases.
 - **No sincroniza saldos.** Cada dispositivo los recalcula desde los movimientos.
+- **No sincroniza datos derivados.** `transaction_search` (texto de búsqueda, documento 02) es solo local: cada dispositivo lo reconstruye desde los movimientos que recibe y nunca viaja en `POST /v1/sync`.
 
 ### Reloj lógico híbrido
 

@@ -238,12 +238,8 @@
           "name": "attachments_transaction_id_transactions_id_fk",
           "tableFrom": "attachments",
           "tableTo": "transactions",
-          "columnsFrom": [
-            "transaction_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["transaction_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -367,12 +363,8 @@
           "name": "categories_parent_id_categories_id_fk",
           "tableFrom": "categories",
           "tableTo": "categories",
-          "columnsFrom": [
-            "parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parent_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -598,44 +590,28 @@
       "indexes": {
         "transactions_list": {
           "name": "transactions_list",
-          "columns": [
-            "user_id",
-            "\"occurred_on\" desc",
-            "id"
-          ],
+          "columns": ["user_id", "\"occurred_on\" desc", "id"],
           "isUnique": false,
           "where": "\"transactions\".\"deleted_at\" is null"
         },
         "transactions_month": {
           "name": "transactions_month",
-          "columns": [
-            "user_id",
-            "occurred_on",
-            "category_id"
-          ],
+          "columns": ["user_id", "occurred_on", "category_id"],
           "isUnique": false
         },
         "transactions_account": {
           "name": "transactions_account",
-          "columns": [
-            "account_id"
-          ],
+          "columns": ["account_id"],
           "isUnique": false
         },
         "transactions_to_account": {
           "name": "transactions_to_account",
-          "columns": [
-            "to_account_id"
-          ],
+          "columns": ["to_account_id"],
           "isUnique": false
         },
         "transactions_external_id": {
           "name": "transactions_external_id",
-          "columns": [
-            "user_id",
-            "account_id",
-            "external_id"
-          ],
+          "columns": ["user_id", "account_id", "external_id"],
           "isUnique": true,
           "where": "\"transactions\".\"external_id\" is not null"
         }
@@ -645,12 +621,8 @@
           "name": "transactions_account_id_accounts_id_fk",
           "tableFrom": "transactions",
           "tableTo": "accounts",
-          "columnsFrom": [
-            "account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["account_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -658,12 +630,8 @@
           "name": "transactions_to_account_id_accounts_id_fk",
           "tableFrom": "transactions",
           "tableTo": "accounts",
-          "columnsFrom": [
-            "to_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["to_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -671,12 +639,8 @@
           "name": "transactions_category_id_categories_id_fk",
           "tableFrom": "transactions",
           "tableTo": "categories",
-          "columnsFrom": [
-            "category_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["category_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }

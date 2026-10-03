@@ -56,6 +56,7 @@ Casi todo lo que guarda Luka es información financiera personal, así que se tr
 | Logs y trazas | Baja | Plataforma de observabilidad | Solo ids; sin importes, comercios, notas ni correos | 30 días |
 | Credenciales del agregador bancario (V3) | Crítica | Solo servidor | Cifradas con una clave gestionada; nunca llegan al dispositivo | Hasta que el usuario desconecte |
 | Texto original de los mensajes capturados (V2) | Alta | Solo dispositivo | Local; nunca se sincroniza ni sale del teléfono | 30 días |
+| Texto de búsqueda de los movimientos (`transaction_search`) | Alta, porque repite notas y comercios | Solo dispositivo | Protección de datos de iOS como la base local; nunca se sincroniza ni se registra en logs | Se borra con su movimiento (cascada) y con la base; se reconstruye desde los movimientos |
 
 **En tránsito.** TLS 1.2 o superior, HSTS y App Transport Security de iOS sin excepciones. El pinning de certificados no entra en el MVP: sus riesgos operativos pesan más que su beneficio hasta que haya una razón concreta.
 
