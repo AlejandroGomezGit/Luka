@@ -1,4 +1,4 @@
-import { useColorScheme } from 'react-native';
+import { type TextStyle, useColorScheme } from 'react-native';
 
 export type Scheme = 'light' | 'dark';
 
@@ -34,7 +34,27 @@ export const themeColors = {
   },
 } as const;
 
-export const spacing = { sm: 8, md: 16, lg: 24 } as const;
+export const spacing = { xs: 4, sm: 8, md: 16, lg: 24 } as const;
+
+/** Radios: tarjetas agrupadas, controles (campos, segmentos) y píldoras (chips, botones). */
+export const radius = { card: 20, control: 12, pill: 999 } as const;
+
+/**
+ * Tamaños mínimos, nunca fijos, para que crezcan con Dynamic Type: área táctil de 44 pt (Apple) y filas
+ * de lista de 58 pt como en las maquetas.
+ */
+export const sizes = { touch: 44, row: 58 } as const;
+
+/** Escala tipográfica de iOS; el tamaño de Dynamic Type se aplica encima (allowFontScaling). */
+export const typography = {
+  largeTitle: { fontSize: 34, fontWeight: '700' },
+  title: { fontSize: 22, fontWeight: '700' },
+  headline: { fontSize: 17, fontWeight: '600' },
+  body: { fontSize: 17 },
+  subhead: { fontSize: 15 },
+  footnote: { fontSize: 13 },
+  amount: { fontSize: 48, fontWeight: '700' },
+} as const satisfies Record<string, TextStyle>;
 
 /**
  * Tamaños de accesibilidad de Dynamic Type (desde AX1, escala de 1,6 o más): Apple recomienda pasar de
@@ -45,5 +65,5 @@ export const isAccessibilitySize = (fontScale: number) => fontScale >= 1.6;
 /** Tema según el modo claro u oscuro del sistema. */
 export function useTheme() {
   const scheme: Scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  return { scheme, colors: themeColors[scheme], spacing };
+  return { scheme, colors: themeColors[scheme], spacing, radius, sizes, typography };
 }

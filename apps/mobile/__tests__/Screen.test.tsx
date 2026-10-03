@@ -40,3 +40,8 @@ test('HU-02 HU-03 con el teclado abierto, el primer toque en una opción la sele
   await render(tree());
   expect(screen.root?.props.keyboardShouldPersistTaps).toBe('handled');
 });
+
+test('T-044 el contenido deja libre el espacio de la barra de pestañas flotante y de las barras del sistema', async () => {
+  await render(tree());
+  expect(screen.root?.props.contentInsetAdjustmentBehavior).toBe('automatic');
+});

@@ -28,7 +28,7 @@ export default function CategoriesScreen() {
 
   return (
     <Screen contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
-      <Stack.Screen options={{ title: 'Categorías' }} />
+      <Stack.Screen options={{ title: 'Categorías', headerLargeTitle: true }} />
       <View accessibilityRole="tablist" style={[styles.row, { gap: spacing.sm }]}>
         {KINDS.map((option) => (
           <Pressable
