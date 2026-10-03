@@ -1,4 +1,4 @@
-import { PREDEFINED_CATEGORIES, predefinedCategoryId } from '@luka/domain';
+import { isEmoji, PREDEFINED_CATEGORIES, predefinedCategoryId } from '@luka/domain';
 import { categories } from '@luka/schema-sqlite';
 import { eq } from 'drizzle-orm';
 import { seedPredefinedCategories } from '../src/db/categories';
@@ -37,6 +37,19 @@ describe('HU-07 categorías predefinidas', () => {
       userId: localUser,
       version: 0,
     });
+  });
+
+  it('HU-07 la siembra escribe un emoji en cada categoría, nunca un token antiguo como «cart»', async () => {
+    const db = await createTestDb();
+    prepareLocalData(db, testClock(), testRandom());
+    const icons = db
+      .select({ icon: categories.icon })
+      .from(categories)
+      .all()
+      .map((row) => row.icon);
+    expect(icons).toHaveLength(PREDEFINED_CATEGORIES.length);
+    expect(icons.filter((icon) => !isEmoji(icon))).toEqual([]);
+    expect(icons.filter((icon) => /^[a-z_.]+$/.test(icon))).toEqual([]);
   });
 
   it('HU-07 sembrar de nuevo es idempotente: no duplica ni cambia nada', async () => {

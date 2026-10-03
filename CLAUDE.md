@@ -51,6 +51,7 @@ TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con ex
 ## Convenciones
 
 - Conventional Commits; ramas feat/, fix/, chore/, docs/ o ci/; un issue por rama y por pull request.
+- Los PR de funcionalidades se mergean con squash (con mi OK); el mensaje del squash dice qué se verificó (pruebas, simulador) y qué no.
 - Sin any.
 - Toda dependencia nueva, incluso de tipos o de desarrollo, se aprueba antes de instalarla y se lista en el PR con su motivo y su licencia.
 - Una migración que ya está en un commit nunca se edita ni se regenera: se crea otra. Regenerarla con drizzle-kit le cambia la hora y Drizzle, que solo compara esa hora, la vuelve a aplicar en las bases que ya la tenían. Cada migración nueva se agrega a migrations.lock.json en el mismo PR; una prueba compara los SQL y el journal con esa lista.
