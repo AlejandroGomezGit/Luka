@@ -24,6 +24,7 @@ export function ColorPicker({ value, onChange }: Props) {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         accessibilityRole="radiogroup"
         contentContainerStyle={{ gap: spacing.sm }}
       >

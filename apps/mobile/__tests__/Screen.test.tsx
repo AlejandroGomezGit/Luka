@@ -35,3 +35,8 @@ test('#39 al cambiar Dynamic Type con la pantalla abierta, el contenido se vuelv
   expect(mounts).toHaveBeenCalledTimes(2);
   expect(screen.getByText('contenido')).toBeOnTheScreen();
 });
+
+test('HU-02 HU-03 con el teclado abierto, el primer toque en una opción la selecciona en vez de solo cerrar el teclado', async () => {
+  await render(tree());
+  expect(screen.root?.props.keyboardShouldPersistTaps).toBe('handled');
+});
