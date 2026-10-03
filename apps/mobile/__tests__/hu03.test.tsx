@@ -10,6 +10,66 @@ import { seedPredefinedCategories } from '../src/db/categories';
 import { LocalSessionProvider, type LocalSession } from '../src/db/session';
 import { createTestDb, testClock, testRandom } from '../src/db/testing';
 
+/**
+ * Modo avión (HU-03): durante todo el flujo, cualquier intento de red falla y queda anotado. Se anota
+ * además de fallar porque la app podría atrapar el error y seguir como si nada.
+ */
+const networkAttempts: string[] = [];
+const realNetwork = {
+  fetch: globalThis.fetch,
+  XMLHttpRequest: (globalThis as { XMLHttpRequest?: unknown }).XMLHttpRequest,
+  WebSocket: globalThis.WebSocket,
+};
+function blocked(api: string, target: unknown): never {
+  networkAttempts.push(`${api} ${String(target)}`);
+  throw new Error(`HU-03 sin red: intento de ${api}`);
+}
+beforeEach(() => {
+  networkAttempts.length = 0;
+  Object.assign(globalThis, {
+    fetch: (input: unknown) => blocked('fetch', input),
+    XMLHttpRequest: class {
+      open(_method: string, url: unknown) {
+        blocked('XMLHttpRequest', url);
+      }
+    },
+    WebSocket: function WebSocket(url: unknown) {
+      blocked('WebSocket', url);
+    },
+  });
+});
+afterEach(() => {
+  Object.assign(globalThis, realNetwork);
+});
+
+/** Título de la barra superior, leído de las opciones que la pantalla le pasa al encabezado nativo. */
+function headerTitles(): unknown[] {
+  const find = (node: unknown): unknown[] => {
+    if (!node || typeof node !== 'object') return [];
+    const n = node as { type?: string; props?: { title?: unknown }; children?: unknown[] };
+    return [
+      ...(n.type === 'RNSScreenStackHeaderConfig' ? [n.props?.title] : []),
+      ...(n.children ?? []).flatMap(find),
+    ];
+  };
+  const tree = screen.toJSON();
+  return find(Array.isArray(tree) ? { children: tree } : tree);
+}
+
+test('HU-03 el guardia de red detecta fetch, XMLHttpRequest y WebSocket', () => {
+  expect(() => fetch('https://ejemplo.co')).toThrow('sin red');
+  const xhr = new (
+    globalThis as unknown as { XMLHttpRequest: new () => { open: (m: string, u: string) => void } }
+  ).XMLHttpRequest();
+  expect(() => xhr.open('GET', 'https://ejemplo.co/xhr')).toThrow('sin red');
+  expect(() => new WebSocket('wss://ejemplo.co')).toThrow('sin red');
+  expect(networkAttempts).toEqual([
+    'fetch https://ejemplo.co',
+    'XMLHttpRequest https://ejemplo.co/xhr',
+    'WebSocket wss://ejemplo.co',
+  ]);
+});
+
 async function session(): Promise<LocalSession> {
   const db = await createTestDb();
   // 1 de octubre de 2026 a mediodía en Bogotá.
@@ -32,9 +92,8 @@ async function session(): Promise<LocalSession> {
   return value;
 }
 
-test('HU-03 desde Inicio se llega a «Guardar» en 3 toques, sin red, y el saldo de la cuenta se actualiza al volver', async () => {
+test('HU-03 desde Inicio se llega a «Guardar» en 3 toques en modo avión (sin fetch, XMLHttpRequest ni WebSocket) y el saldo se actualiza al volver', async () => {
   const value = await session();
-  const fetchSpy = jest.spyOn(global, 'fetch');
   const wrapper = ({ children }: { children: ReactNode }) => (
     <LocalSessionProvider value={value}>{children}</LocalSessionProvider>
   );
@@ -50,7 +109,8 @@ test('HU-03 desde Inicio se llega a «Guardar» en 3 toques, sin red, y el saldo
     await fireEvent.press(element);
   };
   await tap(screen.getByRole('button', { name: 'Agregar' }));
-  // Maqueta docs/diseno/Agregar gasto.png: «Cancelar» mientras no se guarde nada.
+  // Maqueta docs/diseno/Agregar gasto.png: título según el tipo y «Cancelar» mientras no se guarde nada.
+  expect(headerTitles()).toContain('Nuevo gasto');
   expect(screen.getByRole('button', { name: 'Cancelar' })).toBeOnTheScreen();
   // Escribir el monto es teclado: no cuenta como toque (documento 01, HU-03).
   await fireEvent.changeText(screen.getByLabelText('Monto'), '12500');
@@ -62,13 +122,14 @@ test('HU-03 desde Inicio se llega a «Guardar» en 3 toques, sin red, y el saldo
   const saved = value.db.select().from(transactions).all();
   expect(saved).toHaveLength(1);
   expect(saved[0]?.amountMinor).toBe(-1_250_000);
-  expect(fetchSpy).not.toHaveBeenCalled();
 
   // El formulario queda listo para otro: ya no se cancela nada, se termina con «Listo».
   await fireEvent.press(screen.getByRole('radio', { name: 'Ingreso' }));
+  expect(headerTitles()).toContain('Nuevo ingreso');
   expect(screen.getByRole('button', { name: 'Depositado en Efectivo, COP' })).toBeOnTheScreen();
   await fireEvent.press(screen.getByRole('button', { name: 'Listo' }));
   expect(screen.getByText('$ 107.500')).toBeOnTheScreen();
+  expect(networkAttempts).toEqual([]);
 });
 
 test('HU-03 con una cuenta COP y otra USD, se elige la de dólares en la hoja, se registra 12,50 y Inicio descuenta US$ 12,50', async () => {
@@ -111,4 +172,5 @@ test('HU-03 con una cuenta COP y otra USD, se elige la de dólares en la hoja, s
   await fireEvent.press(screen.getByRole('button', { name: 'Listo' }));
   expect(screen.getByText('US$ 87,50')).toBeOnTheScreen();
   expect(screen.getByText('$ 120.000')).toBeOnTheScreen();
+  expect(networkAttempts).toEqual([]);
 });
