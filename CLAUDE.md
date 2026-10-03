@@ -59,6 +59,7 @@ TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con ex
 - Cobertura de packages/domain: 80 % o más.
 - Toda pantalla nueva de la app usa el componente Screen (apps/mobile/src/ui/Screen.tsx): vuelve a montar el contenido cuando cambia Dynamic Type, porque React Native no vuelve a medir el texto y lo deja cortado (#39).
 - Los estilos de la app usan solo los tokens de apps/mobile/src/theme.ts (colores, espaciado, radios, tamaños y tipografía) y los componentes base de apps/mobile/src/ui (Button, ListRow, GroupedCard, TextField, Chip y SegmentedControl); nada de colores, tamaños ni radios escritos a mano (T-044).
+- Una tabla derivada (solo local y reconstruible desde otras, como `transaction_search`) se rellena por lotes o en segundo plano, sin bloquear el primer render, y su relleno es idempotente.
 
 ## Cómo trabajar
 
