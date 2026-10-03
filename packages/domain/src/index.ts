@@ -8,5 +8,6 @@ export * from './invariants.js';
 export * from './money.js';
 export * from './names.js';
 export * from './search.js';
+export * from './summary.js';
 export * from './tokens.js';
 export * from './transaction-input.js';
