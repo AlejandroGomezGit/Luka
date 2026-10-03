@@ -10,11 +10,14 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: colors.background },
+          headerShadowVisible: false,
+          headerLargeTitleShadowVisible: false,
           headerTintColor: colors.text,
           contentStyle: { backgroundColor: colors.background },
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'Luka' }} />
+        {/* Inicio tiene encabezado propio; «Inicio» es el texto del botón para volver. */}
+        <Stack.Screen name="(tabs)" options={{ title: 'Inicio', headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
     </DatabaseProvider>

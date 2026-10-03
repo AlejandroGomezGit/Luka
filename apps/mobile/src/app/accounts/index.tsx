@@ -21,7 +21,7 @@ export default function AccountsScreen() {
 
   return (
     <Screen contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
-      <Stack.Screen options={{ title: 'Cuentas' }} />
+      <Stack.Screen options={{ title: 'Cuentas', headerLargeTitle: true }} />
       <View style={[styles.row, { gap: spacing.sm }]}>
         <Text style={[styles.text, { color: colors.text }]}>Mostrar archivadas</Text>
         <Switch

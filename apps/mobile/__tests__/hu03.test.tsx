@@ -3,7 +3,7 @@ import { Stack } from 'expo-router';
 import { renderRouter } from 'expo-router/testing-library';
 import type { ReactNode } from 'react';
 import { transactions } from '@luka/schema-sqlite';
-import Home from '../src/app/index';
+import Home from '../src/app/(tabs)/index';
 import NewTransactionScreen from '../src/app/transactions/new';
 import { createAccount } from '../src/db/accounts';
 import { seedPredefinedCategories } from '../src/db/categories';

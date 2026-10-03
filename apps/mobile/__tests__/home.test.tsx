@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
-import Home from '../src/app/index';
+import Home from '../src/app/(tabs)/index';
 import { createAccount } from '../src/db/accounts';
 import { LocalSessionProvider } from '../src/db/session';
 import { createTestDb, testClock, testRandom } from '../src/db/testing';
