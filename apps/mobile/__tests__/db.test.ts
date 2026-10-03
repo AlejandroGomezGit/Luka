@@ -3,6 +3,9 @@ import type { Clock } from '@luka/domain';
 import { and, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/sql-js';
 import { migrate } from 'drizzle-orm/sql-js/migrator';
+import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import initSqlJs from 'sql.js';
 import { ensureDeviceProfile } from '../src/db/profile';
 import type { LocalDb } from '../src/db/types';
@@ -50,6 +53,52 @@ describe('migraciones al abrir (ADR-003)', () => {
     const db = await freshDb();
     migrate(db as unknown as Parameters<typeof migrate>[0], { migrationsFolder });
     expect(db.select().from(accounts).all()).toEqual([]);
+  });
+});
+
+describe('una migración que falla (ADR-003)', () => {
+  /**
+   * Copia las migraciones reales y agrega dos pendientes: una válida y otra que falla. Drizzle aplica
+   * todas las pendientes en una sola transacción (BEGIN … COMMIT, ROLLBACK si una falla).
+   */
+  function withFailingMigrations(): string {
+    const folder = mkdtempSync(path.join(tmpdir(), 'luka-migraciones-'));
+    cpSync(migrationsFolder, folder, { recursive: true });
+    const journalPath = path.join(folder, 'meta/_journal.json');
+    const journal = JSON.parse(readFileSync(journalPath, 'utf8')) as {
+      entries: { idx: number; version: string; when: number; tag: string; breakpoints: boolean }[];
+    };
+    const last = journal.entries.at(-1);
+    if (!last) throw new Error('sin migraciones');
+    const extra = [
+      ['9998_valida', 'CREATE TABLE `prueba_valida` (`id` text PRIMARY KEY NOT NULL);'],
+      [
+        '9999_falla',
+        'ALTER TABLE `accounts` ADD `nueva` text;--> statement-breakpoint\nINSERT INTO `tabla_inexistente` VALUES (1);',
+      ],
+    ] as const;
+    extra.forEach(([tag, sql], i) => {
+      writeFileSync(path.join(folder, `${tag}.sql`), sql);
+      journal.entries.push({ ...last, idx: last.idx + i + 1, when: last.when + i + 1, tag });
+    });
+    writeFileSync(journalPath, JSON.stringify(journal));
+    return folder;
+  }
+
+  it('deja la base exactamente como estaba: ni la migración válida ni la mitad de la que falla quedan aplicadas', async () => {
+    const SQL = await initSqlJs();
+    const raw = new SQL.Database();
+    const db = drizzle(raw, { schema: { accounts, deviceProfile, transactions } });
+    migrate(db, { migrationsFolder });
+    const ctx = { db: db as unknown as LocalDb, userId: 'u1', clock, random };
+    insertRow(ctx, accounts, { ...account, openingBalanceMinor: 0 });
+    const before = raw.export();
+
+    expect(() => {
+      migrate(db, { migrationsFolder: withFailingMigrations() });
+    }).toThrow(/tabla_inexistente/);
+    expect(Buffer.from(raw.export()).equals(Buffer.from(before))).toBe(true);
+    expect(raw.exec("select name from sqlite_master where name = 'prueba_valida'")).toEqual([]);
   });
 });
 
