@@ -127,6 +127,14 @@ Los tres que más pesan en el portafolio son el funcionamiento sin conexión, la
 | RNF-13 | Accesibilidad | Dynamic Type y VoiceOver en los flujos principales; contraste mínimo AA | Auditoría con Accessibility Inspector |
 | RNF-14 | Disponibilidad | Meta de 99,5 % mensual para la API mientras sea un servicio de bajo costo | Monitoreo externo de health checks |
 
+## Navegación de la app
+
+La app se organiza como las apps de iOS: una barra de pestañas abajo y pantallas que se abren encima. El diseño sigue las maquetas de `docs/diseno/` con los tokens y componentes base de T-044.
+
+- **Pestañas:** Inicio, Movimientos y Resumen, con la barra nativa de iOS. Movimientos y Resumen muestran «Disponible pronto» hasta T-016 y T-017. «Por revisar» se agrega en V2, con la captura de mensajes.
+- **Inicio:** la fecha, el título y el botón «Agregar»; debajo, «Mis cuentas» con el saldo de cada una y, al final, la sección «Administrar» con dos filas, Cuentas y Categorías, cada una con su nombre y una ayuda para VoiceOver («Abre la lista de tus cuentas»).
+- **Pantallas encima de las pestañas:** Cuentas, Categorías, sus formularios y «Agregar» (CU-08) se abren sobre las pestañas, que se ocultan mientras tanto, como en Ajustes de iOS. Sin cuentas, «Agregar» lleva a crear la primera (CU-05).
+
 ## Catálogo de casos de uso
 
 Hay 36 casos de uso en 11 módulos: 13 en el MVP, 18 en V2 y 5 en V3.
