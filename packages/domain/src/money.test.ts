@@ -161,14 +161,21 @@ describe('formatAmountInput: los separadores de miles se ponen solos al escribir
     );
   });
 
-  it('propiedad: en COP lo formateado se lee como los mismos pesos', () => {
+  it('propiedad: en COP lo formateado se lee como los mismos pesos (hasta el límite de 13 dígitos)', () => {
     fc.assert(
-      fc.property(
-        fc.integer({ min: 0, max: Math.floor(Number.MAX_SAFE_INTEGER / 100) }),
-        (pesos) => {
-          expect(parseAmount(formatAmountInput(String(pesos), 'COP'), 'COP')).toBe(pesos * 100);
-        },
-      ),
+      fc.property(fc.integer({ min: 0, max: 9_999_999_999_999 }), (pesos) => {
+        expect(parseAmount(formatAmountInput(String(pesos), 'COP'), 'COP')).toBe(pesos * 100);
+      }),
     );
+  });
+});
+
+describe('formatAmountInput: límite de dígitos', () => {
+  it('no deja escribir más de 13 dígitos enteros, así el monto nunca pasa de un entero seguro', () => {
+    expect(formatAmountInput('99999999999999999', 'COP')).toBe('9.999.999.999.999');
+    expect(parseAmount(formatAmountInput('99999999999999999', 'COP'), 'COP')).toBe(
+      999_999_999_999_900,
+    );
+    expect(formatAmountInput('12345678901234567,89', 'USD')).toBe('1.234.567.890.123,89');
   });
 });

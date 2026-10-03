@@ -12,7 +12,12 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.ejemplo.luka"
     },
-    "plugins": ["expo-router", "expo-status-bar", "expo-sqlite"],
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-sqlite",
+      "@react-native-community/datetimepicker"
+    ],
     "experiments": {
       "typedRoutes": true
     }

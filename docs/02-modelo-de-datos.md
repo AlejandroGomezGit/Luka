@@ -97,9 +97,9 @@ Siete entidades cubren el MVP: usuarios, dispositivos, cuentas, categorías, mov
 | `amount_minor` | bigint | Con signo, en la moneda de `account_id`; nunca cero |
 | `to_amount_minor` | bigint, nulo | Positivo, en la moneda de `to_account_id`; solo en transferencias |
 | `currency` | char(3) | Copia de la moneda de la cuenta de origen al registrar; protege el histórico |
-| `occurred_on` | date | Fecha local que ve el usuario |
+| `occurred_on` | date | Fecha local que ve el usuario, armada con los componentes locales de la fecha y el reloj inyectado (nunca con `toISOString`). No puede ser futura: error «La fecha no puede ser futura». La lista ordena por esta fecha y desempata por `created_at` |
 | `occurred_at` | timestamptz, nulo | Hora exacta, si el usuario la fija |
-| `category_id` | uuid, nulo | Sin categoría hasta que se asigne |
+| `category_id` | uuid, nulo | Opcional: sin categoría hasta que se asigne. Si la tiene, es siempre una subcategoría (INV-04). En los reportes (T-017) los movimientos sin categoría salen como «Sin categoría» |
 | `category_source` | enum | `user`, `rule`, `model`, `import`; solo `user` alimenta el aprendizaje |
 | `category_confidence` | smallint, nulo | De 0 a 100; solo si la asignó el modelo |
 | `merchant` | text, nulo | Comercio o descripción corta |

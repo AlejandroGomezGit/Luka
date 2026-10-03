@@ -216,7 +216,7 @@ Se detallan los cinco casos de uso que más condicionan la arquitectura: iniciar
 
 1. La app abre el formulario con la última cuenta usada, la fecha de hoy y el teclado numérico activo.
 2. El usuario escribe el monto.
-3. Elige la categoría, con las más usadas primero, y si quiere agrega una nota.
+3. Elige la categoría, con las más usadas primero, y si quiere agrega una nota. La categoría es opcional. «Las más usadas» son seis subcategorías del tipo elegido, por número de movimientos confirmados y no archivadas, con desempate por el uso más reciente y luego por una lista fija de sugerencias, que también completa las que falten sin historial. Si la subcategoría es el «General» de su principal, se muestra con el nombre de la principal («Salario»).
 4. Toca «Guardar».
 5. La app valida los datos, genera un UUID, guarda el movimiento en la base local como pendiente de sincronizar y actualiza saldos y resumen.
 6. La app confirma con un aviso breve y deja el formulario listo para otro registro.
