@@ -379,3 +379,19 @@ describe('HU-04 editar un movimiento (CU-09)', () => {
     expect(screen.getByRole('button', { name: /^Ahorro USD,/ })).toBeOnTheScreen();
   });
 });
+
+test('HU-03 una categoría con un ícono antiguo que no es emoji muestra 🏷️, nunca el texto', async () => {
+  await render(
+    <TransactionForm
+      ref={form}
+      accounts={accounts}
+      initialAccountId="cop"
+      today="2026-10-01"
+      topCategories={() => [{ ...groceries, icon: 'cart' }]}
+      allCategories={() => []}
+      onSubmit={() => ({ ok: true, message: '' })}
+    />,
+  );
+  expect(screen.queryByText('cart', { includeHiddenElements: true })).toBeNull();
+  expect(screen.getByText('🏷️', { includeHiddenElements: true })).toBeTruthy();
+});

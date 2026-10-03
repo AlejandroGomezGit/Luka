@@ -5,6 +5,7 @@ import {
   type CurrencyCode,
   formatAmountInput,
   formatMoney,
+  isEmoji,
   localDateFromParts,
   parseAmount,
   type TransactionInputError,
@@ -33,6 +34,7 @@ import {
 import { AccountList } from './AccountList';
 import { AccountRow } from './AccountRow';
 import { BottomSheet } from './BottomSheet';
+import { FALLBACK_EMOJI } from './CategoryLabel';
 import { Chip, SegmentedControl } from './Chip';
 import type { FormHandle } from './FormHandle';
 import { Button } from './Button';
@@ -298,7 +300,8 @@ export function TransactionForm(props: Props) {
           importantForAccessibility="no-hide-descendants"
           style={[styles.text, { color: colors.onAccent }]}
         >
-          {selected ? '✓' : category.icon}
+          {/* Un ícono antiguo que no es emoji se muestra con el de respaldo, como en las listas. */}
+          {selected ? '✓' : isEmoji(category.icon) ? category.icon : FALLBACK_EMOJI}
         </Text>
         <Text style={[styles.text, { color: selected ? colors.onAccent : colors.text }]}>
           {category.label}

@@ -7,6 +7,8 @@ interface Props {
   subtitle?: string;
   /** Valor a la derecha, por ejemplo el saldo. */
   value?: string;
+  /** Segunda línea bajo el valor, por ejemplo lo que llega en otra moneda («→ US$ 25,00»). */
+  valueDetail?: string;
   /** «alert» para una deuda, en el color de alerta. */
   valueTone?: 'default' | 'alert';
   /** Emoji y token de color del ícono. */
@@ -37,14 +39,22 @@ export function ListRow(props: Props) {
         {subtitle && <Text style={[typography.subhead, { color: colors.muted }]}>{subtitle}</Text>}
       </View>
       {value && (
-        <Text
-          style={[
-            typography.headline,
-            { color: props.valueTone === 'alert' ? colors.alert : colors.text },
-          ]}
-        >
-          {value}
-        </Text>
+        <View style={styles.value}>
+          <Text
+            style={[
+              typography.headline,
+              styles.right,
+              { color: props.valueTone === 'alert' ? colors.alert : colors.text },
+            ]}
+          >
+            {value}
+          </Text>
+          {props.valueDetail && (
+            <Text style={[typography.subhead, styles.right, { color: colors.muted }]}>
+              {props.valueDetail}
+            </Text>
+          )}
+        </View>
       )}
       {chevron && (
         <Text
@@ -122,4 +132,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
   column: { flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' },
   flex: { flexShrink: 1, flexGrow: 1 },
+  value: { flexShrink: 0 },
+  right: { textAlign: 'right' },
 });

@@ -12,7 +12,8 @@ const KIND_LABEL = {
 
 /**
  * Un movimiento en una lista (HU-04; T-016 la reutiliza). Gasto o ingreso: categoría, fecha y cuenta, y el
- * monto con signo. Transferencia: «Efectivo → Dolares» y, con monedas distintas, los dos montos. VoiceOver
+ * monto con signo. Transferencia: «Efectivo → Dolares» y, con monedas distintas, los dos montos
+ * («$ 100.000» y debajo «→ US$ 25,00»). VoiceOver
  * lee tipo, monto, categoría o cuentas, y fecha, con la pista «Toca para editar».
  */
 export function TransactionRow({
@@ -42,7 +43,9 @@ export function TransactionRow({
         color="gray"
         title={`${item.accountName} → ${to}`}
         subtitle={`${day} · Transferencia`}
-        value={arrives ? `${sent} → ${arrives}` : sent}
+        value={sent}
+        // Con monedas distintas, lo que llega va debajo para no partir «Efectivo → Dolares».
+        {...(arrives ? { valueDetail: `→ ${arrives}` } : {})}
         accessibilityLabel={[
           'Transferencia',
           sent,

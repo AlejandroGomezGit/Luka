@@ -75,7 +75,9 @@ test('HU-04 una transferencia muestra «Efectivo → Dolares» y, con monedas di
     />,
   );
   expect(screen.getByText('Efectivo → Dolares')).toBeOnTheScreen();
-  expect(screen.getByText('$ 100.000 → US$ 25,00')).toBeOnTheScreen();
+  // Los dos montos: el que sale y, debajo, el que llega.
+  expect(screen.getByText('$ 100.000')).toBeOnTheScreen();
+  expect(screen.getByText('→ US$ 25,00')).toBeOnTheScreen();
   expect(screen.getByText('Ayer · Transferencia')).toBeOnTheScreen();
   expect(
     screen.getByRole('button', {
@@ -100,5 +102,5 @@ test('HU-04 una transferencia en la misma moneda muestra un solo monto', async (
     />,
   );
   expect(screen.getByText('$ 50.000')).toBeOnTheScreen();
-  expect(screen.queryByText(/→ \$/)).toBeNull();
+  expect(screen.queryByText(/^→/)).toBeNull();
 });
