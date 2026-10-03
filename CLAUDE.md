@@ -55,6 +55,7 @@ TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con ex
 - Sin any.
 - Toda dependencia nueva, incluso de tipos o de desarrollo, se aprueba antes de instalarla y se lista en el PR con su motivo y su licencia.
 - Una migración que ya está en un commit nunca se edita ni se regenera: se crea otra. Regenerarla con drizzle-kit le cambia la hora y Drizzle, que solo compara esa hora, la vuelve a aplicar en las bases que ya la tenían. Cada migración nueva se agrega a migrations.lock.json en el mismo PR; una prueba compara los SQL y el journal con esa lista.
+- Una tabla derivada (solo local y reconstruible desde otras, como `transaction_search`) se rellena por lotes o en segundo plano, sin bloquear el primer render, y su relleno es idempotente.
 - Cada criterio de aceptación tiene una prueba cuyo nombre incluye el id de la historia (por ejemplo HU-03).
 - Cobertura de packages/domain: 80 % o más.
 - Toda pantalla nueva de la app usa el componente Screen (apps/mobile/src/ui/Screen.tsx): vuelve a montar el contenido cuando cambia Dynamic Type, porque React Native no vuelve a medir el texto y lo deja cortado (#39).
