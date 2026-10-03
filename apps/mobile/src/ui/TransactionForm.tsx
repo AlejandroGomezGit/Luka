@@ -111,6 +111,7 @@ export function TransactionForm(props: Props) {
   const [accountId, setAccountId] = useState(initialAccountId);
   const [toAccountId, setToAccountId] = useState<string | null>(null);
   const [toAmount, setToAmount] = useState('');
+  const [amountWidth, setAmountWidth] = useState(0);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [occurredOn, setOccurredOn] = useState(today);
   const [note, setNote] = useState('');
@@ -331,6 +332,21 @@ export function TransactionForm(props: Props) {
         >
           {symbolOf(currency)}
         </Text>
+        {/*
+         * iOS no ensancha a tiempo un campo de ancho automático: al pasar de «6000» a «6.000» desplaza el
+         * texto y oculta el primer dígito. Un texto invisible con el mismo estilo mide lo escrito y el
+         * campo toma ese ancho.
+         */}
+        <Text
+          testID="amount-mirror"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          maxFontSizeMultiplier={AMOUNT_MAX_SCALE}
+          onLayout={(event) => setAmountWidth(Math.ceil(event.nativeEvent.layout.width))}
+          style={[styles.amount, styles.mirror]}
+        >
+          {amount || '0'}
+        </Text>
         {/* La key cambia con la moneda: el campo se vuelve a montar y el teclado cambia al instante. */}
         <TextInput
           key={currency}
@@ -341,7 +357,12 @@ export function TransactionForm(props: Props) {
           onChangeText={(text) => setAmount(formatAmountInput(text, currency))}
           keyboardType={currency === 'COP' ? 'number-pad' : 'decimal-pad'}
           maxFontSizeMultiplier={AMOUNT_MAX_SCALE}
-          style={[styles.amount, styles.amountInput, { color: colors.text }]}
+          style={[
+            styles.amount,
+            styles.amountInput,
+            // Lo medido más el cursor.
+            { color: colors.text, width: amountWidth + CARET_WIDTH },
+          ]}
         />
         <Text style={[styles.currency, { color: colors.muted }]}>{currency}</Text>
       </View>
@@ -477,6 +498,7 @@ export function TransactionForm(props: Props) {
 
 /** El monto ya es grande: con Dynamic Type crece hasta 1,5 veces para no salirse de la pantalla. */
 const AMOUNT_MAX_SCALE = 1.5;
+const CARET_WIDTH = 4;
 
 const styles = StyleSheet.create({
   label: typography.headline,
@@ -500,6 +522,7 @@ const styles = StyleSheet.create({
   chevron: { ...typography.title, transform: [{ rotate: '90deg' }] },
   amount: typography.amount,
   amountInput: { minWidth: sizes.touch, flexShrink: 1, padding: 0 },
+  mirror: { position: 'absolute', opacity: 0 },
   currency: { ...typography.title, fontWeight: '600' },
   pill: {
     borderRadius: radius.pill,

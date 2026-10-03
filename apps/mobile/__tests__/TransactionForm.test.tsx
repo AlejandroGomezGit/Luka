@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { createRef } from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, StyleSheet } from 'react-native';
 import type { AccountWithBalance } from '../src/db/accounts';
 import type { TopCategory } from '../src/db/transactions';
 import type { FormHandle } from '../src/ui/FormHandle';
@@ -242,4 +242,19 @@ describe('HU-02 transferencias (CU-06)', () => {
     expect(screen.getByText('Elige una cuenta de destino distinta.')).toBeOnTheScreen();
     expect(screen.getByText('Esta cuenta está archivada: elige otra.')).toBeOnTheScreen();
   });
+});
+
+test('HU-03 el campo del monto toma el ancho del texto escrito, para que iOS no oculte el primer dígito al agregar el punto de miles', async () => {
+  await setup();
+  await fireEvent.changeText(screen.getByLabelText('Monto'), '6000');
+  // Un texto invisible con el mismo estilo mide lo escrito; el campo toma ese ancho.
+  const mirror = screen.getByTestId('amount-mirror', { includeHiddenElements: true });
+  expect(mirror).toHaveTextContent('6.000');
+  await fireEvent(mirror, 'layout', { nativeEvent: { layout: { width: 150, height: 58 } } });
+  const width = (
+    StyleSheet.flatten(screen.getByLabelText('Monto').props.style as never) as {
+      width?: number;
+    }
+  ).width;
+  expect(width).toBeGreaterThanOrEqual(150);
 });
