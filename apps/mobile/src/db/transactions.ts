@@ -1,7 +1,10 @@
-/** Movimientos: registrar un gasto o ingreso (HU-03, CU-08) y las ayudas del formulario. */
+/** Movimientos: registrar un gasto, ingreso (HU-03, CU-08) o transferencia (CU-06) y las ayudas del formulario. */
 import {
+  type AccountRef,
   buildTransaction,
   type CategoryKind,
+  type CurrencyCode,
+  formatMoney,
   generalCategoryId,
   predefinedCategoryId,
   today,
@@ -10,7 +13,7 @@ import {
 } from '@luka/domain';
 import { categories, transactions } from '@luka/schema-sqlite';
 import { and, count, desc, eq, isNotNull, isNull, max } from 'drizzle-orm';
-import { getAccount, listActiveAccounts } from './accounts';
+import { type AccountRow, getAccount, listActiveAccounts } from './accounts';
 import { getCategory } from './categories';
 import type { LocalDb } from './types';
 import { insertRow, notDeleted, type WriteContext } from './write';
@@ -22,6 +25,12 @@ export type TransactionResult =
  * Guarda un movimiento escrito por la persona: origen manual, categoría puesta por la persona y
  * confirmado. «Hoy» sale del reloj inyectado en la zona horaria del dispositivo.
  */
+const accountRef = (account: AccountRow): AccountRef => ({
+  id: account.id,
+  currency: account.currency as CurrencyCode,
+  archivedAt: account.archivedAt?.getTime() ?? null,
+});
+
 export function createTransaction(
   ctx: WriteContext,
   input: TransactionInput & { note?: string },
@@ -29,17 +38,15 @@ export function createTransaction(
 ): TransactionResult {
   const account = getAccount(ctx.db, input.accountId);
   if (!account) return { ok: false, errors: ['INV-06'] };
+  const toAccount = input.kind === 'transfer' ? getAccount(ctx.db, input.toAccountId) : undefined;
+  if (input.kind === 'transfer' && !toAccount) return { ok: false, errors: ['INV-02'] };
   const categoryId = input.kind === 'transfer' ? null : input.categoryId;
   const category = categoryId ? getCategory(ctx.db, categoryId) : undefined;
   const result = buildTransaction(
     input,
     {
-      account: {
-        id: account.id,
-        currency: account.currency as 'COP',
-        archivedAt: account.archivedAt?.getTime() ?? null,
-      },
-      toAccount: null,
+      account: accountRef(account),
+      toAccount: toAccount ? accountRef(toAccount) : null,
       category: category
         ? { kind: category.kind, systemKey: category.systemKey, parentId: category.parentId }
         : null,
@@ -70,6 +77,23 @@ export function lastUsedAccountId(db: LocalDb): string | null {
     .get();
   const used = active.find((account) => account.id === latest?.accountId);
   return used?.id ?? active[0]?.id ?? null;
+}
+
+/**
+ * Destino por defecto de una transferencia desde `fromId`: el de la última transferencia si sigue activo
+ * y no es el origen; si no, la primera cuenta activa distinta del origen. Con una sola cuenta, ninguno.
+ */
+export function lastTransferDestination(db: LocalDb, fromId: string): string | null {
+  const candidates = listActiveAccounts(db).filter((account) => account.id !== fromId);
+  const latest = db
+    .select({ toAccountId: transactions.toAccountId })
+    .from(transactions)
+    .where(and(eq(transactions.kind, 'transfer'), notDeleted(transactions)))
+    .orderBy(desc(transactions.createdAt))
+    .limit(1)
+    .get();
+  const used = candidates.find((account) => account.id === latest?.toAccountId);
+  return used?.id ?? candidates[0]?.id ?? null;
 }
 
 export interface TopCategory {
@@ -173,4 +197,28 @@ export function savedMessage(
   const main = sub?.parentId ? getCategory(db, sub.parentId) : undefined;
   const where = sub && main ? ` en ${categoryLabels(userId, sub, main).label}` : '';
   return `${kind === 'expense' ? 'Gasto' : 'Ingreso'} guardado: ${amount}${where}`;
+}
+
+/**
+ * Aviso de una transferencia: «Transferencia guardada: $ 50.000 de Ahorro a Efectivo»; con otra moneda
+ * agrega cuánto llega.
+ */
+export function transferSavedMessage(
+  db: LocalDb,
+  transfer: {
+    accountId: string;
+    toAccountId: string;
+    amountMinor: number;
+    toAmountMinor: number | null;
+  },
+): string {
+  const from = getAccount(db, transfer.accountId);
+  const to = getAccount(db, transfer.toAccountId);
+  if (!from || !to) return 'Transferencia guardada';
+  const sent = formatMoney(transfer.amountMinor, from.currency as CurrencyCode);
+  const arrives =
+    from.currency === to.currency || transfer.toAmountMinor === null
+      ? ''
+      : ` (llegan ${formatMoney(transfer.toAmountMinor, to.currency as CurrencyCode)})`;
+  return `Transferencia guardada: ${sent} de ${from.name} a ${to.name}${arrives}`;
 }
