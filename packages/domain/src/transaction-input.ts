@@ -4,6 +4,7 @@
  */
 import { isLocalDate } from './dates.js';
 import {
+  type AccountRef,
   checkNewTransaction,
   type InvariantId,
   type NewTransaction,
@@ -83,4 +84,28 @@ export function buildTransaction(
   };
   const violations = checkNewTransaction(transaction, ctx);
   return violations.length > 0 ? { ok: false, errors: violations } : { ok: true, transaction };
+}
+
+/** Cuentas que ya tenía el movimiento antes de editarlo. */
+export interface ExistingAccounts {
+  accountId: string;
+  toAccountId: string | null;
+}
+
+/**
+ * Contexto para editar un movimiento existente (HU-04, CU-09). INV-06 dice que una cuenta archivada no
+ * acepta movimientos nuevos pero conserva los existentes: si el movimiento sigue en la misma cuenta, de
+ * origen o de destino, su archivo no impide editarlo. Pasarlo a otra cuenta archivada sí se rechaza.
+ */
+export function editContext(
+  ctx: TransactionContext,
+  existing: ExistingAccounts,
+): TransactionContext {
+  const keep = (account: AccountRef, previousId: string | null): AccountRef =>
+    account.id === previousId ? { ...account, archivedAt: null } : account;
+  return {
+    ...ctx,
+    account: keep(ctx.account, existing.accountId),
+    toAccount: ctx.toAccount ? keep(ctx.toAccount, existing.toAccountId) : null,
+  };
 }
