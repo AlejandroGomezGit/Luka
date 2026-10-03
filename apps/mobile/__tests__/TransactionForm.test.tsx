@@ -124,3 +124,22 @@ test('HU-03 dos toques seguidos de Guardar crean un solo movimiento', async () =
   });
   expect(onSubmit).toHaveBeenCalledTimes(1);
 });
+
+test('HU-03 al cambiar a Ingreso la cuenta dice «Depositado en» y la pantalla puede titularse «Nuevo ingreso»', async () => {
+  const onKindChange = jest.fn();
+  await render(
+    <TransactionForm
+      ref={form}
+      accounts={accounts}
+      initialAccountId="cop"
+      today="2026-10-01"
+      topCategories={() => [groceries]}
+      allCategories={() => []}
+      onSubmit={() => ({ ok: true, message: '' })}
+      onKindChange={onKindChange}
+    />,
+  );
+  await fireEvent.press(screen.getByRole('radio', { name: 'Ingreso' }));
+  expect(onKindChange).toHaveBeenCalledWith('income');
+  expect(screen.getByRole('button', { name: 'Depositado en Efectivo, COP' })).toBeOnTheScreen();
+});

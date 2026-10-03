@@ -50,9 +50,12 @@ test('HU-03 desde Inicio se llega a «Guardar» en 3 toques, sin red, y el saldo
     await fireEvent.press(element);
   };
   await tap(screen.getByRole('button', { name: 'Agregar' }));
+  // Maqueta docs/diseno/Agregar gasto.png: «Cancelar» mientras no se guarde nada.
+  expect(screen.getByRole('button', { name: 'Cancelar' })).toBeOnTheScreen();
   // Escribir el monto es teclado: no cuenta como toque (documento 01, HU-03).
   await fireEvent.changeText(screen.getByLabelText('Monto'), '12500');
   await tap(screen.getByRole('radio', { name: 'Supermercado, Alimentación' }));
+  expect(screen.getByText('Alimentación › Supermercado')).toBeOnTheScreen();
   await tap(screen.getByRole('button', { name: 'Guardar' }));
   expect(taps).toBeLessThanOrEqual(3);
 
@@ -61,6 +64,9 @@ test('HU-03 desde Inicio se llega a «Guardar» en 3 toques, sin red, y el saldo
   expect(saved[0]?.amountMinor).toBe(-1_250_000);
   expect(fetchSpy).not.toHaveBeenCalled();
 
+  // El formulario queda listo para otro: ya no se cancela nada, se termina con «Listo».
+  await fireEvent.press(screen.getByRole('radio', { name: 'Ingreso' }));
+  expect(screen.getByRole('button', { name: 'Depositado en Efectivo, COP' })).toBeOnTheScreen();
   await fireEvent.press(screen.getByRole('button', { name: 'Listo' }));
   expect(screen.getByText('$ 107.500')).toBeOnTheScreen();
 });
@@ -90,8 +96,9 @@ test('HU-03 con una cuenta COP y otra USD, se elige la de dólares en la hoja, s
   await fireEvent.press(screen.getByRole('button', { name: 'Pagado con Efectivo, COP' }));
   await fireEvent.press(screen.getByRole('button', { name: /^Ahorro USD,/ }));
   expect(screen.getByRole('button', { name: 'Pagado con Ahorro USD, USD' })).toBeOnTheScreen();
+  expect(screen.getByText('US$', { includeHiddenElements: true })).toBeOnTheScreen();
   expect(screen.getByText('USD')).toBeOnTheScreen();
-  expect(screen.getByText('Saldo: US$ 100,00')).toBeOnTheScreen();
+  expect(screen.getByText('Saldo de la cuenta: US$ 100,00')).toBeOnTheScreen();
 
   await fireEvent.changeText(screen.getByLabelText('Monto'), '12,50');
   expect(screen.getByLabelText('Monto')).toHaveDisplayValue('12,50');

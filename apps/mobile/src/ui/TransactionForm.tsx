@@ -4,6 +4,8 @@ import {
   type CategoryKind,
   type CurrencyCode,
   formatAmountInput,
+  formatMoney,
+  isEmoji,
   localDateFromParts,
   parseAmount,
   type TransactionInputError,
@@ -16,6 +18,7 @@ import type { TopCategory } from '../db/transactions';
 import { useTheme } from '../theme';
 import { AccountList } from './AccountList';
 import { BottomSheet } from './BottomSheet';
+import { FALLBACK_EMOJI } from './CategoryLabel';
 import type { FormHandle } from './FormHandle';
 import { balanceText } from './money';
 import { colorFor } from './palette';
@@ -44,6 +47,8 @@ interface Props {
   allCategories: (kind: CategoryKind) => CategoryNode[];
   onSubmit: (values: TransactionValues) => SubmitResult;
   onSavingChange?: (saving: boolean) => void;
+  /** Para el título de la pantalla: «Nuevo gasto» o «Nuevo ingreso». */
+  onKindChange?: (kind: 'expense' | 'income') => void;
 }
 
 const KINDS = [
@@ -54,16 +59,20 @@ const KINDS = [
 /** Cómo se presenta la cuenta según el tipo de movimiento. */
 const ACCOUNT_LABEL = { expense: 'Pagado con', income: 'Depositado en' } as const;
 
+/** Símbolo de la moneda delante del monto: «$», «US$» o «€». */
+const symbolOf = (currency: CurrencyCode) => formatMoney(0, currency).split(' ')[0];
+
 /** El número escrito sin los decimales que la otra moneda no admite. */
 const integerPart = (text: string) => text.split(',')[0] ?? '';
 
 /**
- * Registrar un gasto o ingreso (HU-03, CU-08). Orden: tipo; cuenta («Pagado con» o «Depositado en») y
- * fecha; monto con su moneda y el saldo de la cuenta; categorías; nota. «Guardar» está en la barra
- * superior y después de guardar el formulario queda listo para otro.
+ * Registrar un gasto o ingreso (HU-03, CU-08), según la maqueta docs/diseno/Agregar gasto.png. Orden:
+ * tipo; cuenta («Pagado con» o «Depositado en») y fecha; monto con su moneda y el saldo de la cuenta;
+ * categorías; nota. «Guardar» está en la barra superior y después de guardar el formulario queda listo
+ * para otro.
  */
 export function TransactionForm(props: Props) {
-  const { ref, accounts, initialAccountId, today, onSubmit, onSavingChange } = props;
+  const { ref, accounts, initialAccountId, today, onSubmit, onSavingChange, onKindChange } = props;
   const { colors, scheme, spacing } = useTheme();
   const [kind, setKind] = useState<'expense' | 'income'>('expense');
   const [amount, setAmount] = useState('');
@@ -131,6 +140,25 @@ export function TransactionForm(props: Props) {
     setSheet(null);
   };
 
+  const chooseKind = (next: 'expense' | 'income') => {
+    setKind(next);
+    setCategoryId(null);
+    onKindChange?.(next);
+  };
+
+  // Ruta de la categoría elegida, «Alimentación › Supermercado»; el «General» muestra solo la principal.
+  const categoryPath = (() => {
+    for (const main of categoryId ? props.allCategories(kind) : []) {
+      const index = main.children.findIndex((child) => child.id === categoryId);
+      if (index === -1) continue;
+      const child = main.children[index];
+      return index === main.children.length - 1 || !child
+        ? main.name
+        : `${main.name} › ${child.name}`;
+    }
+    return '';
+  })();
+
   const chooseDate = (date: string) => {
     setOccurredOn(date);
     setShowPicker(false);
@@ -150,43 +178,60 @@ export function TransactionForm(props: Props) {
     </Pressable>
   );
 
-  const categoryChip = (category: TopCategory) => (
-    <Pressable
-      key={category.id}
-      accessibilityRole="radio"
-      accessibilityLabel={category.accessibilityLabel}
-      accessibilityState={{ selected: categoryId === category.id }}
-      onPress={() => setCategoryId(categoryId === category.id ? null : category.id)}
-      style={[
-        styles.chip,
-        styles.row,
-        {
-          gap: spacing.sm,
-          borderColor: categoryId === category.id ? colors.accent : colors.muted,
-          backgroundColor: `${colorFor(category.color, scheme)}1A`,
-        },
-      ]}
-    >
-      <Text
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-        style={styles.text}
+  // La elegida va rellena con el color de acento y un ✓; las demás, con su color al 10 %.
+  const categoryChip = (category: TopCategory) => {
+    const selected = categoryId === category.id;
+    return (
+      <Pressable
+        key={category.id}
+        accessibilityRole="radio"
+        accessibilityLabel={category.accessibilityLabel}
+        accessibilityState={{ selected }}
+        onPress={() => setCategoryId(selected ? null : category.id)}
+        style={[
+          styles.pill,
+          styles.row,
+          {
+            gap: spacing.sm,
+            backgroundColor: selected ? colors.accent : `${colorFor(category.color, scheme)}1A`,
+          },
+        ]}
       >
-        {category.icon}
-      </Text>
-      <Text style={[styles.text, { color: colors.text }]}>{category.label}</Text>
-    </Pressable>
-  );
+        <Text
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={[styles.text, { color: colors.background }]}
+        >
+          {selected ? '✓' : category.icon}
+        </Text>
+        <Text style={[styles.text, { color: selected ? colors.background : colors.text }]}>
+          {category.label}
+        </Text>
+      </Pressable>
+    );
+  };
 
   return (
     <Screen contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
-      <View accessibilityRole="radiogroup" style={[styles.wrap, { gap: spacing.sm }]}>
-        {KINDS.map((option) =>
-          chip(option.kind, option.label, kind === option.kind, () => {
-            setKind(option.kind);
-            setCategoryId(null);
-          }),
-        )}
+      <View
+        accessibilityRole="radiogroup"
+        style={[styles.segmented, { backgroundColor: colors.surface }]}
+      >
+        {KINDS.map((option) => {
+          const selected = kind === option.kind;
+          return (
+            <Pressable
+              key={option.kind}
+              accessibilityRole="radio"
+              accessibilityLabel={option.label}
+              accessibilityState={{ selected }}
+              onPress={() => chooseKind(option.kind)}
+              style={[styles.segment, selected && { backgroundColor: colors.background }]}
+            >
+              <Text style={[styles.value, { color: colors.text }]}>{option.label}</Text>
+            </Pressable>
+          );
+        })}
       </View>
 
       {account && (
@@ -196,27 +241,45 @@ export function TransactionForm(props: Props) {
             accessibilityLabel={`${ACCOUNT_LABEL[kind]} ${account.name}, ${account.currency}`}
             accessibilityHint="Cambia la cuenta"
             onPress={() => setSheet('account')}
-            style={[styles.field, styles.flex, { borderColor: colors.muted }]}
+            style={[styles.card, styles.row, styles.flex, { backgroundColor: colors.surface }]}
           >
-            <Text style={[styles.caption, { color: colors.muted }]}>{ACCOUNT_LABEL[kind]}</Text>
-            <Text style={[styles.value, { color: colors.text }]}>
-              {account.icon} {account.name} · {account.currency}
-            </Text>
+            <View
+              style={[styles.badge, { backgroundColor: `${colorFor(account.color, scheme)}33` }]}
+            >
+              <Text style={styles.text}>
+                {isEmoji(account.icon) ? account.icon : FALLBACK_EMOJI}
+              </Text>
+            </View>
+            <View style={styles.flex}>
+              <Text style={[styles.caption, { color: colors.muted }]}>{ACCOUNT_LABEL[kind]}</Text>
+              <Text style={[styles.value, { color: colors.text }]}>
+                {account.name} · {account.currency}
+              </Text>
+            </View>
+            {/* Chevron: indica que la fila abre la lista de cuentas. */}
+            <Text style={[styles.chevron, { color: colors.muted }]}>›</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Fecha: ${dateLabel}`}
             accessibilityHint="Cambia la fecha"
             onPress={() => setSheet('date')}
-            style={[styles.field, { borderColor: colors.muted }]}
+            style={[styles.card, styles.row, { backgroundColor: colors.surface }]}
           >
-            <Text style={[styles.caption, { color: colors.muted }]}>Fecha</Text>
-            <Text style={[styles.value, { color: colors.text }]}>{dateLabel}</Text>
+            <Text style={[styles.value, { color: colors.text }]}>📅 {dateLabel}</Text>
           </Pressable>
         </View>
       )}
 
-      <View style={[styles.row, { gap: spacing.sm }]}>
+      <View style={[styles.row, styles.center, { gap: spacing.sm }]}>
+        <Text
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          maxFontSizeMultiplier={AMOUNT_MAX_SCALE}
+          style={[styles.amount, { color: colors.text }]}
+        >
+          {symbolOf(currency)}
+        </Text>
         {/* La key cambia con la moneda: el campo se vuelve a montar y el teclado cambia al instante. */}
         <TextInput
           key={currency}
@@ -226,13 +289,14 @@ export function TransactionForm(props: Props) {
           placeholder="0"
           onChangeText={(text) => setAmount(formatAmountInput(text, currency))}
           keyboardType={currency === 'COP' ? 'number-pad' : 'decimal-pad'}
-          style={[styles.amount, { color: colors.text, borderColor: colors.muted }]}
+          maxFontSizeMultiplier={AMOUNT_MAX_SCALE}
+          style={[styles.amount, styles.amountInput, { color: colors.text }]}
         />
         <Text style={[styles.currency, { color: colors.muted }]}>{currency}</Text>
       </View>
       {account && (
-        <Text style={[styles.caption, { color: colors.muted }]}>
-          Saldo: {balanceText(account.type, account.balanceMinor, currency)}
+        <Text style={[styles.caption, styles.centerText, { color: colors.muted }]}>
+          Saldo de la cuenta: {balanceText(account.type, account.balanceMinor, currency)}
         </Text>
       )}
       {errors.map((code) => (
@@ -241,14 +305,25 @@ export function TransactionForm(props: Props) {
         </Text>
       ))}
 
+      <View style={[styles.wrap, styles.between, { gap: spacing.sm }]}>
+        <Text accessibilityRole="header" style={[styles.label, { color: colors.text }]}>
+          Categoría
+        </Text>
+        <Text style={[styles.caption, { color: colors.muted }]}>{categoryPath}</Text>
+      </View>
       <View style={[styles.wrap, { gap: spacing.sm }]}>
         {props.topCategories(kind).map(categoryChip)}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={showAll ? 'Ocultar categorías' : 'Todas las categorías'}
+          onPress={() => setShowAll(!showAll)}
+          style={[styles.pill, { backgroundColor: `${colors.accent}26` }]}
+        >
+          <Text style={[styles.text, { color: colors.accent }]}>
+            {showAll ? 'Ocultar' : 'Todas ›'}
+          </Text>
+        </Pressable>
       </View>
-      <Pressable accessibilityRole="button" onPress={() => setShowAll(!showAll)}>
-        <Text style={[styles.text, { color: colors.accent }]}>
-          {showAll ? 'Ocultar categorías' : 'Todas las categorías'}
-        </Text>
-      </Pressable>
       {showAll &&
         props.allCategories(kind).map((main) => (
           <View key={main.id} style={{ gap: spacing.sm }}>
@@ -271,14 +346,18 @@ export function TransactionForm(props: Props) {
           </View>
         ))}
 
-      <TextInput
-        accessibilityLabel="Nota"
-        placeholder="Nota (opcional)"
-        value={note}
-        onChangeText={setNote}
-        maxLength={200}
-        style={[styles.input, { color: colors.text, borderColor: colors.muted }]}
-      />
+      <View style={[styles.card, styles.row, { gap: spacing.md, backgroundColor: colors.surface }]}>
+        <Text style={[styles.text, { color: colors.text }]}>Nota</Text>
+        <TextInput
+          accessibilityLabel="Nota"
+          placeholder="Opcional"
+          placeholderTextColor={colors.muted}
+          value={note}
+          onChangeText={setNote}
+          maxLength={200}
+          style={[styles.text, styles.flex, { color: colors.text }]}
+        />
+      </View>
 
       <Text accessibilityLiveRegion="polite" style={[styles.text, { color: colors.accent }]}>
         {message}
@@ -315,6 +394,9 @@ export function TransactionForm(props: Props) {
   );
 }
 
+/** El monto ya es grande: con Dynamic Type crece hasta 1,5 veces para no salirse de la pantalla. */
+const AMOUNT_MAX_SCALE = 1.5;
+
 const styles = StyleSheet.create({
   label: { fontSize: 17, fontWeight: '600' },
   text: { fontSize: 17 },
@@ -323,17 +405,24 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
   wrap: { flexDirection: 'row', flexWrap: 'wrap' },
   flex: { flex: 1 },
-  field: { borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 14, gap: 2 },
-  amount: {
-    flex: 1,
-    fontSize: 28,
-    fontWeight: '600',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
+  center: { justifyContent: 'center' },
+  centerText: { textAlign: 'center' },
+  between: { justifyContent: 'space-between', alignItems: 'baseline' },
+  segmented: { flexDirection: 'row', borderRadius: 10, padding: 3 },
+  segment: { flex: 1, alignItems: 'center', borderRadius: 8, paddingVertical: 8 },
+  card: { borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, gap: 12 },
+  badge: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  currency: { fontSize: 17, fontWeight: '600' },
-  input: { fontSize: 17, borderWidth: 1, borderRadius: 8, padding: 12 },
+  chevron: { fontSize: 24, transform: [{ rotate: '90deg' }] },
+  amount: { fontSize: 48, fontWeight: '700' },
+  amountInput: { minWidth: 40, flexShrink: 1, padding: 0 },
+  currency: { fontSize: 20, fontWeight: '600' },
   chip: { borderWidth: 2, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14 },
+  pill: { borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14 },
   error: { fontSize: 15 },
 });
