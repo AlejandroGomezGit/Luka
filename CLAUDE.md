@@ -65,12 +65,15 @@ TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con ex
 - Escribe primero la prueba del criterio de aceptación cuando sea posible.
 - Al terminar, ejecuta lint, typecheck y las pruebas y reporta el resultado real, sin suponerlo.
 - Si cambia una decisión de arquitectura, crea un ADR en docs/adr/; si cambia un comportamiento, actualiza el documento afectado en el mismo PR.
+- Si un mensaje mío trae algo entre corchetes sin llenar (por ejemplo «[todo bien / vi esto: ___]»), no ejecutes la acción que depende de eso (mergear, push a main) y pregúntame.
+- Push a ramas de feature y abrir el PR no necesitan confirmación. Mergear y cualquier push a main requieren mi OK explícito.
+- Para experimentos en la app (código temporal, pruebas de diseño) usa el simulador iPhone 17 con un git worktree aparte y un Metro propio en otro puerto (por ejemplo 8082). No toques el iPhone 17 Pro ni el Metro que yo tenga corriendo.
 
 ## Seguridad
 
 - No leas ni imprimas archivos .env; usa .env.example con valores falsos.
 - Nunca pongas secretos en el código ni en variables EXPO_PUBLIC_, que terminan dentro de la app.
-- Pide confirmación antes de git push, de borrar datos o de instalar dependencias.
+- Pide confirmación antes de mergear o hacer push a main, de borrar datos o de instalar dependencias (ver «Cómo trabajar»).
 
 ## Fuera de alcance mientras no se pida
 
