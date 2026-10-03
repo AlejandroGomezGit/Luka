@@ -149,6 +149,18 @@ export const attachments = sqliteTable(
  * Solo en el dispositivo, una fila: identidad local creada en el primer arranque. El `user_id` local se
  * envía al servidor al registrarse (T-019), así los datos creados sin servidor no se reescriben.
  */
+/**
+ * Texto de búsqueda de cada movimiento (HU-05): nota y comercio normalizados (minúsculas, sin tildes).
+ * Tabla derivada y solo local: se reconstruye desde `transactions`, nunca se sincroniza y se borra con
+ * su movimiento.
+ */
+export const transactionSearch = sqliteTable('transaction_search', {
+  transactionId: text('transaction_id')
+    .primaryKey()
+    .references(() => transactions.id, { onDelete: 'cascade' }),
+  content: text('content').notNull(),
+});
+
 export const deviceProfile = sqliteTable('device_profile', {
   deviceId: text('device_id').primaryKey(),
   userId: text('user_id').notNull(),
