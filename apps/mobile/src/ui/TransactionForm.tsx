@@ -215,7 +215,7 @@ export function TransactionForm(props: Props) {
     <Screen contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
       <View
         accessibilityRole="radiogroup"
-        style={[styles.segmented, { backgroundColor: colors.surface }]}
+        style={[styles.segmented, { backgroundColor: colors.card }]}
       >
         {KINDS.map((option) => {
           const selected = kind === option.kind;
@@ -241,7 +241,7 @@ export function TransactionForm(props: Props) {
             accessibilityLabel={`${ACCOUNT_LABEL[kind]} ${account.name}, ${account.currency}`}
             accessibilityHint="Cambia la cuenta"
             onPress={() => setSheet('account')}
-            style={[styles.card, styles.row, styles.flex, { backgroundColor: colors.surface }]}
+            style={[styles.card, styles.row, styles.flex, { backgroundColor: colors.card }]}
           >
             <View
               style={[styles.badge, { backgroundColor: `${colorFor(account.color, scheme)}33` }]}
@@ -264,7 +264,7 @@ export function TransactionForm(props: Props) {
             accessibilityLabel={`Fecha: ${dateLabel}`}
             accessibilityHint="Cambia la fecha"
             onPress={() => setSheet('date')}
-            style={[styles.card, styles.row, { backgroundColor: colors.surface }]}
+            style={[styles.card, styles.row, { backgroundColor: colors.card }]}
           >
             <Text style={[styles.value, { color: colors.text }]}>📅 {dateLabel}</Text>
           </Pressable>
@@ -346,7 +346,7 @@ export function TransactionForm(props: Props) {
           </View>
         ))}
 
-      <View style={[styles.card, styles.row, { gap: spacing.md, backgroundColor: colors.surface }]}>
+      <View style={[styles.card, styles.row, { gap: spacing.md, backgroundColor: colors.card }]}>
         <Text style={[styles.text, { color: colors.text }]}>Nota</Text>
         <TextInput
           accessibilityLabel="Nota"
