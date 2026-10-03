@@ -50,4 +50,23 @@ describe('HU-08 las 6 categorías más grandes y «Otras categorías»', () => {
   it('HU-08 con 6 o menos no hay «Otras categorías»', () => {
     expect(topWithRest(items.slice(0, 6), 6).rest).toBeNull();
   });
+
+  it('HU-08 con cualquier lista, las primeras más «Otras categorías» suman siempre el total', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.nat({ max: 1_000_000 })),
+        fc.integer({ min: 1, max: 8 }),
+        (amounts, n) => {
+          const { top, rest } = topWithRest(
+            amounts.map((amountMinor) => ({ amountMinor })),
+            n,
+          );
+          expect(top.length + (rest?.count ?? 0)).toBe(amounts.length);
+          expect(top.reduce((a, i) => a + i.amountMinor, 0) + (rest?.amountMinor ?? 0)).toBe(
+            amounts.reduce((a, b) => a + b, 0),
+          );
+        },
+      ),
+    );
+  });
 });
