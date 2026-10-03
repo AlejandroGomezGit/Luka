@@ -1,5 +1,4 @@
-import { today } from '@luka/domain';
-import { transactions } from '@luka/schema-sqlite';
+import { newId, today } from '@luka/domain';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { deviceTimeZone } from '../../clock';
@@ -8,12 +7,16 @@ import { getCategory, listCategories } from '../../db/categories';
 import { useLocalSession } from '../../db/session';
 import {
   categoryLabels,
+  deleteTransaction,
   getTransaction,
+  restoreTransaction,
   topCategories,
   transactionValues,
   updateTransaction,
 } from '../../db/transactions';
-import { restore, softDelete } from '../../db/write';
+import { getReceipt } from '../../db/attachments';
+import { expoReceiptIO } from '../../files/expoReceiptIO';
+import { removeDeletedReceiptFiles } from '../../files/receipts';
 import type { FormHandle } from '../../ui/FormHandle';
 import { HeaderButton } from '../../ui/HeaderButton';
 import { type Kind, TransactionForm } from '../../ui/TransactionForm';
@@ -36,6 +39,7 @@ export default function EditTransactionScreen() {
   const form = useRef<FormHandle>(null);
   const [saving, setSaving] = useState(false);
   const row = useMemo(() => getTransaction(session.db, id), [session.db, id]);
+  const receipt = useMemo(() => getReceipt(session.db, id) ?? null, [session.db, id]);
   const [kind, setKind] = useState<Kind>(
     row?.kind === 'transfer' ? 'transfer' : row?.kind === 'income' ? 'income' : 'expense',
   );
@@ -77,6 +81,8 @@ export default function EditTransactionScreen() {
         ref={form}
         mode="edit"
         initial={transactionValues(row)}
+        initialReceipt={receipt}
+        newReceiptId={() => newId(session.clock, session.random)}
         accounts={accounts}
         initialAccountId={row.accountId}
         today={today(session.clock, deviceTimeZone())}
@@ -92,11 +98,15 @@ export default function EditTransactionScreen() {
           return { ok: true, message: 'Cambios guardados' };
         }}
         onDelete={() => {
-          softDelete(session, transactions, row.id);
+          deleteTransaction(session, row.id);
           offer({
             message: 'Movimiento eliminado. Puedes deshacerlo.',
             undo: () => {
-              restore(session, transactions, row.id);
+              restoreTransaction(session, row.id);
+            },
+            // Ya no se puede deshacer: la foto del recibo se borra del iPhone (la fila sigue 30 días).
+            onExpire: () => {
+              removeDeletedReceiptFiles(session.db, expoReceiptIO, row.id);
             },
           });
           router.back();

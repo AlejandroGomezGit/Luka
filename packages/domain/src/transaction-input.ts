@@ -11,6 +11,7 @@ import {
   type TransactionContext,
 } from './invariants.js';
 import { applySign } from './money.js';
+import type { TagError } from './tags.js';
 
 interface InputBase {
   /** Lo que escribe la persona, siempre positivo; el tipo fija el signo (INV-01). */
@@ -42,6 +43,7 @@ export type TransactionInputError =
   | 'to_amount_not_positive'
   | 'date_invalid'
   | 'date_in_future'
+  | TagError
   | InvariantId;
 
 export type BuildResult =

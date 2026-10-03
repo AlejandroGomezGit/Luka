@@ -13,12 +13,19 @@ import {
   generalCategoryId,
   normalizeText,
   predefinedCategoryId,
+  tagErrors,
   today,
   type TransactionContext,
   type TransactionInput,
   type TransactionInputError,
 } from '@luka/domain';
-import { accounts, categories, transactions, transactionSearch } from '@luka/schema-sqlite';
+import {
+  accounts,
+  attachments,
+  categories,
+  transactions,
+  transactionSearch,
+} from '@luka/schema-sqlite';
 import {
   and,
   count,
@@ -36,17 +43,31 @@ import {
   sql,
 } from 'drizzle-orm';
 import { type AccountRow, getAccount, listActiveAccounts } from './accounts';
+import { type ReceiptFile, setReceipt } from './attachments';
 import { getCategory } from './categories';
 import type { LocalDb } from './types';
-import { insertRow, notDeleted, updateRow, type WriteContext } from './write';
+import { insertRow, notDeleted, restore, softDelete, updateRow, type WriteContext } from './write';
 
 export type TransactionResult =
   { ok: true; id: string } | { ok: false; errors: TransactionInputError[] };
 
 export type TransactionRow = typeof transactions.$inferSelect;
 
-/** Lo que escribe la persona en el formulario: el movimiento con el monto en positivo y su nota. */
-export type TransactionValues = TransactionInput & { note: string };
+/**
+ * Lo que guarda el formulario además del movimiento: nota, etiquetas y foto del recibo (HU-06). Sin
+ * `receipt` la foto no cambia; con null se quita.
+ */
+export interface TransactionExtras {
+  note?: string;
+  tags?: string[];
+  receipt?: ReceiptFile | null;
+}
+
+/** Lo que escribe la persona en el formulario: el movimiento con el monto en positivo, nota y etiquetas. */
+export type TransactionValues = TransactionInput & { note: string; tags: string[] } & Pick<
+    TransactionExtras,
+    'receipt'
+  >;
 
 const accountRef = (account: AccountRow): AccountRef => ({
   id: account.id,
@@ -89,9 +110,12 @@ export function getTransaction(db: LocalDb, id: string): TransactionRow | undefi
  */
 export function createTransaction(
   ctx: WriteContext,
-  input: TransactionInput & { note?: string },
+  input: TransactionInput & TransactionExtras,
   timeZone: string,
 ): TransactionResult {
+  const tags = input.tags ?? [];
+  const invalidTags = tagErrors(tags);
+  if (invalidTags.length > 0) return { ok: false, errors: invalidTags };
   const read = contextFor(ctx.db, input);
   if (!read.ok) return read;
   const result = buildTransaction(input, read.ctx, today(ctx.clock, timeZone));
@@ -102,11 +126,13 @@ export function createTransaction(
       ...result.transaction,
       occurredOn: input.occurredOn,
       note,
+      tags,
       categorySource: 'user',
       source: 'manual',
       reviewStatus: 'confirmed',
     });
-    writeSearch(tx, newId, note, null);
+    writeSearch(tx, newId, note, null, tags);
+    if (input.receipt) setReceipt({ ...ctx, db: tx }, newId, input.receipt);
     return newId;
   });
   return { ok: true, id };
@@ -120,7 +146,7 @@ export function createTransaction(
 export function updateTransaction(
   ctx: WriteContext,
   id: string,
-  input: TransactionInput & { note?: string },
+  input: TransactionInput & TransactionExtras,
   timeZone: string,
 ): TransactionResult {
   const existing = getTransaction(ctx.db, id);
@@ -129,6 +155,9 @@ export function updateTransaction(
       'Solo se edita un movimiento existente, sin convertirlo en transferencia ni al revés',
     );
   }
+  const tags = input.tags ?? existing.tags;
+  const invalidTags = tagErrors(tags);
+  if (invalidTags.length > 0) return { ok: false, errors: invalidTags };
   const read = contextFor(ctx.db, input);
   if (!read.ok) return read;
   const result = buildTransaction(
@@ -143,8 +172,10 @@ export function updateTransaction(
       ...result.transaction,
       occurredOn: input.occurredOn,
       note,
+      tags,
     });
-    writeSearch(tx, id, note, existing.merchant);
+    writeSearch(tx, id, note, existing.merchant, tags);
+    if (input.receipt !== undefined) setReceipt({ ...ctx, db: tx }, id, input.receipt);
   });
   return { ok: true, id };
 }
@@ -156,6 +187,7 @@ export function transactionValues(row: TransactionRow): TransactionValues {
     accountId: row.accountId,
     occurredOn: row.occurredOn,
     note: row.note ?? '',
+    tags: row.tags,
   };
   return row.kind === 'transfer' && row.toAccountId
     ? { kind: 'transfer', ...base, toAccountId: row.toAccountId, toAmountMinor: row.toAmountMinor }
@@ -177,11 +209,18 @@ export interface TransactionListItem {
 }
 
 /**
- * Texto de búsqueda de un movimiento (HU-05): nota y comercio normalizados en `transaction_search`, una
- * tabla derivada y solo local que no pasa por write.ts porque nunca se sincroniza.
+ * Texto de búsqueda de un movimiento (HU-05, HU-06): nota, comercio y etiquetas normalizados en
+ * `transaction_search`, una tabla derivada y solo local que no pasa por write.ts porque nunca se
+ * sincroniza.
  */
-function writeSearch(db: LocalDb, id: string, note: string | null, merchant: string | null) {
-  const content = normalizeText([note, merchant].filter(Boolean).join(' '));
+function writeSearch(
+  db: LocalDb,
+  id: string,
+  note: string | null,
+  merchant: string | null,
+  tags: readonly string[],
+) {
+  const content = normalizeText([note, merchant, ...tags].filter(Boolean).join(' '));
   db.insert(transactionSearch)
     .values({ transactionId: id, content })
     .onConflictDoUpdate({ target: transactionSearch.transactionId, set: { content } })
@@ -189,19 +228,76 @@ function writeSearch(db: LocalDb, id: string, note: string | null, merchant: str
 }
 
 /**
- * Completa el texto de búsqueda de los movimientos que no lo tienen (los anteriores a la migración 0002 o
- * los que lleguen sin él). Idempotente: corre en cada arranque.
+ * Completa el texto de búsqueda de hasta `limit` movimientos que no lo tienen (los anteriores a la
+ * migración 0002 o los que lleguen sin él) y devuelve cuántos completó. Idempotente.
  */
-export function backfillTransactionSearch(db: LocalDb): void {
+export function backfillTransactionSearch(db: LocalDb, limit = Number.MAX_SAFE_INTEGER): number {
   const missing = db
-    .select({ id: transactions.id, note: transactions.note, merchant: transactions.merchant })
+    .select({
+      id: transactions.id,
+      note: transactions.note,
+      merchant: transactions.merchant,
+      tags: transactions.tags,
+    })
     .from(transactions)
     .leftJoin(transactionSearch, eq(transactionSearch.transactionId, transactions.id))
     .where(isNull(transactionSearch.transactionId))
+    .limit(limit)
     .all();
-  if (missing.length === 0) return;
+  if (missing.length === 0) return 0;
   db.transaction((tx) => {
-    for (const row of missing) writeSearch(tx, row.id, row.note, row.merchant);
+    for (const row of missing) writeSearch(tx, row.id, row.note, row.merchant, row.tags);
+  });
+  return missing.length;
+}
+
+/**
+ * Corre el relleno en cada arranque por lotes y después del primer render (regla de tablas derivadas de
+ * CLAUDE.md, DT-06): cada lote se agenda aparte para no bloquear la pantalla.
+ */
+export function fillSearchInBackground(
+  db: LocalDb,
+  schedule: (task: () => void) => void = (task) => setTimeout(task, 0),
+  batch = 500,
+): void {
+  const step = () => {
+    if (backfillTransactionSearch(db, batch) === batch) schedule(step);
+  };
+  schedule(step);
+}
+
+/**
+ * Borrado lógico de un movimiento y de su foto en el mismo instante (HU-04, HU-06): así Deshacer devuelve
+ * justo lo que se borró aquí, y no una foto que se había quitado antes.
+ */
+export function deleteTransaction(ctx: WriteContext, id: string): void {
+  const now = ctx.clock.now();
+  const at = { ...ctx, clock: { now: () => now } };
+  ctx.db.transaction((tx) => {
+    softDelete({ ...at, db: tx }, transactions, id);
+    for (const { id: attachmentId } of tx
+      .select({ id: attachments.id })
+      .from(attachments)
+      .where(and(eq(attachments.transactionId, id), isNull(attachments.deletedAt)))
+      .all()) {
+      softDelete({ ...at, db: tx }, attachments, attachmentId);
+    }
+  });
+}
+
+/** Deshace deleteTransaction: el movimiento y lo que se borró con él. */
+export function restoreTransaction(ctx: WriteContext, id: string): void {
+  const deletedAt = getTransaction(ctx.db, id)?.deletedAt;
+  if (!deletedAt) return;
+  ctx.db.transaction((tx) => {
+    restore({ ...ctx, db: tx }, transactions, id);
+    for (const { id: attachmentId } of tx
+      .select({ id: attachments.id })
+      .from(attachments)
+      .where(and(eq(attachments.transactionId, id), eq(attachments.deletedAt, deletedAt)))
+      .all()) {
+      restore({ ...ctx, db: tx }, attachments, attachmentId);
+    }
   });
 }
 

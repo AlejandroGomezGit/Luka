@@ -195,6 +195,7 @@ describe('HU-02 transferencias (CU-06)', () => {
       toAmountMinor: null,
       occurredOn: '2026-10-01',
       note: '',
+      tags: [],
     });
   });
 
@@ -293,6 +294,7 @@ describe('HU-04 editar un movimiento (CU-09)', () => {
     categoryId: 'groceries',
     occurredOn: '2026-09-30',
     note: 'Mercado',
+    tags: [],
   };
 
   test('HU-04 al editar, el formulario abre con los valores del movimiento y «Eliminar movimiento» es un botón destructivo de 44 pt o más al final', async () => {
@@ -341,6 +343,7 @@ describe('HU-04 editar un movimiento (CU-09)', () => {
         toAmountMinor: 50_000_00,
         occurredOn: '2026-10-01',
         note: '',
+        tags: [],
       },
       { accounts: [...accounts, account('bank', 'Ahorro', 'COP')] },
     );

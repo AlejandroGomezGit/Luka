@@ -1,4 +1,4 @@
-import { type CurrencyCode, formatMoney, today } from '@luka/domain';
+import { type CurrencyCode, formatMoney, newId, today } from '@luka/domain';
 import { router, Stack } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { deviceTimeZone } from '../../clock';
@@ -67,6 +67,7 @@ export default function NewTransactionScreen() {
         onSavingChange={setSaving}
         onKindChange={setKind}
         transferDestination={(fromId) => lastTransferDestination(session.db, fromId)}
+        newReceiptId={() => newId(session.clock, session.random)}
         onSubmit={(values) => {
           const result = createTransaction(session, values, deviceTimeZone());
           if (!result.ok) return result;

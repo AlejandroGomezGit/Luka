@@ -49,7 +49,7 @@ export const radius = { card: 20, control: 12, pill: 999 } as const;
  * Tamaños mínimos, nunca fijos, para que crezcan con Dynamic Type: área táctil de 44 pt (Apple) y filas
  * de lista de 58 pt como en las maquetas; el círculo del ícono mide 32 pt antes de Dynamic Type.
  */
-export const sizes = { touch: 44, row: 58, badge: 32, swatch: 12 } as const;
+export const sizes = { touch: 44, row: 58, badge: 32, swatch: 12, thumbnail: 96 } as const;
 
 /** Escala tipográfica de iOS; el tamaño de Dynamic Type se aplica encima (allowFontScaling). */
 export const typography = {

@@ -8,7 +8,9 @@ import {
   isEmoji,
   localDateFromParts,
   parseAmount,
+  parseTags,
   type TransactionInputError,
+  tagsText,
 } from '@luka/domain';
 import { type Ref, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
@@ -21,6 +23,7 @@ import {
   View,
 } from 'react-native';
 import type { AccountWithBalance } from '../db/accounts';
+import type { ReceiptFile } from '../db/attachments';
 import type { CategoryNode } from '../db/categories';
 import type { TopCategory, TransactionValues } from '../db/transactions';
 import {
@@ -39,7 +42,9 @@ import { Chip, SegmentedControl } from './Chip';
 import type { FormHandle } from './FormHandle';
 import { Button } from './Button';
 import { amountText, balanceText, isNegativeBalance, NEGATIVE_BALANCE_HELP } from './money';
+import { expoReceiptIO } from '../files/expoReceiptIO';
 import { colorFor } from './palette';
+import { ReceiptField } from './ReceiptField';
 import { Screen } from './Screen';
 import { TextField } from './TextField';
 import { transactionErrorMessage } from './transactionErrors';
@@ -74,6 +79,10 @@ interface Props {
   onKindChange?: (kind: Kind) => void;
   /** Destino por defecto de una transferencia desde esa cuenta (lastTransferDestination). */
   transferDestination?: (fromId: string) => string | null;
+  /** Foto del recibo que ya tiene el movimiento (al editar). */
+  initialReceipt?: ReceiptFile | null;
+  /** Id para una foto nueva; sin él no se ofrece la foto del recibo. */
+  newReceiptId?: () => string;
 }
 
 const NEEDS_TWO_ACCOUNTS = 'Para transferir necesitas al menos dos cuentas activas.';
@@ -129,6 +138,12 @@ export function TransactionForm(props: Props) {
   );
   const [occurredOn, setOccurredOn] = useState(initial?.occurredOn ?? today);
   const [note, setNote] = useState(initial?.note ?? '');
+  const [tags, setTags] = useState(tagsText(initial?.tags ?? []));
+  const initialReceipt = props.initialReceipt ?? null;
+  const [receipt, setReceipt] = useState<ReceiptFile | null>(initialReceipt);
+  // Fotos elegidas en este formulario que todavía no tienen fila: si no se guardan, su archivo sobra.
+  const captured = useRef(new Set<string>());
+  const [failure, setFailure] = useState('');
   const [showAll, setShowAll] = useState(false);
   const [sheet, setSheet] = useState<'account' | 'toAccount' | 'date' | null>(null);
   const [showPicker, setShowPicker] = useState(false);
@@ -174,6 +189,24 @@ export function TransactionForm(props: Props) {
     onSavingChange?.(false);
   }, [amount, onSavingChange]);
 
+  const discard = (id: string) => {
+    if (!captured.current.delete(id)) return;
+    expoReceiptIO.remove(expoReceiptIO.fileUri(id));
+  };
+  // Al salir sin guardar, las fotos recién elegidas no quedan en el iPhone.
+  useEffect(
+    () => () => {
+      for (const id of [...captured.current]) discard(id);
+    },
+    [],
+  );
+  const changeReceipt = (next: ReceiptFile | null) => {
+    // Una foto recién elegida que se quita o se reemplaza antes de guardar no se usa.
+    if (receipt) discard(receipt.id);
+    if (next) captured.current.add(next.id);
+    setReceipt(next);
+  };
+
   const submit = () => {
     if (saving.current || !account) return;
     const text = amount.replace(/,$/, '');
@@ -185,7 +218,10 @@ export function TransactionForm(props: Props) {
     saving.current = true;
     onSavingChange?.(true);
     const arrives = toAmount.replace(/,$/, '');
-    const result = onSubmit(
+    // Al crear solo viaja una foto elegida; al editar, también quitarla (null). Sin cambios, nada.
+    const receiptChange =
+      receipt?.id === initialReceipt?.id ? {} : editing || receipt ? { receipt } : {};
+    const values = (
       isTransfer && toAccount
         ? {
             kind,
@@ -200,6 +236,7 @@ export function TransactionForm(props: Props) {
               : null,
             occurredOn,
             note,
+            tags: parseTags(tags),
           }
         : {
             kind: kind === 'income' ? 'income' : 'expense',
@@ -208,8 +245,21 @@ export function TransactionForm(props: Props) {
             categoryId,
             occurredOn,
             note,
-          },
-    );
+            tags: parseTags(tags),
+          }
+    ) satisfies TransactionValues;
+    let result: SubmitResult;
+    try {
+      result = onSubmit({ ...values, ...receiptChange });
+    } catch {
+      // No se guardó la fila: la foto recién elegida tampoco se queda.
+      if (receipt) discard(receipt.id);
+      setReceipt(initialReceipt);
+      saving.current = false;
+      onSavingChange?.(false);
+      setFailure('No se pudo guardar el movimiento. Vuelve a intentarlo.');
+      return;
+    }
     if (!result.ok) {
       saving.current = false;
       onSavingChange?.(false);
@@ -217,6 +267,12 @@ export function TransactionForm(props: Props) {
       return;
     }
     setErrors([]);
+    setFailure('');
+    if (receipt) captured.current.delete(receipt.id);
+    // La foto anterior quitada o reemplazada al editar ya no tiene fila vigente: su archivo sobra.
+    if (initialReceipt && initialReceipt.id !== receipt?.id) {
+      expoReceiptIO.remove(expoReceiptIO.fileUri(initialReceipt.id));
+    }
     setMessage(result.message);
     AccessibilityInfo.announceForAccessibility(result.message);
     // Al editar, la pantalla se cierra al guardar: no hay otro registro que preparar.
@@ -225,6 +281,8 @@ export function TransactionForm(props: Props) {
     setToAmount('');
     setCategoryId(null);
     setNote('');
+    setTags('');
+    setReceipt(null);
   };
   useImperativeHandle(ref, () => ({ submit }));
 
@@ -485,6 +543,23 @@ export function TransactionForm(props: Props) {
         />
       </View>
 
+      <TextField
+        label="Etiquetas"
+        placeholder="Separadas por comas: viaje, trabajo"
+        value={tags}
+        onChangeText={setTags}
+        autoCorrect={false}
+      />
+
+      {props.newReceiptId && (
+        <ReceiptField value={receipt} onChange={changeReceipt} newId={props.newReceiptId} />
+      )}
+
+      {failure !== '' && (
+        <Text accessibilityLiveRegion="polite" style={[styles.text, { color: colors.alert }]}>
+          {failure}
+        </Text>
+      )}
       <Text accessibilityLiveRegion="polite" style={[styles.text, { color: colors.accentText }]}>
         {message}
       </Text>

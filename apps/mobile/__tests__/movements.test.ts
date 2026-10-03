@@ -9,6 +9,7 @@ import {
   backfillTransactionSearch,
   countTransactions,
   createTransaction,
+  fillSearchInBackground,
   listTransactions,
   transactionListQuery,
   type TransactionFilters,
@@ -284,7 +285,10 @@ describe('HU-05 lista de movimientos (CU-10)', () => {
       source: 'manual',
       reviewStatus: 'confirmed',
     });
+    // El relleno corre después del primer render (DatabaseProvider), lote a lote.
     prepareLocalData(ctx.db, ctx.clock, ctx.random);
+    expect(countTransactions(ctx.db, userId, { text: 'panaderia' })).toBe(0);
+    fillSearchInBackground(ctx.db, (task) => task());
     expect(countTransactions(ctx.db, userId, { text: 'panaderia' })).toBe(1);
   });
 

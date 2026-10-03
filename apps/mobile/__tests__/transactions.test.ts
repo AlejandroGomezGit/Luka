@@ -584,6 +584,7 @@ describe('HU-04 editar, eliminar y deshacer (CU-09)', () => {
       categoryId: id('food.groceries'),
       occurredOn: '2026-10-01',
       note: 'Mercado',
+      tags: [],
     });
   });
 });

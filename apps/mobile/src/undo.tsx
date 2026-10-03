@@ -1,10 +1,20 @@
 import { useSegments } from 'expo-router';
-import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { UndoBar } from './ui/UndoBar';
 
 interface Offer {
   message: string;
   undo: () => void;
+  /** Cuando ya no se puede deshacer: el aviso desaparece o lo reemplaza otro (HU-06: borrar la foto). */
+  onExpire?: () => void;
 }
 
 interface UndoValue {
@@ -22,14 +32,21 @@ const UndoContext = createContext<UndoValue>({ offer: () => undefined, revision:
  */
 export function UndoProvider({ children }: { children: ReactNode }) {
   const [pending, setPending] = useState<Offer | null>(null);
+  const current = useRef<Offer | null>(null);
   const [revision, setRevision] = useState(0);
   const segments = useSegments();
-  const offer = useCallback((next: Offer) => {
+  const show = (next: Offer | null) => {
+    current.current = next;
     setPending(next);
+  };
+  const offer = useCallback((next: Offer) => {
+    current.current?.onExpire?.();
+    show(next);
     setRevision((r) => r + 1);
   }, []);
   const dismiss = useCallback(() => {
-    setPending(null);
+    current.current?.onExpire?.();
+    show(null);
   }, []);
   const value = useMemo(() => ({ offer, revision }), [offer, revision]);
   return (
@@ -43,7 +60,7 @@ export function UndoProvider({ children }: { children: ReactNode }) {
           onDismiss={dismiss}
           onUndo={() => {
             pending.undo();
-            setPending(null);
+            show(null);
             setRevision((r) => r + 1);
           }}
         />

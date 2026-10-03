@@ -16,7 +16,15 @@
       "expo-router",
       "expo-status-bar",
       "expo-sqlite",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Luka usa la cámara solo para fotografiar recibos y guardarlos en el movimiento que elijas.",
+          "photosPermission": false,
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
