@@ -26,3 +26,8 @@ reason = "uuid 7.0.3 solo está en xcode, de los plugins de configuración de Ex
 id = "GHSA-67mh-4wv8-2f99"
 ignoreUntil = 2026-12-31T00:00:00Z
 reason = "esbuild 0.18.20 solo está en drizzle-kit (generar migraciones), que no levanta el servidor de desarrollo de esbuild afectado. La corrección (0.25) va dentro de un paquete abandonado de drizzle-kit; Renovate propondrá actualizar drizzle-kit."
+
+[[IgnoredVulns]]
+id = "GHSA-xvch-5gv4-984h"
+ignoreUntil = 2026-10-11T00:00:00Z
+reason = "PRUEBA de T-043: muestra que una excepción se declara con motivo y fecha y no apaga el job. Esta rama no se fusiona."
