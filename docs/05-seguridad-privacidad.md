@@ -49,7 +49,7 @@ Casi todo lo que guarda Luka es información financiera personal, así que se tr
 | Hash de la contraseña | Alta | Servidor | Argon2id; nunca se registra | Hasta eliminar la cuenta |
 | Tokens de refresco | Alta | Hash en el servidor; Keychain en el dispositivo | Un solo uso y revocables | Hasta caducar o revocar |
 | Movimientos, cuentas, categorías y notas | Alta | Dispositivo y PostgreSQL | Cifrado en reposo del proveedor, seguridad a nivel de fila y protección de datos de iOS | Mientras exista la cuenta; borrado lógico de 30 días |
-| Fotos de recibos | Alta | Dispositivo y almacenamiento de objetos | Bucket privado, cifrado en reposo y URLs prefirmadas de corta vida | Igual que el movimiento |
+| Fotos de recibos | Alta | Dispositivo (`Documents/attachments/`, dentro de la app) y almacenamiento de objetos (desde T-035) | En el iPhone: reducidas a 1.600 px y sin metadatos de ubicación, con la protección de datos de iOS; la carpeta entra en la copia de seguridad de iCloud y del Mac, igual que la base local. En el servidor: bucket privado, cifrado en reposo y URLs prefirmadas de corta vida | El archivo se borra del iPhone cuando ya no se puede deshacer el borrado (o se quita la foto); la fila, igual que el movimiento (borrado lógico de 30 días) |
 | Correo y nombre | Media | Servidor | Cifrado en reposo; fuera de los logs | Hasta eliminar la cuenta |
 | Token push | Media | Servidor | Se borra al revocar el dispositivo | Hasta revocar |
 | Consentimientos | Media | Servidor | Solo se agregan filas, no se editan | Se define con asesoría legal (ver abajo) |
@@ -109,6 +109,7 @@ Borrar la cuenta (CU-03) elimina todo lo que Luka guarda sobre la persona, no so
 | Trabajos pendientes en la cola | Se cancelan al confirmar | Prueba de integración |
 | Tokens y dispositivos | De inmediato | Prueba: el token deja de funcionar |
 | Base local en cada dispositivo | En la siguiente sincronización, que recibe `403` con `account_deleted` y borra los datos locales | Prueba E2E |
+| Fotos de recibos en cada dispositivo (`Documents/attachments/`) | Junto con la base local: se borra la carpeta entera | Prueba E2E: la carpeta no existe después |
 | Copias de seguridad | Salen por rotación; propuesta: 35 días como máximo | Revisión de la política de retención del proveedor |
 | Logs | No contienen datos financieros y se eliminan a los 30 días | Prueba del redactado de logs |
 | Prueba de la autorización (`consents`) | Se conserva solo el tiempo que indique la asesoría legal | Decisión pendiente: validar |
@@ -127,6 +128,7 @@ Luka cumple casi todo lo que Apple exige de forma natural, pero hay un riesgo de
 - [ ] **Cuenta de demostración activa** con datos de ejemplo y servicios en línea durante toda la revisión (2.1 (a) y «Before You Submit»).
 - [ ] **Metadatos exactos:** capturas con datos ficticios y no de una persona real (2.3.9), nombre único de hasta 30 caracteres (2.3.7), clasificación por edad honesta (2.3.6) y datos de privacidad correctos en App Store Connect (2.3).
 - [ ] **Manifiesto de privacidad.** Desde el 1 de mayo de 2024 App Store Connect no acepta apps que usan ciertas APIs sin describir su motivo en el manifiesto; hay que revisar los módulos de Expo y las dependencias ([Apple](https://developer.apple.com/documentation/bundleresources/describing-use-of-required-reason-api)).
+- [ ] **Permisos con su motivo en español** (5.1.1): solo la cámara, con «Luka usa la cámara solo para fotografiar recibos y guardarlos en el movimiento que elijas.» (T-018). La galería usa el selector del sistema y no pide permiso, así que el Info.plist no lleva textos de fotos ni de micrófono; se comprueba con `npx expo config --type introspect`. Expo Go muestra su propio texto: el de Luka solo se ve en un build propio (T-041).
 - [ ] **Face ID con `LocalAuthentication`**, como pide la guía 2.5.13.
 - [ ] **Notificaciones opcionales y sin información sensible** (4.5.4).
 - [ ] **Inicio de sesión.** Cuenta propia más Sign in with Apple no activa la regla 4.8; si algún día se agrega un inicio de sesión social, esa regla pide una opción equivalente que limite los datos y permita ocultar el correo, y Sign in with Apple lo cumple.

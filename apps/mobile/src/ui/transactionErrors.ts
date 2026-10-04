@@ -17,6 +17,10 @@ export function transactionErrorMessage(code: TransactionInputError): string {
       return 'Elige una cuenta de destino distinta.';
     case 'INV-04':
       return 'Esa categoría no corresponde al tipo de movimiento.';
+    case 'too_many_tags':
+      return 'Puedes poner hasta 10 etiquetas.';
+    case 'tag_too_long':
+      return 'Cada etiqueta puede tener hasta 30 caracteres.';
     default:
       return 'No se pudo guardar el movimiento.';
   }

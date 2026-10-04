@@ -195,6 +195,7 @@ describe('HU-02 transferencias (CU-06)', () => {
       toAmountMinor: null,
       occurredOn: '2026-10-01',
       note: '',
+      tags: [],
     });
   });
 
@@ -293,7 +294,15 @@ describe('HU-04 editar un movimiento (CU-09)', () => {
     categoryId: 'groceries',
     occurredOn: '2026-09-30',
     note: 'Mercado',
+    tags: [],
   };
+
+  test('HU-04 al abrir un movimiento para verlo o editarlo, el teclado no se abre solo; en «Agregar» el monto sí toma el foco (HU-03)', async () => {
+    await edit(expense);
+    expect(screen.getByLabelText('Monto').props.autoFocus).toBe(false);
+    await setup();
+    expect(screen.getByLabelText('Monto').props.autoFocus).toBe(true);
+  });
 
   test('HU-04 al editar, el formulario abre con los valores del movimiento y «Eliminar movimiento» es un botón destructivo de 44 pt o más al final', async () => {
     const { onSubmit, onDelete } = await edit(expense);
@@ -341,6 +350,7 @@ describe('HU-04 editar un movimiento (CU-09)', () => {
         toAmountMinor: 50_000_00,
         occurredOn: '2026-10-01',
         note: '',
+        tags: [],
       },
       { accounts: [...accounts, account('bank', 'Ahorro', 'COP')] },
     );

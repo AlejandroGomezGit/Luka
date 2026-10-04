@@ -326,6 +326,35 @@ Se detallan los cinco casos de uso que más condicionan la arquitectura: iniciar
 
 **Postcondiciones:** ninguna; buscar y filtrar no cambian datos.
 
+### CU-11 Agregar etiquetas y foto de recibo
+
+- **Actor:** Usuario. **Requisitos:** RF-11, RNF-04.
+- **Precondiciones:** ninguna. No requiere conexión.
+- **Disparador:** el usuario registra o edita un gasto, ingreso o transferencia.
+
+**Flujo principal**
+
+1. En «Etiquetas» el usuario escribe etiquetas separadas por comas («Viaje a Medellín, trabajo»). Se guardan como las escribe, sin espacios de sobra; una repetida sin importar mayúsculas ni tildes se quita y queda la primera forma. Hasta 10 etiquetas de hasta 30 caracteres.
+2. El usuario toca «Agregar foto del recibo» y elige «Tomar foto» o «Elegir de la galería». La galería no pide permiso; la cámara sí, con el texto «Luka usa la cámara solo para fotografiar recibos y guardarlos en el movimiento que elijas.».
+3. La app reduce la foto a 1.600 px en su lado largo, la guarda como JPEG sin metadatos de ubicación dentro de la app y muestra la miniatura («Foto del recibo» para VoiceOver) con «Reemplazar» y «Quitar». Hay una foto por movimiento.
+4. Al guardar el movimiento se guardan las etiquetas y la foto, que queda pendiente de subir hasta T-035. La búsqueda de movimientos (CU-10) encuentra las etiquetas.
+
+**Flujos alternativos**
+
+- Cancelar el selector: «No elegiste ninguna foto.».
+- Cámara sin permiso: «Luka no tiene permiso para usar la cámara. Puedes darlo en Ajustes.» y el botón «Abrir Ajustes».
+- Quitar, reemplazar o salir sin guardar: la foto recién elegida se borra del iPhone.
+- Borrar el movimiento borra su foto; «Deshacer» devuelve las dos. El archivo se borra del iPhone cuando desaparece el aviso o al abrir la app, lo que ocurra primero; la fila sigue el borrado lógico de 30 días.
+
+**Errores**
+
+- Sin espacio: «No hay espacio suficiente en el iPhone para guardar la foto.».
+- La foto no se puede reducir: «No se pudo procesar la foto. Prueba con otra.»; no se puede guardar: «No se pudo guardar la foto. Inténtalo de nuevo.».
+- Más de 10 etiquetas o una de más de 30 caracteres: «Puedes poner hasta 10 etiquetas.» o «Cada etiqueta puede tener hasta 30 caracteres.».
+- Si el movimiento no se guarda, la foto recién elegida se borra: «No se pudo guardar el movimiento. Vuelve a intentarlo.». Nunca quedan archivos sin fila ni filas sin archivo.
+
+**Postcondiciones:** el movimiento tiene sus etiquetas y, si se eligió, una fila de `attachments` con `storage_key` nulo y el archivo en `Documents/attachments/`.
+
 ### CU-18 Ver el resumen mensual
 
 - **Actor:** Usuario. **Requisitos:** RF-20, RNF-02, RNF-04.
@@ -421,7 +450,7 @@ El MVP se corta en 11 historias, diez de usuario y una técnica; las de V2 y V3 
 | HU-03 | Como usuario, quiero registrar un gasto en pocos toques, para no dejar de anotarlos | Se llega a «Guardar» en 3 toques o menos desde el inicio (las pulsaciones del teclado al escribir el monto no cuentan); funciona en modo avión; el monto se guarda como entero en la unidad menor | CU-08 |
 | HU-04 | Como usuario, quiero editar o eliminar un movimiento y deshacer un borrado, para corregir errores | Tras eliminar puedo deshacer durante unos segundos; los saldos se recalculan; un movimiento eliminado no aparece en listas ni resúmenes | CU-09 |
 | HU-05 | Como usuario, quiero buscar y filtrar mis movimientos, para encontrar uno específico | Filtro por fecha, categoría, cuenta, monto y texto, combinados; con 10 000 movimientos el resultado aparece sin saltos visibles | CU-10 |
-| HU-06 | Como usuario, quiero agregar etiquetas y la foto de un recibo, para tener comprobantes | La foto se guarda en el dispositivo y se sube al sincronizar con conexión; puedo quitarla o reemplazarla | CU-11 |
+| HU-06 | Como usuario, quiero agregar etiquetas y la foto de un recibo, para tener comprobantes | La foto se guarda en el dispositivo, reducida y sin ubicación, y queda pendiente de subir (la subida llega con T-035); puedo quitarla o reemplazarla; la búsqueda encuentra las etiquetas | CU-11 |
 | HU-07 | Como usuario, quiero categorías en español y poder crear las mías, para organizar mis gastos a mi manera | Hay categorías predefinidas al empezar; puedo crear, renombrar y archivar con ícono y color; archivar no altera movimientos antiguos | CU-13 |
 | HU-08 | Como usuario, quiero ver un resumen del mes, para saber cómo voy | Muestra ingresos, gastos y balance del mes elegido; las transferencias entre mis cuentas no cuentan como gasto ni ingreso; cambiar de mes funciona sin conexión | CU-18 |
 | HU-09 | Como usuario, quiero que mis datos se sincronicen solos, para no perder nada si cambio de celular | Lo creado sin conexión llega al servidor al volver la red, sin duplicados aunque se reintente; el indicador muestra al día, pendiente o con error; ante un conflicto ambos dispositivos terminan iguales | CU-21, CU-22 |
