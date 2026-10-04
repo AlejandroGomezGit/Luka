@@ -33,7 +33,7 @@ Todo el sistema se escribe en TypeScript, así un solo lenguaje cubre la app, la
 | Cámara y OCR | Cámara de Expo y reconocimiento de texto de Apple en el dispositivo, mediante un módulo nativo (por validar) | Leer recibos en V3 sin enviar la foto a nadie |
 | API | NestJS con adaptador Fastify | Estructura modular conocida y buen rendimiento |
 | Contratos | Zod en un paquete compartido y OpenAPI generado | Un mismo esquema valida la app y el servidor, y documenta la API |
-| Base de datos del servidor | PostgreSQL con Drizzle ORM para el esquema y las migraciones; por ahora la API consulta con `postgres` directo dentro de `withUser` (T-026), y usar Drizzle en la API se decide al resolver #84 (T-047), porque agregarle una dependencia hoy vuelve a resolver las de la app | Transacciones, `jsonb` y seguridad a nivel de fila |
+| Base de datos del servidor | PostgreSQL con Drizzle ORM para el esquema y las migraciones; por ahora la API consulta con `postgres` directo dentro de `withUser` (T-026); cuando la API use Drizzle, lo hará a través de `@luka/schema-pg` (T-047) | Transacciones, `jsonb` y seguridad a nivel de fila |
 | Trabajos en segundo plano | BullMQ sobre Redis | Recurrentes, alertas, importaciones y purgas |
 | Archivos | Almacenamiento de objetos compatible con S3 y URLs prefirmadas | Las imágenes no pasan por la API |
 | Autenticación | JWT de vida corta, refresco rotatorio, Argon2id y Sign in with Apple | Control propio con bibliotecas probadas |
@@ -43,6 +43,8 @@ Todo el sistema se escribe en TypeScript, así un solo lenguaje cubre la app, la
 | Pruebas | Jest, React Native Testing Library, `inject` de Fastify con Testcontainers, fast-check, Maestro y k6 | Unitarias, de integración, de propiedades, E2E móviles y de carga |
 
 ## Monorepo y paquetes compartidos
+
+**Dependencias de la API y el lockfile (T-047).** pnpm resuelve los pares opcionales de un paquete con lo que ya existe en el workspace. Una dependencia de la API que comparte pares opcionales con la app puede cambiar lo que resuelve `apps/mobile`: con `drizzle-orm` directo en la API (su par opcional `expo-sqlite` arrastra la cadena de Expo), la app pasaba de 823 a 940 entradas en el lockfile, con 116 versiones nuevas como `jest@30`. Por eso esa dependencia entra por un paquete del workspace que ya la tenga (Drizzle, a través de `@luka/schema-pg`) o pasa la comprobación «Dependencias de la app» del CI.
 
 Un solo repositorio con pnpm y Turborepo aloja la app, la API y cinco paquetes; la regla clave es que `packages/domain` es TypeScript puro, sin React Native ni Node, para que corra igual en el celular, en el servidor y en las pruebas.
 

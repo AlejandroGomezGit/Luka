@@ -1,0 +1,40 @@
+name: Dependencias de la app
+
+# T-047: un PR que no toca apps/mobile no debe cambiar lo que resuelve apps/mobile en pnpm-lock.yaml
+# (versiones ni variantes de pares). Solo queda exento si cambia apps/mobile/package.json o lleva la
+# etiqueta cambia-dependencias-app, que se pone con el OK del dueño (CLAUDE.md). Las ramas de
+# Renovate no están exentas. Corre también al poner o quitar la etiqueta.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  app:
+    name: Lo que resuelve apps/mobile
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - name: Comparar con la base del PR
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          ETIQUETA: ${{ contains(github.event.pull_request.labels.*.name, 'cambia-dependencias-app') }}
+        run: |
+          if [ "$ETIQUETA" = true ]; then
+            echo "Exento: lleva la etiqueta cambia-dependencias-app."
+            exit 0
+          fi
+          if git diff --name-only "$BASE" HEAD | grep -qx 'apps/mobile/package.json'; then
+            echo "Exento: el PR cambia apps/mobile/package.json."
+            exit 0
+          fi
+          git show "$BASE:pnpm-lock.yaml" > "$RUNNER_TEMP/base-lock.yaml"
+          node scripts/app-lock-closure.mjs "$RUNNER_TEMP/base-lock.yaml" pnpm-lock.yaml
