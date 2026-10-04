@@ -68,7 +68,8 @@ let proxied: NestFastifyApplication;
 beforeAll(async () => {
   container = await new RedisContainer('redis:8-alpine').start();
   const REDIS_URL = container.getConnectionUrl();
-  redis = new Redis(REDIS_URL);
+  // Al final Redis está detenido: sin disconnectTimeout corto, ioredis retiene el proceso 2 s (DT-10).
+  redis = new Redis(REDIS_URL, { disconnectTimeout: 200 });
   const controllers = [ProbeController];
   strict = await createTestApp(
     {
@@ -156,6 +157,17 @@ describe('límite de tasa (AM-08)', () => {
     expect((await me({ 'x-usuario-prueba': 'b' })).statusCode).toBe(200);
   });
 
+  it('AM-08: el contador general y el estricto de /v1/auth/* no comparten clave', async () => {
+    await me();
+    await strict.inject({ method: 'GET', url: '/v1/auth/inexistente' });
+    const keys = await redis.keys('luka:tasa:*');
+    expect(keys.map((key) => key.split(':').slice(0, 3).join(':')).sort()).toEqual([
+      'luka:tasa:auth',
+      'luka:tasa:ip',
+    ]);
+    for (const key of keys) expect(await redis.get(key)).toBe('1');
+  });
+
   it('AM-08: /healthz no cuenta para el límite', async () => {
     for (let i = 0; i < 8; i++) {
       expect((await strict.inject({ method: 'GET', url: '/healthz' })).statusCode).toBe(200);
@@ -177,7 +189,8 @@ describe('límite de tasa (AM-08)', () => {
     const keys = await redis.keys('*');
     expect(keys.length).toBeGreaterThanOrEqual(6);
     for (const key of keys) {
-      expect(key).toMatch(/^luka:/);
+      expect(key).toMatch(/^luka:(tasa:(ip|auth|usuario)|intentos|bloqueo):/);
+      expect(key).not.toContain('undefined');
       expect(key).not.toMatch(/ana|ejemplo|203\.0\.113|127\.0\.0\.1|2001/);
       expect(await redis.pttl(key)).toBeGreaterThan(0);
     }

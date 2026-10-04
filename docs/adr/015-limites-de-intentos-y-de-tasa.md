@@ -24,7 +24,7 @@ AM-01 pide frenar la adivinación de contraseñas con una espera creciente y men
 
   `/healthz` y `/readyz` no cuentan.
 
-**Claves de Redis.** Los correos se pasan a minúsculas y sin espacios, y las IP se agrupan: la IPv4 tal cual y la IPv6 por su prefijo /64. Los dos van solo como HMAC-SHA256 con `RATE_LIMIT_KEY_SECRET`. Toda clave expira. Los incrementos son atómicos: un script Lua en los intentos y el del plugin en la tasa.
+**Claves de Redis.** Los correos se pasan a minúsculas y sin espacios, y las IP se agrupan: la IPv4 tal cual y la IPv6 por su prefijo /64. Los dos van solo como HMAC-SHA256 con `RATE_LIMIT_KEY_SECRET`. Toda clave expira. Los incrementos son atómicos: un script Lua en los intentos y el del plugin en la tasa. Cada contador tiene su espacio de nombres: `luka:tasa:ip:`, `luka:tasa:auth:` y `luka:tasa:usuario:` en la tasa, y `luka:intentos:` y `luka:bloqueo:` en los intentos. Así, el contador general y el estricto de `/v1/auth/*` nunca comparten clave.
 
 **Si Redis no responde:**
 
@@ -35,7 +35,13 @@ AM-01 pide frenar la adivinación de contraseñas con una espera creciente y men
 
 Los dos casos se registran como advertencia, y `/readyz` marca a Redis caído. Las sesiones abiertas siguen funcionando, porque el refresco del token solo pasa por el límite de tasa.
 
-**IP del cliente.** Fastify confía en `X-Forwarded-For` solo si `TRUST_PROXY` lo permite: `false` (el valor por defecto), `true` o las direcciones del balanceador. No acepta un número de saltos, porque Fastify 5.12 lo ignora: un cliente directo podría falsificar la cabecera. La API avisa al arrancar si `TRUST_PROXY` es `false` en producción. El valor real se decide en T-040.
+**IP del cliente.** Fastify confía en `X-Forwarded-For` solo si `TRUST_PROXY` lo permite: `false` (el valor por defecto), `true` o las direcciones y rangos del balanceador, separados por comas.
+
+- **Un número de saltos hace fallar el arranque.** Fastify desactivó esa forma en 5.12.1 por CVE-2026-16732 (GHSA-3m5p-2c4r-xxw2): con solo contar saltos, un cliente directo puede falsificar `X-Forwarded-*`.
+- **En producción, `true` también hace fallar el arranque**, porque confía en cualquier cabecera `X-Forwarded-*`. Exige las direcciones del balanceador.
+- **Con `false` en producción, la API avisa al arrancar:** detrás de un balanceador, todas las peticiones compartirían su IP.
+- **Producción** es `APP_ENV=production` o `NODE_ENV=production`. Sin `APP_ENV`, `NODE_ENV=production` cuenta como producción y nunca como local.
+- **T-040** pone el CIDR del balanceador y deja el origen alcanzable solo a través del proxy; si no, cualquiera podría saltárselo y enviar la cabecera.
 
 ## Alternativas descartadas
 

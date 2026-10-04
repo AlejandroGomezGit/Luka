@@ -155,6 +155,22 @@ describe('configuración de los límites', () => {
     expect(() => loadEnv({ ...env, TRUST_PROXY: '1' })).toThrow(/TRUST_PROXY/);
   });
 
+  it('AM-08: en producción TRUST_PROXY=true no arranca: confiaría en cualquier X-Forwarded-*', () => {
+    for (const production of [{ APP_ENV: 'production' }, { NODE_ENV: 'production' }]) {
+      expect(() => loadEnv({ ...env, ...production, TRUST_PROXY: 'true' })).toThrow(/TRUST_PROXY/);
+      expect(loadEnv({ ...env, ...production, TRUST_PROXY: '10.0.0.0/8' }).TRUST_PROXY).toBe(
+        '10.0.0.0/8',
+      );
+    }
+    expect(loadEnv({ ...env, APP_ENV: 'staging', TRUST_PROXY: 'true' }).TRUST_PROXY).toBe(true);
+  });
+
+  it('con NODE_ENV=production y sin APP_ENV, el entorno es producción y no local', () => {
+    expect(loadEnv({ ...env, NODE_ENV: 'production' }).APP_ENV).toBe('production');
+    expect(loadEnv(env).APP_ENV).toBe('local');
+    expect(loadEnv({ ...env, NODE_ENV: 'production', APP_ENV: 'staging' }).APP_ENV).toBe('staging');
+  });
+
   it('RATE_LIMIT_KEY_SECRET es obligatoria y el error no muestra valores', () => {
     const { RATE_LIMIT_KEY_SECRET: _, ...withoutSecret } = env;
     expect(() => loadEnv(withoutSecret)).toThrow(/RATE_LIMIT_KEY_SECRET/);
