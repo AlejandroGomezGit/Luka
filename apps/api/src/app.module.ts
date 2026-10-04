@@ -7,6 +7,7 @@ import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fa
 import { LoggerModule } from 'nestjs-pino';
 import type { Env } from './config.js';
 import { Datastores } from './datastores.js';
+import { Database } from './db/database.js';
 import { HealthController } from './health.controller.js';
 import { ProblemFilter } from './problem.filter.js';
 import { ENV } from './tokens.js';
@@ -40,6 +41,7 @@ export class AppModule {
       controllers: [HealthController],
       providers: [
         { provide: ENV, useValue: env },
+        Database,
         Datastores,
         { provide: APP_FILTER, useClass: ProblemFilter },
       ],

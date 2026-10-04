@@ -33,6 +33,8 @@ pnpm install
 cp .env.example .env                              # valores falsos para desarrollo local
 docker compose -f infra/docker-compose.yml up -d --wait
 pnpm db:migrate                                   # aplica las migraciones en el PostgreSQL local
+# Una vez: contraseña local (falsa, la de .env.example) del rol de la API, que la migración no fija.
+docker compose -f infra/docker-compose.yml exec postgres psql -U luka -d luka -c "alter role luka_app password 'luka-app-local'"
 pnpm dev:api                                      # API en http://localhost:3000 (prueba /readyz)
 pnpm dev:mobile                                   # servidor de Expo para el simulador de iOS
 ```
