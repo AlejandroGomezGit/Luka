@@ -28,3 +28,11 @@ El modelo de amenazas completo (AM-01 a AM-14) y los requisitos de privacidad (L
 - Los logs nunca registran importes, comercios, notas ni correos.
 - El texto de los movimientos se procesa en el dispositivo y no sale sin consentimiento.
 - Nunca hay secretos en el código: el repositorio solo incluye `.env.example` con valores falsos.
+
+## Hallazgos de los escáneres
+
+El CI corre gitleaks (secretos) y osv-scanner (dependencias vulnerables) en cada PR. Un hallazgo nunca se resuelve desactivando el job:
+
+- **Secreto real:** se rota de inmediato. Borrar el commit no basta, porque el valor ya pudo copiarse.
+- **Falso positivo de gitleaks:** se agrega su huella exacta (`commit:archivo:regla:línea`) a `.gitleaksignore` con un comentario que explica el motivo. Nunca se ignora una ruta ni una regla entera.
+- **Vulnerabilidad sin arreglo aplicable:** se agrega a `osv-scanner.toml` como `[[IgnoredVulns]]` con su motivo y un `ignoreUntil` a 90 días o menos. Al caducar, el job vuelve a fallar y se revisa de nuevo.
