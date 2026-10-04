@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   alterAppPassword,
+  urlSource,
   describeUrl,
   explain,
   localAppPassword,
@@ -90,4 +91,24 @@ test('drizzle envuelve el error: se muestra el de PostgreSQL que viene en cause,
     cause: { code: 'ECONNREFUSED', message: 'connect ECONNREFUSED 127.0.0.1:15432' },
   };
   assert.match(explain(refused, url), /ECONNREFUSED.*¿Está levantado Docker Compose/s);
+});
+
+test('dice de dónde salió la URL de migraciones: la terminal, .env o el valor por defecto', () => {
+  const shell = new Set(['MIGRATION_DATABASE_URL']);
+  assert.equal(
+    urlSource({ MIGRATION_DATABASE_URL: 'x' }, shell),
+    'MIGRATION_DATABASE_URL de la terminal',
+  );
+  assert.equal(
+    urlSource({ MIGRATION_DATABASE_URL: 'x' }, new Set()),
+    'MIGRATION_DATABASE_URL de .env',
+  );
+  assert.equal(urlSource({}, new Set()), 'valor por defecto, sin MIGRATION_DATABASE_URL');
+});
+
+test('si nada escucha, sugiere revisar el puerto publicado con docker compose ps', () => {
+  const url = migrationUrl({ MIGRATION_DATABASE_URL: 'postgres://luka:x@localhost:5432/luka' });
+  const text = explain({ cause: { code: 'ECONNREFUSED', message: '' } }, url);
+  assert.match(text, /Nada escucha en localhost:5432/);
+  assert.match(text, /docker compose -f infra\/docker-compose.yml ps/);
 });

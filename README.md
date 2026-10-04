@@ -73,4 +73,5 @@ Para contribuir, lee [CONTRIBUTING.md](CONTRIBUTING.md); para reportar una vulne
 ## Problemas comunes
 
 - **`role "luka" does not exist` al migrar o al arrancar la API.** Las URL apuntan a otro PostgreSQL, por ejemplo uno de Homebrew en el 5432. Desde T-047 el de Docker usa el 15432 (`POSTGRES_PORT`), así que basta con que `DATABASE_URL` y `MIGRATION_DATABASE_URL` de tu `.env` usen ese puerto, como en `.env.example`. Comprueba quién escucha con `lsof -nP -iTCP:15432 -sTCP:LISTEN`.
+- **`db:migrate` va a otro puerto o servidor.** `pnpm db:migrate` lee el `.env` de la raíz, pero una variable exportada en la terminal tiene prioridad sobre él, y sin `MIGRATION_DATABASE_URL` usa `localhost:15432`. El primer mensaje dice cuál usó: «(MIGRATION_DATABASE_URL de .env)», «(… de la terminal)» o «(valor por defecto …)». Compara el puerto con el que publica Docker: `docker compose -f infra/docker-compose.yml ps`.
 - **La API no arranca y nombra una variable.** Falta en `.env`; cópiala de `.env.example`.

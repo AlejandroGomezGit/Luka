@@ -22,6 +22,18 @@ export function migrationUrl(env) {
   return url;
 }
 
+/**
+ * De dónde salió la URL de migraciones. `shell` son las variables que ya traía la terminal antes de
+ * leer .env (process.loadEnvFile no pisa las de la terminal).
+ */
+export function urlSource(env, shell) {
+  if (env.MIGRATION_DATABASE_URL === undefined)
+    return 'valor por defecto, sin MIGRATION_DATABASE_URL';
+  return shell.has('MIGRATION_DATABASE_URL')
+    ? 'MIGRATION_DATABASE_URL de la terminal'
+    : 'MIGRATION_DATABASE_URL de .env';
+}
+
 /** usuario@host:puerto/base, sin contraseña. */
 export const describeUrl = (url) =>
   `${decodeURIComponent(url.username)}@${url.hostname}:${url.port || '5432'}${url.pathname}`;
@@ -43,7 +55,7 @@ export function explain(error, url) {
   }
   if (code === 'ECONNREFUSED') {
     lines.push(
-      `Nada escucha en ${url.hostname}:${url.port || '5432'}. ¿Está levantado Docker Compose y coincide el puerto (POSTGRES_PORT)?`,
+      `Nada escucha en ${url.hostname}:${url.port || '5432'}. ¿Está levantado Docker Compose y coincide el puerto? Mira el puerto publicado con docker compose -f infra/docker-compose.yml ps.`,
     );
   }
   const secret = decodeURIComponent(url.password);
@@ -67,6 +79,7 @@ export const alterAppPassword = (password) =>
   `alter role luka_app password '${password.replaceAll("'", "''")}'`;
 
 if (import.meta.url === `file://${process.argv[1] ?? ''}`) {
+  const shell = new Set(Object.keys(process.env));
   try {
     process.loadEnvFile(fileURLToPath(new URL('../../../.env', import.meta.url)));
   } catch {
@@ -79,7 +92,7 @@ if (import.meta.url === `file://${process.argv[1] ?? ''}`) {
     console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
-  console.log(`Migrando ${describeUrl(url)}`);
+  console.log(`Migrando ${describeUrl(url)} (${urlSource(process.env, shell)})`);
   const sql = postgres(url.toString(), { max: 1, onnotice: () => undefined });
   try {
     await migrate(drizzle(sql), {
