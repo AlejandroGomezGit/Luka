@@ -279,7 +279,7 @@ Se detallan los cinco casos de uso que más condicionan la arquitectura: iniciar
 
 **Flujo principal**
 
-1. La app abre el formulario de CU-08 (o CU-06) con los valores del movimiento. La barra superior dice «Editar gasto», «Editar ingreso» o «Editar transferencia», con «Cancelar» y «Guardar».
+1. La app abre el formulario de CU-08 (o CU-06) con los valores del movimiento. La barra superior dice «Editar gasto», «Editar ingreso» o «Editar transferencia», con «Cancelar» y «Guardar». El teclado no se abre hasta que el usuario toca un campo; en «Agregar» (CU-08) el monto sí toma el foco.
 2. El usuario cambia monto, cuenta, categoría, fecha o nota y toca «Guardar»; o toca «Eliminar movimiento», un botón destructivo al final del formulario.
 3. Al guardar, la app valida con las reglas de CU-08 y CU-06, guarda el cambio con una nueva marca `updated_at` y vuelve a la pantalla anterior. Al eliminar no pide confirmación: marca `deleted_at` (borrado lógico) y vuelve.
 4. La app recalcula saldos y resumen; en una transferencia cambian los dos saldos.
