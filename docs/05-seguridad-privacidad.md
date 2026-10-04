@@ -10,7 +10,7 @@ Catorce amenazas cubren lo que importa proteger: las cuentas, las sesiones, los 
 | --- | --- | --- | --- |
 | AM-01 | Adivinar o robar contraseñas con intentos masivos | Argon2id, límite de intentos con espera creciente, mensajes de error genéricos | Pruebas de integración de los límites |
 | AM-02 | Robo de un token de sesión | Token de acceso de 15 minutos, refresco de un solo uso con detección de reutilización, tokens en el Keychain, revocación por dispositivo | Pruebas de integración de la rotación |
-| AM-03 | Leer datos de otro usuario | `user_id` en toda consulta, seguridad a nivel de fila en PostgreSQL e identificadores UUID | Pruebas de aislamiento en CI (INV-08) |
+| AM-03 | Leer datos de otro usuario | `user_id` en toda consulta, seguridad a nivel de fila en PostgreSQL forzada en cada tabla, rol de la API sin `BYPASSRLS`, claves foráneas compuestas (`user_id`, `id`) e identificadores UUID | Pruebas de aislamiento en CI con dos usuarios, tabla por tabla, y prueba de catálogo (T-026, INV-08) |
 | AM-04 | Inyección SQL o datos mal formados | Consultas parametrizadas con Drizzle, validación con Zod en cada entrada, límites de tamaño | Análisis estático y pruebas de contrato |
 | AM-05 | Celular perdido o robado | Protección de datos de iOS, bloqueo con Face ID, revocar el dispositivo desde otra sesión | Prueba manual en dispositivo |
 | AM-06 | Interceptar el tráfico | TLS 1.2 o superior, HSTS y App Transport Security de iOS sin excepciones | Escaneo de TLS en staging |

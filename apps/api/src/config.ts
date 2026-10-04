@@ -3,7 +3,9 @@ import { z } from 'zod';
 const Env = z.object({
   APP_ENV: z.enum(['local', 'ci', 'staging', 'production']).default('local'),
   PORT: z.coerce.number().int().positive().default(3000),
+  // La API se conecta como luka_app (RLS); el dueño de las tablas solo aplica migraciones.
   DATABASE_URL: z.url(),
+  DATABASE_POOL_SIZE: z.coerce.number().int().positive().default(10),
   REDIS_URL: z.url(),
 });
 

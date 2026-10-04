@@ -18,5 +18,9 @@
   "pg/0001_inicial": {
     "when": 1790950164749,
     "sha256": "a4a336f9e62fd0e71e76905f524d79302511e5fb22a96d0cfe7405deb4f9763b"
+  },
+  "pg/0002_aislamiento": {
+    "when": 1791084688615,
+    "sha256": "0e702eeaef33fe53e096ff521570f6d297c50b3518b4cee31299939dd9893991"
   }
 }

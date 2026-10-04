@@ -175,7 +175,7 @@ La base de datos rechaza los estados imposibles y la capa de dominio los valida 
 | INV-05 | `currency` del movimiento es la de su cuenta al crearlo, y la moneda de una cuenta con movimientos no cambia; cuentan también los borrados, porque «Deshacer» o la sincronización pueden devolverlos | Dominio, API |
 | INV-06 | Una cuenta archivada no acepta movimientos nuevos, pero conserva los existentes: un movimiento que ya estaba en ella sigue editable mientras no cambie de cuenta; pasarlo a otra cuenta archivada se rechaza | Dominio, API |
 | INV-07 | Las categorías con `system_key` no se eliminan: solo se renombran o se archivan | Dominio, API |
-| INV-08 | Ningún dato de otro `user_id` se lee ni se escribe | Filtros de la API y seguridad a nivel de fila |
+| INV-08 | Ningún dato de otro `user_id` se lee ni se escribe | Filtros de la API y seguridad a nivel de fila (T-026): la API se conecta como `luka_app` (sin superusuario ni `BYPASSRLS`) y cada petición corre en una transacción con `app.user_id` fijado por `withUser`; cada tabla tiene RLS forzada con una política `USING` y `WITH CHECK` sobre `app.current_user_id()`, y las claves foráneas entre tablas del usuario son compuestas (`user_id`, `id`), porque PostgreSQL comprueba las claves por encima de la RLS. Una prueba de catálogo rechaza tablas sin RLS forzada, políticas abiertas y privilegios de más |
 | INV-09 | Un movimiento «por revisar» no entra en saldos, presupuestos ni reportes hasta que se confirma | Dominio, API |
 
 ### Saldo de una cuenta

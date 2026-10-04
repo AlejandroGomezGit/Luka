@@ -19,6 +19,7 @@ import {
   bigint,
   char,
   check,
+  foreignKey,
   customType,
   date,
   index,
@@ -28,6 +29,7 @@ import {
   smallint,
   text,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
@@ -110,7 +112,11 @@ export const accounts = pgTable(
     sortOrder: integer('sort_order').notNull().default(0),
     archivedAt: timestamptz('archived_at'),
   },
-  (t) => [check('accounts_type', oneOf(t.type, ACCOUNT_TYPES))],
+  (t) => [
+    check('accounts_type', oneOf(t.type, ACCOUNT_TYPES)),
+    // Destino de las claves foráneas compuestas: una fila solo apunta a otra del mismo usuario (AM-03).
+    unique('accounts_user_id_id').on(t.userId, t.id),
+  ],
 );
 
 export const categories = pgTable(
@@ -125,7 +131,16 @@ export const categories = pgTable(
     systemKey: text('system_key'),
     archivedAt: timestamptz('archived_at'),
   },
-  (t) => [check('categories_kind', oneOf(t.kind, CATEGORY_KINDS))],
+  (t) => [
+    check('categories_kind', oneOf(t.kind, CATEGORY_KINDS)),
+    unique('categories_user_id_id').on(t.userId, t.id),
+    // Las claves foráneas se comprueban por encima de la RLS: (user_id, id) impide apuntar a otro usuario.
+    foreignKey({
+      name: 'categories_parent_same_user',
+      columns: [t.userId, t.parentId],
+      foreignColumns: [t.userId, t.id],
+    }),
+  ],
 );
 
 export const transactions = pgTable(
@@ -176,6 +191,22 @@ export const transactions = pgTable(
           and ${t.toAccountId} <> ${t.accountId} and ${t.toAmountMinor} > 0)
         or (${t.kind} <> 'transfer' and ${t.toAccountId} is null and ${t.toAmountMinor} is null)`,
     ),
+    unique('transactions_user_id_id').on(t.userId, t.id),
+    foreignKey({
+      name: 'transactions_account_same_user',
+      columns: [t.userId, t.accountId],
+      foreignColumns: [accounts.userId, accounts.id],
+    }),
+    foreignKey({
+      name: 'transactions_to_account_same_user',
+      columns: [t.userId, t.toAccountId],
+      foreignColumns: [accounts.userId, accounts.id],
+    }),
+    foreignKey({
+      name: 'transactions_category_same_user',
+      columns: [t.userId, t.categoryId],
+      foreignColumns: [categories.userId, categories.id],
+    }),
     index('transactions_list')
       .on(t.userId, t.occurredOn.desc(), t.id)
       .where(sql`${t.deletedAt} is null`),
@@ -202,5 +233,12 @@ export const attachments = pgTable(
     storageKey: text('storage_key'),
     uploadedAt: timestamptz('uploaded_at'),
   },
-  (t) => [check('attachments_kind', oneOf(t.kind, ATTACHMENT_KINDS))],
+  (t) => [
+    check('attachments_kind', oneOf(t.kind, ATTACHMENT_KINDS)),
+    foreignKey({
+      name: 'attachments_transaction_same_user',
+      columns: [t.userId, t.transactionId],
+      foreignColumns: [transactions.userId, transactions.id],
+    }),
+  ],
 );
