@@ -1,0 +1,7 @@
+# Hallazgos de gitleaks revisados (T-043). Solo huellas exactas (commit:archivo:regla:línea), nunca
+# rutas ni reglas enteras; cada una con su motivo.
+#
+# Credencial del S3 local de Docker Compose (healthcheck de RustFS en infra/docker-compose.yml): solo
+# existe en el contenedor de desarrollo, no se usa en ningún otro sitio y su valor es evidente a
+# propósito. Confirmado el 2026-10-04; no hay nada que rotar.
+24fd75cf3de8f59632704c345e305060e2f17cf3:infra/docker-compose.yml:curl-auth-user:44

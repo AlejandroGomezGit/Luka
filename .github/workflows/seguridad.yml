@@ -1,0 +1,63 @@
+name: Seguridad
+
+# T-043 (AM-09, AM-10): secretos, dependencias vulnerables y configuración de Renovate. Corre también
+# los lunes para avisar de una excepción caducada aunque no haya cambios.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 12 * * 1' # lunes, 7:00 en Bogotá
+
+concurrency:
+  group: seguridad-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  secretos:
+    name: Secretos (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      # Todo el historial de lo que se va a fusionar. Los hallazgos revisados están en .gitleaksignore,
+      # solo por huella exacta. safe.directory: el repositorio es de otro usuario dentro del contenedor.
+      - run: >-
+          docker run --rm -v "$PWD:/repo"
+          -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/repo
+          ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+          git /repo --redact --verbose --exit-code 1
+
+  dependencias:
+    name: Dependencias (osv-scanner)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      # Cada excepción con motivo y a 90 días o menos; avisa si alguna caducó.
+      - run: node --test scripts/*.test.mjs
+      - run: node scripts/osv-ignores.mjs osv-scanner.toml
+      # Falla con cualquier vulnerabilidad conocida que no tenga una excepción vigente.
+      - run: >-
+          docker run --rm -v "$PWD:/repo:ro"
+          ghcr.io/google/osv-scanner:v2.6.0@sha256:afd838850ac1a0fcc15ff4a041dc9ba11123c3f0d2666217a5f0fcf9222b55fa
+          scan source --config /repo/osv-scanner.toml --lockfile /repo/pnpm-lock.yaml
+
+  renovate:
+    name: Configuración de Renovate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - run: npx --yes --package renovate@44.132.5 -- renovate-config-validator --strict

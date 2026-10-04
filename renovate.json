@@ -1,0 +1,73 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Actualizaciones automáticas (T-043, documento 06): los lunes, agrupadas y por el mismo CI.",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "timezone": "America/Bogota",
+  "schedule": ["before 6am on monday"],
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "Panel de dependencias (Renovate)",
+  "semanticCommits": "enabled",
+  "minimumReleaseAge": "3 days",
+  "prConcurrentLimit": 5,
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on the first day of the month"]
+  },
+  "packageRules": [
+    { "matchPackageNames": ["@nestjs/*"], "groupName": "NestJS" },
+    { "matchPackageNames": ["fastify", "@fastify/*"], "groupName": "Fastify" },
+    { "matchPackageNames": ["drizzle-orm", "drizzle-kit"], "groupName": "Drizzle" },
+    {
+      "matchPackageNames": [
+        "eslint",
+        "@eslint/*",
+        "typescript-eslint",
+        "prettier",
+        "typescript",
+        "jest",
+        "@jest/*",
+        "@types/*",
+        "turbo",
+        "@swc/*"
+      ],
+      "groupName": "herramientas de desarrollo"
+    },
+    { "matchManagers": ["github-actions"], "groupName": "GitHub Actions" },
+    { "matchManagers": ["docker-compose"], "groupName": "imágenes de Docker Compose" },
+    {
+      "description": "SDK de Expo: Renovate no puede correr expo install, así que solo propone parches; el cambio de SDK se hace a mano como issue planeado (documento 06). expo-doctor en el CI rechaza versiones que no coinciden con el SDK.",
+      "matchPackageNames": [
+        "expo",
+        "expo-*",
+        "@expo/*",
+        "jest-expo",
+        "react",
+        "react-dom",
+        "react-native",
+        "react-native-*",
+        "@react-native/*",
+        "@react-native-community/*",
+        "@types/react"
+      ],
+      "matchUpdateTypes": ["major", "minor"],
+      "enabled": false
+    },
+    {
+      "matchPackageNames": [
+        "expo",
+        "expo-*",
+        "@expo/*",
+        "jest-expo",
+        "react",
+        "react-dom",
+        "react-native",
+        "react-native-*",
+        "@react-native/*",
+        "@react-native-community/*",
+        "@types/react"
+      ],
+      "matchUpdateTypes": ["patch"],
+      "groupName": "SDK de Expo (parches)"
+    }
+  ]
+}

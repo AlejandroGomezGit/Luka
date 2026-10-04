@@ -1,0 +1,28 @@
+# Excepciones de osv-scanner (T-043). Cada una lleva su motivo y caduca en 90 días o menos: al vencer,
+# el job «Dependencias» vuelve a fallar y scripts/osv-ignores.mjs lo avisa. Se revisan con cada
+# cambio de versión del SDK de Expo. Aprobadas el 2026-10-04.
+
+[[IgnoredVulns]]
+id = "GHSA-vcc3-ghjq-m6fr"
+ignoreUntil = 2026-12-31T00:00:00Z
+reason = "decode-uri-component 0.2.2 entra en la app vía query-string 7 de expo-router (lee las URL luka://). Una URL maliciosa abierta por la persona podría congelar la app; no expone datos. La versión corregida (0.5.0) es solo ESM y query-string 7 la carga con require: forzarla rompe expo-router. Se espera el parche de Expo (DT-09)."
+
+[[IgnoredVulns]]
+id = "GHSA-vfj7-8cjw-p6xm"
+ignoreUntil = 2026-12-31T00:00:00Z
+reason = "braces 3.0.3 solo está en herramientas de desarrollo (micromatch en Metro y Jest), no en la app ni en la API; los patrones salen de nuestra configuración. No hay versión corregida: 3.0.3 es la última."
+
+[[IgnoredVulns]]
+id = "GHSA-86w9-cpqp-85rv"
+ignoreUntil = 2026-12-31T00:00:00Z
+reason = "node-forge 1.4.0 solo está en @expo/cli (herramienta de desarrollo), no en la app ni en la API; Luka no firma actualizaciones con EAS Update. No hay versión corregida: 1.4.0 es la última."
+
+[[IgnoredVulns]]
+id = "GHSA-w5hq-g745-h8pq"
+ignoreUntil = 2026-12-31T00:00:00Z
+reason = "uuid 7.0.3 solo está en xcode, de los plugins de configuración de Expo (preparar el proyecto nativo); la app usa uuid 14.0.2, que no está afectada. xcode exige la 7: forzar la 11 cruza cuatro versiones mayores de una herramienta que no controlamos."
+
+[[IgnoredVulns]]
+id = "GHSA-67mh-4wv8-2f99"
+ignoreUntil = 2026-12-31T00:00:00Z
+reason = "esbuild 0.18.20 solo está en drizzle-kit (generar migraciones), que no levanta el servidor de desarrollo de esbuild afectado. La corrección (0.25) va dentro de un paquete abandonado de drizzle-kit; Renovate propondrá actualizar drizzle-kit."

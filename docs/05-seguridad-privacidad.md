@@ -16,8 +16,8 @@ Catorce amenazas cubren lo que importa proteger: las cuentas, las sesiones, los 
 | AM-06 | Interceptar el tráfico | TLS 1.2 o superior, HSTS y App Transport Security de iOS sin excepciones | Escaneo de TLS en staging |
 | AM-07 | Repetir o manipular operaciones de sincronización | `opId` idempotente, validación del registro resultante, reloj acotado por el servidor, lotes limitados | Pruebas de propiedades y de integración |
 | AM-08 | Abuso de la API: fuerza bruta, scraping, saturación | Límite de tasa por IP y por usuario, tamaño máximo de lote, tiempos de espera | k6 y pruebas de `429` |
-| AM-09 | Secretos filtrados en el repositorio o en los logs | Escaneo de secretos en CI, gestor de secretos, logs sin datos financieros | gitleaks en cada PR (T-043) y prueba del redactado de logs (T-019) |
-| AM-10 | Dependencia vulnerable o comprometida | Actualización automática, auditoría en CI, archivo de bloqueo y SBOM | osv-scanner en cada PR (T-043) |
+| AM-09 | Secretos filtrados en el repositorio o en los logs | Escaneo de secretos en CI, gestor de secretos, logs sin datos financieros | gitleaks sobre todo el historial en cada PR y push a `main`, con hallazgos revisados solo por huella exacta en `.gitleaksignore` (T-043), y prueba del redactado de logs (T-019) |
+| AM-10 | Dependencia vulnerable o comprometida | Actualización automática, auditoría en CI, archivo de bloqueo y SBOM | osv-scanner en cada PR, push a `main` y cada lunes; falla con cualquier vulnerabilidad conocida salvo excepciones con motivo que caducan en 90 días o menos (T-043) |
 | AM-11 | Adjuntos maliciosos o excesivos | URL prefirmada con tipo y tamaño máximos, caducidad corta, bucket privado | Prueba de integración de subida |
 | AM-12 | Compartir datos con terceros sin permiso | Categorizador en el dispositivo; IA externa y banco solo con consentimiento explícito | Pruebas E2E de consentimiento |
 | AM-13 | Pérdida de datos por borrado accidental o fallo de la base | Copias de seguridad automáticas, restauración probada y borrado lógico de 30 días | Simulacro de restauración |
