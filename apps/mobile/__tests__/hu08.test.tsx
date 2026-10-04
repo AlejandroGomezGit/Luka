@@ -111,7 +111,7 @@ test('HU-08 la pestaña Resumen muestra ingresos, gastos y balance del mes en cu
   expect(networkAttempts).toEqual([]);
 });
 
-test('HU-08 cambiar de mes: el siguiente está deshabilitado en el mes en curso', async () => {
+test('HU-08 cambiar de mes funciona sin conexión: el siguiente está deshabilitado en el mes en curso', async () => {
   await app();
   expect(screen.getByRole('button', { name: 'Mes siguiente' })).toBeDisabled();
   await fireEvent.press(screen.getByRole('button', { name: 'Mes anterior' }));
@@ -122,6 +122,8 @@ test('HU-08 cambiar de mes: el siguiente está deshabilitado en el mes en curso'
   expect(screen.getByRole('button', { name: 'Mes siguiente' })).not.toBeDisabled();
   await fireEvent.press(screen.getByRole('button', { name: 'Mes anterior' }));
   expect(screen.getByText('Sin movimientos en agosto 2026')).toBeOnTheScreen();
+  // Cambiar de mes solo lee la base local: ni fetch, ni XMLHttpRequest, ni WebSocket.
+  expect(networkAttempts).toEqual([]);
 });
 
 // Sin colapsar espacios: el normalizador por defecto convierte el espacio de no separación en uno normal.

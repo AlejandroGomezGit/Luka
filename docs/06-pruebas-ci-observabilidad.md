@@ -11,7 +11,7 @@ La mayor parte de la confianza viene de pruebas rápidas y deterministas sobre e
 | Unitarias | Dinero, fechas, invariantes y utilidades de `packages/domain` | Jest; `packages/config`, que es JavaScript sin compilar, usa `node:test` | Cobertura de 80 % o más en `domain` (RNF-11) | Cada PR |
 | Propiedades | Idempotencia, orden de llegada, convergencia y reloj lógico (documento 4) | fast-check | Todas las propiedades en verde | Cada PR |
 | Categorizador | Calidad del acierto con un conjunto de prueba etiquetado y reservado | Jest | El acierto no empeora entre versiones | Cada PR que toque el categorizador |
-| Componentes de la app | Pantallas y formularios de HU-02 a HU-08, con casos felices y de error | Jest y React Native Testing Library | Cada criterio de aceptación con su prueba | Cada PR |
+| Componentes de la app | Pantallas y formularios de HU-02 a HU-08, con casos felices y de error; las pantallas fallan ante cualquier intento de red (`blockNetwork` en `apps/mobile/src/testing.ts`) | Jest y React Native Testing Library | Cada criterio de aceptación con su prueba | Cada PR |
 | Integración de la API | Endpoints contra PostgreSQL y Redis reales | `inject` de Fastify (sin abrir un puerto) y Testcontainers | Por endpoint: éxito, validación, autenticación y aislamiento entre usuarios | Cada PR |
 | Contrato | La API cumple el OpenAPI y la app cumple el contrato | Pruebas de contrato sobre el OpenAPI generado | Ningún cambio que rompa sin subir de versión | Cada PR |
 | Migraciones | Esquemas de PostgreSQL y SQLite | Scripts de CI | Aplicar desde cero y desde la versión anterior | Cada PR que cambie el esquema |
@@ -20,6 +20,7 @@ La mayor parte de la confianza viene de pruebas rápidas y deterministas sobre e
 | Seguridad | Secretos, dependencias, análisis estático y escaneo dinámico (documento 5) | gitleaks y osv-scanner (T-043), CodeQL cuando el repositorio sea público, ZAP contra staging | Sin hallazgos críticos | PR y nocturno |
 | Carga | Sincronización con 1 000 usuarios simulados (RNF-03) | k6 | p95 menor a 300 ms | De noche y antes de lanzar |
 | Accesibilidad | VoiceOver, Dynamic Type y contraste (RNF-13) | Accessibility Inspector y revisión manual | Flujos principales sin bloqueos | Antes de cada versión |
+| Verificación en iPhone real | Lo que el simulador no muestra: el teclado sobre el campo enfocado, permisos, cámara, galería, modo avión, VoiceOver y Dynamic Type | Revisión manual en un iPhone con Expo Go; desde T-041, con un build propio | Lo probado y lo pendiente quedan anotados en el PR y en R-16 (CLAUDE.md) | Cada PR que toque campos de texto, permisos o archivos, y al cerrar cada hito |
 | Lectores de mensajes | Cada banco reconoce sus mensajes y extrae monto, comercio, fecha y tarjeta, incluidos los formatos de monto colombianos | Jest con muestras reales sin datos personales | Una muestra por cada formato; ningún lector sin muestras | Cada PR que toque la captura |
 
 **Reglas para que las pruebas sirvan**
