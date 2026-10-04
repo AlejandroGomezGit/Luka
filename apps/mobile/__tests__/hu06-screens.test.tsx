@@ -29,10 +29,38 @@ const mockIO: {
   pick: { uri: string } | 'cancelled' | 'camera_denied';
   freeBytes: number;
   failShrink: boolean;
-} = { pick: { uri: 'cache/ImagePicker/IMG.jpg' }, freeBytes: 1e9, failShrink: false };
+  pickCalls: number;
+} = { pick: { uri: 'cache/ImagePicker/IMG.jpg' }, freeBytes: 1e9, failShrink: false, pickCalls: 0 };
+
+// Hoja inferior como en iOS: al cerrarse, `onDismiss` llega después, cuando termina la animación.
+// `finishClosing` la termina; mientras tanto iOS no presenta otra pantalla (el selector de fotos).
+const mockDismissals: (() => void)[] = [];
+jest.mock('../src/ui/BottomSheet', () => {
+  const { useEffect, useRef } = jest.requireActual<typeof import('react')>('react');
+  return {
+    BottomSheet: (props: { visible: boolean; onDismiss?: () => void; children: ReactNode }) => {
+      const wasVisible = useRef(props.visible);
+      useEffect(() => {
+        if (wasVisible.current && !props.visible && props.onDismiss) {
+          mockDismissals.push(props.onDismiss);
+        }
+        wasVisible.current = props.visible;
+      }, [props.visible, props.onDismiss]);
+      return props.visible ? props.children : null;
+    },
+  };
+});
+const finishClosing = () =>
+  act(async () => {
+    for (let dismiss = mockDismissals.shift(); dismiss; dismiss = mockDismissals.shift()) {
+      dismiss();
+    }
+    await Promise.resolve();
+  });
 jest.mock('../src/files/expoReceiptIO', () => ({
   expoReceiptIO: {
     pick: () => {
+      mockIO.pickCalls++;
       if (typeof mockIO.pick !== 'string') mockFiles.add(mockIO.pick.uri);
       return Promise.resolve(mockIO.pick);
     },
@@ -64,6 +92,8 @@ beforeEach(() => {
   mockIO.pick = { uri: 'cache/ImagePicker/IMG.jpg' };
   mockIO.freeBytes = 1e9;
   mockIO.failShrink = false;
+  mockIO.pickCalls = 0;
+  mockDismissals.length = 0;
 });
 afterEach(() => {
   jest.restoreAllMocks();
@@ -126,7 +156,20 @@ async function app(withReceipt = false) {
 async function addPhoto(option: 'Tomar foto' | 'Elegir de la galería' = 'Elegir de la galería') {
   await fireEvent.press(screen.getByRole('button', { name: 'Agregar foto del recibo' }));
   await fireEvent.press(screen.getByRole('button', { name: option }));
+  await finishClosing();
 }
+
+test('HU-06 «Elegir de la galería» abre el selector cuando la hoja terminó de cerrarse, no antes (en el iPhone real no se abría)', async () => {
+  await app();
+  await fireEvent.press(screen.getByRole('button', { name: 'Agregar' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Agregar foto del recibo' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Elegir de la galería' }));
+  // Con la hoja todavía cerrándose, iOS no presentaría el selector: no se debe abrir aún.
+  expect(mockIO.pickCalls).toBe(0);
+  await finishClosing();
+  expect(mockIO.pickCalls).toBe(1);
+  expect(await screen.findByRole('image', { name: 'Foto del recibo' })).toBeOnTheScreen();
+});
 
 const minHeight = (name: string) =>
   (
@@ -200,7 +243,7 @@ test('HU-06 salir sin guardar o reemplazar antes de guardar borra la foto recié
   const [first] = [...mockFiles];
   await fireEvent.press(screen.getByRole('button', { name: 'Reemplazar' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Elegir de la galería' }));
-  await act(() => Promise.resolve());
+  await finishClosing();
   expect(mockFiles.size).toBe(1);
   expect(mockFiles.has(first ?? '')).toBe(false);
 

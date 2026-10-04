@@ -7,14 +7,25 @@ interface Props {
   visible: boolean;
   title: string;
   onClose: () => void;
+  /**
+   * Cuando la hoja terminó de cerrarse. Para abrir otra pantalla del sistema (por ejemplo el selector de
+   * fotos): iOS no la presenta mientras la hoja se está cerrando.
+   */
+  onDismiss?: () => void;
   children: ReactNode;
 }
 
 /** Hoja inferior para elegir una opción sin salir del formulario; tocar fuera o «Cancelar» la cierra. */
-export function BottomSheet({ visible, title, onClose, children }: Props) {
+export function BottomSheet({ visible, title, onClose, onDismiss, children }: Props) {
   const { colors, radius, spacing, typography } = useTheme();
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+      {...(onDismiss ? { onDismiss } : {})}
+    >
       <Pressable
         accessibilityLabel="Cerrar"
         style={[styles.backdrop, { backgroundColor: colors.scrim }]}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Image, Linking, StyleSheet, Text, View } from 'react-native';
 import type { ReceiptFile } from '../db/attachments';
 import { expoReceiptIO } from '../files/expoReceiptIO';
@@ -30,9 +30,15 @@ export function ReceiptField({ value, onChange, newId }: Props) {
   const { colors, radius, sizes, spacing, typography } = useTheme();
   const [choosing, setChoosing] = useState(false);
   const [error, setError] = useState<ReceiptError | null>(null);
+  // La opción elegida en la hoja: el selector se abre cuando la hoja terminó de cerrarse, porque iOS no
+  // presenta la galería mientras otra pantalla se está cerrando (en el iPhone no se abría).
+  const chosen = useRef<ReceiptSource | null>(null);
+  const choose = (source: ReceiptSource) => {
+    chosen.current = source;
+    setChoosing(false);
+  };
 
   const take = async (source: ReceiptSource) => {
-    setChoosing(false);
     const result = await captureReceipt(expoReceiptIO, source, newId());
     if (!result.ok) {
       setError(result.error);
@@ -90,13 +96,22 @@ export function ReceiptField({ value, onChange, newId }: Props) {
           )}
         </>
       )}
-      <BottomSheet visible={choosing} title="Foto del recibo" onClose={() => setChoosing(false)}>
+      <BottomSheet
+        visible={choosing}
+        title="Foto del recibo"
+        onClose={() => setChoosing(false)}
+        onDismiss={() => {
+          const source = chosen.current;
+          chosen.current = null;
+          if (source) void take(source);
+        }}
+      >
         <View style={{ gap: spacing.sm }}>
-          <Button label="Tomar foto" variant="secondary" onPress={() => void take('camera')} />
+          <Button label="Tomar foto" variant="secondary" onPress={() => choose('camera')} />
           <Button
             label="Elegir de la galería"
             variant="secondary"
-            onPress={() => void take('library')}
+            onPress={() => choose('library')}
           />
         </View>
       </BottomSheet>
