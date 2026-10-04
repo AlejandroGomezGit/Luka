@@ -437,7 +437,9 @@ export function TransactionForm(props: Props) {
         <TextInput
           key={currency}
           accessibilityLabel="Monto"
-          autoFocus
+          // En «Agregar» el monto toma el foco (HU-03: 3 toques); al editar, el teclado espera a que
+          // la persona toque un campo.
+          autoFocus={!editing}
           value={amount}
           placeholder="0"
           onChangeText={(text) => setAmount(formatAmountInput(text, currency))}
