@@ -11,8 +11,17 @@ import postgres from 'postgres';
 const DEFAULT_MIGRATION_URL = 'postgres://luka:luka@localhost:15432/luka';
 const DEFAULT_APP_URL = 'postgres://luka_app:luka-app-local@localhost:15432/luka';
 
-/** URL de migraciones: siempre el dueño de las tablas, nunca luka_app (el rol de la API). */
+/**
+ * URL de migraciones: siempre el dueño de las tablas, nunca luka_app (el rol de la API). El valor
+ * por defecto (el Docker Compose local) solo vale con APP_ENV=local escrito explícitamente; sin eso
+ * se detiene, para no migrar por accidente un servidor que no es el de desarrollo.
+ */
 export function migrationUrl(env) {
+  if (env.MIGRATION_DATABASE_URL === undefined && env.APP_ENV !== 'local') {
+    throw new Error(
+      'Falta MIGRATION_DATABASE_URL. Defínela en la terminal o en .env; el valor por defecto (Docker Compose local) solo se usa con APP_ENV=local.',
+    );
+  }
   const url = new URL(env.MIGRATION_DATABASE_URL ?? DEFAULT_MIGRATION_URL);
   if (decodeURIComponent(url.username) === 'luka_app') {
     throw new Error(
@@ -28,7 +37,7 @@ export function migrationUrl(env) {
  */
 export function urlSource(env, shell) {
   if (env.MIGRATION_DATABASE_URL === undefined)
-    return 'valor por defecto, sin MIGRATION_DATABASE_URL';
+    return 'valor por defecto con APP_ENV=local, sin MIGRATION_DATABASE_URL';
   return shell.has('MIGRATION_DATABASE_URL')
     ? 'MIGRATION_DATABASE_URL de la terminal'
     : 'MIGRATION_DATABASE_URL de .env';
@@ -83,7 +92,7 @@ if (import.meta.url === `file://${process.argv[1] ?? ''}`) {
   try {
     process.loadEnvFile(fileURLToPath(new URL('../../../.env', import.meta.url)));
   } catch {
-    // Sin .env: valores locales por defecto (los de .env.example).
+    // Sin .env: solo la terminal; migrationUrl se detiene si tampoco hay APP_ENV=local.
   }
   let url;
   try {

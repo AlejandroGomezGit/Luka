@@ -81,6 +81,7 @@ TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con ex
 
 - No leas ni imprimas archivos .env; usa .env.example con valores falsos.
 - Nunca pongas secretos en el código ni en variables EXPO_PUBLIC_, que terminan dentro de la app.
+- Nunca te conectes a mi base de datos ni a mis contenedores (psql, docker compose exec, migraciones, la API o pruebas contra ellos); lo único permitido es leer sus logs cuando yo lo pida. Para probar usa contenedores desechables (Testcontainers o `docker run --rm` en otro puerto) y pasa siempre la URL explícita; nunca dejes que un script tome su valor por defecto ni el .env.
 - Pide confirmación antes de mergear o hacer push a main, de borrar datos o de instalar dependencias (ver «Cómo trabajar»).
 
 ## Fuera de alcance mientras no se pida
