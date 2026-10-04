@@ -54,6 +54,8 @@ TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con ex
 - Los PR de funcionalidades se mergean con squash (con mi OK); el mensaje del squash dice qué se verificó (pruebas, simulador) y qué no.
 - Sin any.
 - Toda dependencia nueva, incluso de tipos o de desarrollo, se aprueba antes de instalarla y se lista en el PR con su motivo y su licencia.
+- Una dependencia de la API que traiga pares opcionales compartidos con la app entra por un paquete del workspace que ya la tenga (Drizzle llega a la API a través de `@luka/schema-pg`) o pasa la comprobación de CI «Dependencias de la app», que falla si un PR que no toca la app cambia lo que resuelve `apps/mobile` (T-047).
+- La etiqueta `cambia-dependencias-app` se pone solo con mi OK y con las versiones que cambian descritas en el PR.
 - Una migración que ya está en un commit nunca se edita ni se regenera: se crea otra. Regenerarla con drizzle-kit le cambia la hora y Drizzle, que solo compara esa hora, la vuelve a aplicar en las bases que ya la tenían. Cada migración nueva se agrega a migrations.lock.json en el mismo PR; una prueba compara los SQL y el journal con esa lista.
 - Cada criterio de aceptación tiene una prueba cuyo nombre incluye el id de la historia (por ejemplo HU-03).
 - Cobertura de packages/domain: 80 % o más.
