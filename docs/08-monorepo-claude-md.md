@@ -39,7 +39,7 @@ El repositorio incluye un `.env.example` con valores falsos y nunca un `.env` re
 | Variable | Para qué | Dónde se usa | Valor de ejemplo |
 | --- | --- | --- | --- |
 | `APP_ENV` | Entorno de ejecución | API y app | `local` |
-| `DATABASE_URL` | Conexión a PostgreSQL | API y worker | `postgres://luka:luka@localhost:5432/luka` |
+| `DATABASE_URL` | Conexión a PostgreSQL | API y worker | `postgres://luka_app:luka-app-local@localhost:55432/luka` |
 | `REDIS_URL` | Cola de trabajos | API y worker | `redis://localhost:6379` |
 | `JWT_PRIVATE_KEY` y `JWT_PUBLIC_KEY` | Firma y verificación de tokens de acceso | API | Se generan en local y no se versionan |
 | `REFRESH_TOKEN_PEPPER` | Secreto para el hash de los tokens de refresco | API | `cambia-esto-en-local` |
