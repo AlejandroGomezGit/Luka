@@ -33,7 +33,7 @@ Todo el sistema se escribe en TypeScript, así un solo lenguaje cubre la app, la
 | Cámara y OCR | Cámara de Expo y reconocimiento de texto de Apple en el dispositivo, mediante un módulo nativo (por validar) | Leer recibos en V3 sin enviar la foto a nadie |
 | API | NestJS con adaptador Fastify | Estructura modular conocida y buen rendimiento |
 | Contratos | Zod en un paquete compartido y OpenAPI generado | Un mismo esquema valida la app y el servidor, y documenta la API |
-| Base de datos del servidor | PostgreSQL con Drizzle ORM | Transacciones, `jsonb` y seguridad a nivel de fila |
+| Base de datos del servidor | PostgreSQL con Drizzle ORM para el esquema y las migraciones; por ahora la API consulta con `postgres` directo dentro de `withUser` (T-026), y usar Drizzle en la API se decide al resolver #84 (T-047), porque agregarle una dependencia hoy vuelve a resolver las de la app | Transacciones, `jsonb` y seguridad a nivel de fila |
 | Trabajos en segundo plano | BullMQ sobre Redis | Recurrentes, alertas, importaciones y purgas |
 | Archivos | Almacenamiento de objetos compatible con S3 y URLs prefirmadas | Las imágenes no pasan por la API |
 | Autenticación | JWT de vida corta, refresco rotatorio, Argon2id y Sign in with Apple | Control propio con bibliotecas probadas |
