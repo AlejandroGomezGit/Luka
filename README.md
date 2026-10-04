@@ -37,7 +37,7 @@ pnpm dev:api                                      # API en http://localhost:3000
 pnpm dev:mobile                                   # servidor de Expo para el simulador de iOS
 ```
 
-El entorno local levanta PostgreSQL (5432), Redis (6379), almacenamiento compatible con S3 (API en 9000, consola en 9001) y correo de pruebas (SMTP en 1025, bandeja en http://localhost:8025).
+El entorno local levanta PostgreSQL (5432), Redis (6379), almacenamiento compatible con S3 (API en 9000, consola en 9001) y correo de pruebas (SMTP en 1025, bandeja en http://localhost:8025). Todos los puertos se publican solo en `127.0.0.1`: los servicios no son alcanzables desde otros equipos de tu red, porque sus credenciales de desarrollo son conocidas (por ejemplo `luka-local-secret` del S3 local).
 
 ## Comandos
 
@@ -72,5 +72,5 @@ Para contribuir, lee [CONTRIBUTING.md](CONTRIBUTING.md); para reportar una vulne
 
 ## Problemas comunes
 
-- **`role "luka" does not exist` al migrar o al arrancar la API.** Hay otro PostgreSQL escuchando en `localhost:5432` (por ejemplo uno de Homebrew) y recibe las conexiones antes que Docker. Detenlo mientras trabajas en Luka (`brew services stop postgresql`, o el nombre de tu servicio) y comprueba con `lsof -nP -iTCP:5432 -sTCP:LISTEN` que solo queda Docker.
+- **`role "luka" does not exist` al migrar o al arrancar la API.** Hay otro PostgreSQL escuchando en `localhost:5432` (por ejemplo uno de Homebrew) y recibe las conexiones antes que Docker. Detenlo mientras trabajas en Luka (`brew services stop postgresql`, o el nombre de tu servicio) y comprueba con `lsof -nP -iTCP:5432 -sTCP:LISTEN` que solo queda Docker. Publicar los puertos solo en `127.0.0.1` no cambia este conflicto: los dos PostgreSQL siguen compitiendo por el 5432 de tu Mac.
 - **La API no arranca y nombra una variable.** Falta en `.env`; cópiala de `.env.example`.
