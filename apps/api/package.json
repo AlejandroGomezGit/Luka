@@ -13,6 +13,7 @@
     "test:integration": "NODE_OPTIONS=--experimental-vm-modules jest --testPathPatterns integration"
   },
   "dependencies": {
+    "@fastify/rate-limit": "11.2.0",
     "@luka/contracts": "workspace:*",
     "@nestjs/common": "^12.1.2",
     "@nestjs/core": "^12.1.2",

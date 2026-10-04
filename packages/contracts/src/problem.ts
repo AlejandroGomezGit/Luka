@@ -14,3 +14,19 @@ export const Problem = z.looseObject({
 });
 
 export type Problem = z.infer<typeof Problem>;
+
+/** 429: `too_many_attempts` por intentos fallidos de credenciales (AM-01), `rate_limited` por exceso de peticiones (AM-08). */
+export const RateLimitProblem = Problem.extend({
+  status: z.literal(429),
+  code: z.enum(['too_many_attempts', 'rate_limited']),
+});
+
+export type RateLimitProblem = z.infer<typeof RateLimitProblem>;
+
+/** 503 de los intentos de credenciales cuando Redis no responde: se niegan en vez de quedar sin límite. */
+export const UnavailableProblem = Problem.extend({
+  status: z.literal(503),
+  code: z.literal('temporarily_unavailable'),
+});
+
+export type UnavailableProblem = z.infer<typeof UnavailableProblem>;

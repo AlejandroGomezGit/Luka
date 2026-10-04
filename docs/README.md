@@ -33,5 +33,6 @@ La copia oficial del diseño vive aquí; si un documento y el código se contrad
 | [012](adr/012-adjuntos-con-urls-prefirmadas.md) | Adjuntos con URLs prefirmadas |
 | [013](adr/013-api-versionada-y-problem-json.md) | API versionada en `/v1` con errores problem+json |
 | [014](adr/014-tuberia-de-captura.md) | Tubería de captura con fuentes enchufables |
+| [015](adr/015-limites-de-intentos-y-de-tasa.md) | Límites de intentos de credenciales y de tasa en Redis |
 
-Un ADR nuevo toma el siguiente número (`015-titulo.md`) con contexto, decisión, alternativas descartadas y consecuencias.
+Un ADR nuevo toma el siguiente número (`016-titulo.md`) con contexto, decisión, alternativas descartadas y consecuencias.

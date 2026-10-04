@@ -44,16 +44,28 @@ export function toProblem(exception: unknown): Problem {
   };
 }
 
+/** Los segundos de `Retry-After` que trae una excepción (429 y 503 de los límites), si los trae. */
+export function retryAfterOf(exception: unknown): number | undefined {
+  if (!(exception instanceof HttpException)) return undefined;
+  const body = exception.getResponse();
+  return typeof body === 'object' &&
+    'retryAfterSeconds' in body &&
+    typeof body.retryAfterSeconds === 'number'
+    ? body.retryAfterSeconds
+    : undefined;
+}
+
 @Catch()
 export class ProblemFilter implements ExceptionFilter {
   private readonly logger = new Logger(ProblemFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const problem = toProblem(exception);
-    if (problem.status >= 500) this.logger.error(exception);
-    void host
-      .switchToHttp()
-      .getResponse<FastifyReply>()
+    if (problem.status >= 500 && problem.status !== 503) this.logger.error(exception);
+    const reply = host.switchToHttp().getResponse<FastifyReply>();
+    const retryAfter = retryAfterOf(exception);
+    if (retryAfter !== undefined) void reply.header('retry-after', retryAfter);
+    void reply
       .status(problem.status)
       .header('content-type', 'application/problem+json')
       .send(problem);

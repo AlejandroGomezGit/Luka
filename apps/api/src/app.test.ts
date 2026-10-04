@@ -1,25 +1,37 @@
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 import { Problem, Readiness } from '@luka/contracts';
-import { HttpException, NotFoundException } from '@nestjs/common';
+import { Controller, HttpCode, HttpException, NotFoundException, Post } from '@nestjs/common';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { loadEnv, startupWarnings } from './config.js';
 import { toProblem } from './problem.filter.js';
 import { createTestApp } from './test-app.js';
 
+// Sin servidores: las comprobaciones de /readyz son falsas y Redis apunta a un puerto sin servidor, así
+// que el límite de tasa deja pasar (como con Redis caído).
 const env = {
-  DATABASE_URL: 'postgres://luka:luka@localhost:15432/luka',
-  REDIS_URL: 'redis://localhost:6379',
+  DATABASE_URL: 'postgres://nadie:nada@127.0.0.1:9/nada',
+  REDIS_URL: 'redis://127.0.0.1:9',
+  RATE_LIMIT_KEY_SECRET: 'falso-solo-para-pruebas-0123456789',
 };
+
+@Controller('prueba')
+class EchoController {
+  @Post('eco')
+  @HttpCode(204)
+  echo(): void {
+    // Solo recibe el cuerpo.
+  }
+}
 
 const healthy = { ok: true };
 const fakeDatastores = {
   pingPostgres: () => Promise.resolve(),
   pingRedis: () => (healthy.ok ? Promise.resolve() : Promise.reject(new Error('caído'))),
-  onApplicationShutdown: () => Promise.resolve(),
 };
 
 let app: NestFastifyApplication;
 beforeAll(async () => {
-  app = await createTestApp(env, fakeDatastores);
+  app = await createTestApp(env, { datastores: fakeDatastores, controllers: [EchoController] });
 });
 afterAll(() => app.close());
 
@@ -83,5 +95,88 @@ describe('errores problem+json (ADR-013)', () => {
     const problem = toProblem(new Error('detalle interno con datos'));
     expect(Problem.parse(problem)).toMatchObject({ status: 500, code: 'internal_error' });
     expect(JSON.stringify(problem)).not.toContain('detalle interno');
+  });
+});
+
+const SECURITY_HEADERS = {
+  'strict-transport-security': 'max-age=31536000; includeSubDomains',
+  'x-content-type-options': 'nosniff',
+  'referrer-policy': 'no-referrer',
+  'x-frame-options': 'DENY',
+  'content-security-policy': "default-src 'none'; frame-ancestors 'none'",
+  'cross-origin-resource-policy': 'same-origin',
+  'cache-control': 'no-store',
+};
+
+describe('cabeceras de seguridad, tamaño y tiempos (AM-06, AM-08)', () => {
+  it('AM-06: toda respuesta lleva las cabeceras de seguridad: 200, 404 y 413', async () => {
+    const responses = await Promise.all([
+      app.inject({ method: 'GET', url: '/healthz' }),
+      app.inject({ method: 'GET', url: '/v1/no-existe' }),
+      app.inject({
+        method: 'POST',
+        url: '/v1/prueba/eco',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ relleno: 'x'.repeat(1_048_576) }),
+      }),
+    ]);
+    expect(responses.map((res) => res.statusCode)).toEqual([200, 404, 413]);
+    for (const res of responses) expect(res.headers).toMatchObject(SECURITY_HEADERS);
+  });
+
+  it('AM-08: un cuerpo de más de 1 MB responde 413 payload_too_large en problem+json', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/prueba/eco',
+      headers: { 'content-type': 'application/json' },
+      payload: JSON.stringify({ relleno: 'x'.repeat(1_048_576) }),
+    });
+    expect(res.statusCode).toBe(413);
+    expect(res.headers['content-type']).toContain('application/problem+json');
+    expect(Problem.parse(res.json())).toMatchObject({ status: 413, code: 'payload_too_large' });
+    const small = await app.inject({ method: 'POST', url: '/v1/prueba/eco', payload: { a: 1 } });
+    expect(small.statusCode).toBe(204);
+  });
+
+  it('AM-08: el tiempo máximo de una petición sale de REQUEST_TIMEOUT_MS', () => {
+    expect(app.getHttpAdapter().getInstance().server.requestTimeout).toBe(30_000);
+    expect(loadEnv({ ...env, REQUEST_TIMEOUT_MS: '5000' }).REQUEST_TIMEOUT_MS).toBe(5_000);
+  });
+});
+
+describe('configuración de los límites', () => {
+  it('TRUST_PROXY es false por defecto, acepta true o direcciones y rechaza un número de saltos', () => {
+    expect(loadEnv(env).TRUST_PROXY).toBe(false);
+    expect(loadEnv({ ...env, TRUST_PROXY: 'true' }).TRUST_PROXY).toBe(true);
+    expect(loadEnv({ ...env, TRUST_PROXY: '10.0.0.0/8,127.0.0.1' }).TRUST_PROXY).toBe(
+      '10.0.0.0/8,127.0.0.1',
+    );
+    // Fastify ignora los saltos (un cliente directo falsificaría X-Forwarded-For): mejor fallar al arrancar.
+    expect(() => loadEnv({ ...env, TRUST_PROXY: '1' })).toThrow(/TRUST_PROXY/);
+  });
+
+  it('RATE_LIMIT_KEY_SECRET es obligatoria y el error no muestra valores', () => {
+    const { RATE_LIMIT_KEY_SECRET: _, ...withoutSecret } = env;
+    expect(() => loadEnv(withoutSecret)).toThrow(/RATE_LIMIT_KEY_SECRET/);
+    expect(() => loadEnv({ ...env, RATE_LIMIT_KEY_SECRET: 'corta' })).toThrow(
+      /RATE_LIMIT_KEY_SECRET/,
+    );
+  });
+
+  it('el tope por cuenta desde todas las IP debe ser mayor que el de cuenta e IP', () => {
+    expect(() =>
+      loadEnv({ ...env, LOGIN_ATTEMPTS_MAX: '5', LOGIN_ACCOUNT_ATTEMPTS_MAX: '5' }),
+    ).toThrow(/LOGIN_ACCOUNT_ATTEMPTS_MAX/);
+  });
+
+  it('avisa al arrancar si TRUST_PROXY es false en producción (el valor real se decide en T-040)', () => {
+    expect(startupWarnings(loadEnv({ ...env, APP_ENV: 'production' }))).toEqual([
+      expect.stringContaining('TRUST_PROXY'),
+    ]);
+    expect(startupWarnings(loadEnv({ ...env, NODE_ENV: 'production' }))).toHaveLength(1);
+    expect(
+      startupWarnings(loadEnv({ ...env, APP_ENV: 'production', TRUST_PROXY: '10.0.0.0/8' })),
+    ).toEqual([]);
+    expect(startupWarnings(loadEnv(env))).toEqual([]);
   });
 });

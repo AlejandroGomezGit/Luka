@@ -163,6 +163,7 @@ Son 14 decisiones de arquitectura, todas aceptadas por el dueño del proyecto. E
 | ADR-012 | Adjuntos en almacenamiento de objetos con URLs prefirmadas | Subir los archivos por la API | La API no maneja binarios y escala mejor | Aceptada |
 | ADR-013 | API versionada en `/v1` con errores `problem+json` | Sin versionado | Versiones viejas de la app conviven con la API nueva | Aceptada |
 | ADR-014 | Tubería de captura con fuentes enchufables: hoy mensajes por Atajo de iOS y texto pegado, y la conexión bancaria como fuente futura | Leer los SMS directamente (no es posible en iPhone y Google Play lo restringe), conectar bancos desde el inicio, solo entrada manual | Una sola ruta para deduplicar, revisar y categorizar; sumar el banco será escribir un adaptador | Aceptada |
+| ADR-015 | Límites de intentos de credenciales (por cuenta e IP, por cuenta y por IP, con espera creciente) y de tasa (por IP, más estricto en `/v1/auth/*`, y por usuario) en Redis; sin Redis, la tasa deja pasar y los intentos responden 503 | Solo `@fastify/rate-limit`, contar en memoria, dejar pasar los intentos sin Redis | Frena la fuerza bruta incluso con Redis caído sin tumbar la API; el tope por cuenta permite bloquear a alguien un rato, acotado y documentado | Aceptada |
 
 ## Entornos y despliegue
 

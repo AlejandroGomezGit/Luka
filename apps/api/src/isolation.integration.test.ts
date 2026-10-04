@@ -305,7 +305,12 @@ describe('AM-03 contexto por transacción', () => {
 
   it('AM-03 withUser de la API solo ve las filas de su usuario, petición tras petición', async () => {
     const db = new Database(
-      loadEnv({ DATABASE_URL: appUrl, REDIS_URL: 'redis://localhost', DATABASE_POOL_SIZE: '1' }),
+      loadEnv({
+        DATABASE_URL: appUrl,
+        REDIS_URL: 'redis://localhost',
+        DATABASE_POOL_SIZE: '1',
+        RATE_LIMIT_KEY_SECRET: 'falso-solo-para-pruebas-0123456789',
+      }),
     );
     const ownersOf = (user: string) =>
       db.withUser(user, async (tx) =>
