@@ -60,3 +60,10 @@ test('T-044 el final del contenido queda por encima de la barra de pestañas flo
   // Arriba, el ajuste automático deja libre la barra de estado y el título grande.
   expect(screen.root?.props.contentInsetAdjustmentBehavior).toBe('automatic');
 });
+
+test('HU-03 HU-06 al abrirse el teclado, el contenido sube y el campo enfocado queda visible (iOS)', async () => {
+  await render(tree());
+  // React Native 0.86 (Fabric): ajusta el margen inferior al teclado y desplaza hasta el TextInput
+  // enfocado (RCTScrollViewComponentView, _keyboardWillChangeFrame). Se verifica en un iPhone real.
+  expect(screen.root?.props.automaticallyAdjustKeyboardInsets).toBe(true);
+});

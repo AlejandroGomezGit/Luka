@@ -15,6 +15,9 @@ import { useTheme } from '../theme';
  * al cambiar `fontScale`. El estado que debe sobrevivir vive por encima de este componente.
  * Con el teclado abierto, un toque en un botón u opción actúa de una vez; si no, iOS lo gasta en cerrar
  * el teclado (así una cuenta quedaba en COP aunque se tocara «Dólar (USD)»).
+ * Al abrirse el teclado, el contenido sube y el campo enfocado queda visible: en React Native 0.86
+ * (Fabric, iOS) `automaticallyAdjustKeyboardInsets` ajusta el margen inferior al teclado y desplaza hasta
+ * el TextInput enfocado (sin esto, «Etiquetas» quedaba tapado en el iPhone).
  * Arriba, el ajuste automático de márgenes deja libre la barra de estado y el encabezado (también el
  * título grande, que se encoge al desplazar). Abajo ese ajuste no llega con las pestañas nativas: en el
  * simulador el desplazamiento terminaba 83 pt bajo la barra flotante de iOS 26. Por eso el relleno
@@ -33,6 +36,7 @@ export function useScreenScrollProps(contentContainerStyle?: StyleProp<ViewStyle
     key: fontScale,
     props: {
       keyboardShouldPersistTaps: 'handled' as const,
+      automaticallyAdjustKeyboardInsets: true,
       contentInsetAdjustmentBehavior: 'automatic' as const,
       style: { backgroundColor: colors.background },
       contentContainerStyle: [content, { paddingBottom: paddingBottom + bottom }],
