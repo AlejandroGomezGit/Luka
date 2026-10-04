@@ -26,7 +26,8 @@
     },
     "db:migrate": {
       "dependsOn": ["^build"],
-      "cache": false
+      "cache": false,
+      "passThroughEnv": ["MIGRATION_DATABASE_URL", "DATABASE_URL", "APP_ENV"]
     }
   }
 }
