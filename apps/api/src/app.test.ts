@@ -6,7 +6,7 @@ import { toProblem } from './problem.filter.js';
 import { createTestApp } from './test-app.js';
 
 const env = {
-  DATABASE_URL: 'postgres://luka:luka@localhost:55432/luka',
+  DATABASE_URL: 'postgres://luka:luka@localhost:15432/luka',
   REDIS_URL: 'redis://localhost:6379',
 };
 

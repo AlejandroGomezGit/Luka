@@ -37,7 +37,7 @@ pnpm dev:api                                      # API en http://localhost:3000
 pnpm dev:mobile                                   # servidor de Expo para el simulador de iOS
 ```
 
-El entorno local levanta PostgreSQL (55432, o `POSTGRES_PORT` si lo defines al levantar Docker Compose), Redis (6379), almacenamiento compatible con S3 (API en 9000, consola en 9001) y correo de pruebas (SMTP en 1025, bandeja en http://localhost:8025). Todos los puertos se publican solo en `127.0.0.1`: los servicios no son alcanzables desde otros equipos de tu red, porque sus credenciales de desarrollo son conocidas (por ejemplo `luka-local-secret` del S3 local).
+El entorno local levanta PostgreSQL (15432, o `POSTGRES_PORT` si lo defines al levantar Docker Compose), Redis (6379), almacenamiento compatible con S3 (API en 9000, consola en 9001) y correo de pruebas (SMTP en 1025, bandeja en http://localhost:8025). Todos los puertos se publican solo en `127.0.0.1`: los servicios no son alcanzables desde otros equipos de tu red, porque sus credenciales de desarrollo son conocidas (por ejemplo `luka-local-secret` del S3 local).
 
 ## Comandos
 
@@ -72,5 +72,5 @@ Para contribuir, lee [CONTRIBUTING.md](CONTRIBUTING.md); para reportar una vulne
 
 ## Problemas comunes
 
-- **`role "luka" does not exist` al migrar o al arrancar la API.** Las URL apuntan a otro PostgreSQL, por ejemplo uno de Homebrew en el 5432. Desde T-047 el de Docker usa el 55432 (`POSTGRES_PORT`), así que basta con que `DATABASE_URL` y `MIGRATION_DATABASE_URL` de tu `.env` usen ese puerto, como en `.env.example`. Comprueba quién escucha con `lsof -nP -iTCP:55432 -sTCP:LISTEN`.
+- **`role "luka" does not exist` al migrar o al arrancar la API.** Las URL apuntan a otro PostgreSQL, por ejemplo uno de Homebrew en el 5432. Desde T-047 el de Docker usa el 15432 (`POSTGRES_PORT`), así que basta con que `DATABASE_URL` y `MIGRATION_DATABASE_URL` de tu `.env` usen ese puerto, como en `.env.example`. Comprueba quién escucha con `lsof -nP -iTCP:15432 -sTCP:LISTEN`.
 - **La API no arranca y nombra una variable.** Falta en `.env`; cópiala de `.env.example`.

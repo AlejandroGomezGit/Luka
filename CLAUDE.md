@@ -71,6 +71,7 @@ TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con ex
 - Al terminar, ejecuta lint, typecheck y las pruebas y reporta el resultado real, sin suponerlo.
 - Antes de cada commit corre lint, tipos y pruebas del paquete afectado, encadenados para que el commit solo ocurra si todos pasan (por ejemplo `pnpm turbo run lint typecheck test --filter <paquete>... && git commit …`). Nunca hagas push de un commit que no compile.
 - Si cambia una decisión de arquitectura, crea un ADR en docs/adr/; si cambia un comportamiento, actualiza el documento afectado en el mismo PR.
+- Si un cambio se aparta de lo que aprobé, dilo en el PR y en el chat antes de pedir revisión: qué cambió y por qué.
 - Si un mensaje mío trae algo entre corchetes sin llenar (por ejemplo «[todo bien / vi esto: ___]»), no ejecutes la acción que depende de eso (mergear, push a main) y pregúntame.
 - Push a ramas de feature y abrir el PR no necesitan confirmación. Mergear y cualquier push a main requieren mi OK explícito.
 - Trabaja siempre en un git worktree aparte (por ejemplo ../Luka-dev). Mi Metro sirve la carpeta principal y solo debe ver lo que ya está en un commit; así un estado intermedio (por ejemplo, una migración a medio generar) nunca llega a mi simulador.
