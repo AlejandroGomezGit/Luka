@@ -7,10 +7,13 @@ import type { DestinationStream } from 'pino';
 import { AppModule, configureApp, createAdapter } from './app.module.js';
 import { loadEnv } from './config.js';
 import { Datastores } from './datastores.js';
+import { RedisClient } from './redis.js';
 
 interface TestAppOptions {
   /** Reemplaza las comprobaciones reales de /readyz. */
   datastores?: Pick<Datastores, 'pingPostgres' | 'pingRedis'>;
+  /** Reemplaza la conexión a Redis (las pruebas unitarias usan uno falso, sin red). */
+  redis?: object;
   /** Controladores solo de prueba, montados bajo /v1. */
   controllers?: Type[];
   /** Recibe los logs (JSON por línea) en vez de descartarlos. */
@@ -22,7 +25,7 @@ interface TestAppOptions {
 /** Levanta la API en memoria con las mismas piezas que main.ts. */
 export async function createTestApp(
   env: Record<string, string>,
-  { datastores, controllers = [], logStream, configure }: TestAppOptions = {},
+  { datastores, redis, controllers = [], logStream, configure }: TestAppOptions = {},
 ): Promise<NestFastifyApplication> {
   const parsed = loadEnv(env);
   let builder = Test.createTestingModule({
@@ -30,6 +33,7 @@ export async function createTestApp(
     controllers,
   });
   if (datastores) builder = builder.overrideProvider(Datastores).useValue(datastores);
+  if (redis) builder = builder.overrideProvider(RedisClient).useValue(redis);
   const moduleRef = await builder.compile();
   const app = moduleRef.createNestApplication<NestFastifyApplication>(createAdapter(parsed), {
     logger: false,
