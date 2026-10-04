@@ -7,4 +7,6 @@ export default {
   extensionsToTreatAsEsm: ['.ts'],
   // La primera instancia de PGlite compila su WASM: unos 25 s en los runners de CI.
   testTimeout: 60_000,
+  // scripts/ tiene sus propias pruebas con node:test (package.json, «test»).
+  testPathIgnorePatterns: ['/node_modules/', '/scripts/'],
 };

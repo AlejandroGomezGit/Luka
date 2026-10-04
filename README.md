@@ -32,9 +32,7 @@ corepack enable                                   # activa la versión de pnpm f
 pnpm install
 cp .env.example .env                              # valores falsos para desarrollo local
 docker compose -f infra/docker-compose.yml up -d --wait
-pnpm db:migrate                                   # aplica las migraciones en el PostgreSQL local
-# Una vez: contraseña local (falsa, la de .env.example) del rol de la API, que la migración no fija.
-docker compose -f infra/docker-compose.yml exec postgres psql -U luka -d luka -c "alter role luka_app password 'luka-app-local'"
+pnpm db:migrate                                   # migra como luka y, en local, fija la contraseña de luka_app
 pnpm dev:api                                      # API en http://localhost:3000 (prueba /readyz)
 pnpm dev:mobile                                   # servidor de Expo para el simulador de iOS
 ```
@@ -43,14 +41,14 @@ El entorno local levanta PostgreSQL (55432, o `POSTGRES_PORT` si lo defines al l
 
 ## Comandos
 
-| Comando                                                  | Qué hace                                                                 |
-| -------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` | Lo mismo que corre el CI, en todo el monorepo                            |
-| `pnpm test:api`                                          | Integración de la API contra PostgreSQL y Redis reales (requiere Docker) |
-| `pnpm format`                                            | Formatea con Prettier                                                    |
-| `pnpm db:generate`                                       | Genera migraciones a partir de los esquemas de Drizzle                   |
-| `pnpm db:migrate`                                        | Aplica las migraciones en el PostgreSQL local                            |
-| `pnpm --filter @luka/contracts openapi`                  | Regenera `packages/contracts/openapi.json`                               |
+| Comando                                                  | Qué hace                                                                                                                               |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` | Lo mismo que corre el CI, en todo el monorepo                                                                                          |
+| `pnpm test:api`                                          | Integración de la API contra PostgreSQL y Redis reales (requiere Docker)                                                               |
+| `pnpm format`                                            | Formatea con Prettier                                                                                                                  |
+| `pnpm db:generate`                                       | Genera migraciones a partir de los esquemas de Drizzle                                                                                 |
+| `pnpm db:migrate`                                        | Migra como `luka` (dice a qué servidor se conecta y muestra el error real de PostgreSQL) y, en local, fija la contraseña de `luka_app` |
+| `pnpm --filter @luka/contracts openapi`                  | Regenera `packages/contracts/openapi.json`                                                                                             |
 
 ## Estructura
 
