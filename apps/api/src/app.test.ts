@@ -6,13 +6,28 @@ import { loadEnv, startupWarnings } from './config.js';
 import { toProblem } from './problem.filter.js';
 import { createTestApp } from './test-app.js';
 
-// Sin servidores: las comprobaciones de /readyz son falsas y Redis apunta a un puerto sin servidor, así
-// que el límite de tasa deja pasar (como con Redis caído).
+// Sin servidores: las comprobaciones de /readyz y Redis son falsos. El límite de tasa y los intentos
+// contra un Redis real se prueban en limits.integration.test.ts.
 const env = {
   DATABASE_URL: 'postgres://nadie:nada@127.0.0.1:9/nada',
   REDIS_URL: 'redis://127.0.0.1:9',
   RATE_LIMIT_KEY_SECRET: 'falso-solo-para-pruebas-0123456789',
 };
+
+/**
+ * Redis falso: @fastify/rate-limit define su comando con defineCommand y lo llama con un callback al
+ * final; aquí cada petición es la primera de su ventana, así que nunca se limita y no hay red.
+ */
+class FakeRedis {
+  [command: string]: unknown;
+
+  defineCommand(name: string): void {
+    this[name] = (...args: unknown[]) => {
+      const done = args.at(-1) as (error: null, result: [number, number]) => void;
+      done(null, [1, Number(args[1])]);
+    };
+  }
+}
 
 @Controller('prueba')
 class EchoController {
@@ -31,7 +46,11 @@ const fakeDatastores = {
 
 let app: NestFastifyApplication;
 beforeAll(async () => {
-  app = await createTestApp(env, { datastores: fakeDatastores, controllers: [EchoController] });
+  app = await createTestApp(env, {
+    datastores: fakeDatastores,
+    redis: new FakeRedis(),
+    controllers: [EchoController],
+  });
 });
 afterAll(() => app.close());
 
