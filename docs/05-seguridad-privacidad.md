@@ -8,14 +8,14 @@ Catorce amenazas cubren lo que importa proteger: las cuentas, las sesiones, los 
 
 | ID | Amenaza | Mitigación | Cómo se verifica |
 | --- | --- | --- | --- |
-| AM-01 | Adivinar o robar contraseñas con intentos masivos | Argon2id, límite de intentos con espera creciente, mensajes de error genéricos | Pruebas de integración de los límites |
+| AM-01 | Adivinar o robar contraseñas con intentos masivos | Argon2id, límite de intentos con espera creciente por cuenta e IP, por cuenta desde todas las IP y por IP (ADR-015), mensajes de error genéricos y la misma respuesta exista o no el correo | Pruebas de integración de los límites (T-025), con Redis caído incluido |
 | AM-02 | Robo de un token de sesión | Token de acceso de 15 minutos, refresco de un solo uso con detección de reutilización, tokens en el Keychain, revocación por dispositivo | Pruebas de integración de la rotación |
 | AM-03 | Leer datos de otro usuario | `user_id` en toda consulta, seguridad a nivel de fila en PostgreSQL forzada en cada tabla, rol de la API sin `BYPASSRLS`, claves foráneas compuestas (`user_id`, `id`) e identificadores UUID | Pruebas de aislamiento en CI con dos usuarios, tabla por tabla, y prueba de catálogo (T-026, INV-08) |
 | AM-04 | Inyección SQL o datos mal formados | Consultas parametrizadas con Drizzle, validación con Zod en cada entrada, límites de tamaño | Análisis estático y pruebas de contrato |
 | AM-05 | Celular perdido o robado | Protección de datos de iOS, bloqueo con Face ID, revocar el dispositivo desde otra sesión | Prueba manual en dispositivo |
 | AM-06 | Interceptar el tráfico | TLS 1.2 o superior, HSTS y App Transport Security de iOS sin excepciones | Escaneo de TLS en staging |
 | AM-07 | Repetir o manipular operaciones de sincronización | `opId` idempotente, validación del registro resultante, reloj acotado por el servidor, lotes limitados | Pruebas de propiedades y de integración |
-| AM-08 | Abuso de la API: fuerza bruta, scraping, saturación | Límite de tasa por IP y por usuario, tamaño máximo de lote, tiempos de espera | k6 y pruebas de `429` |
+| AM-08 | Abuso de la API: fuerza bruta, scraping, saturación | Límite de tasa por IP (IPv6 por /64) y por usuario, más estricto en `/v1/auth/*` (ADR-015), cuerpo de 1 MB como máximo, tiempo máximo por petición y `TRUST_PROXY` explícito | k6 y pruebas de `429` (T-025) |
 | AM-09 | Secretos filtrados en el repositorio o en los logs | Escaneo de secretos en CI, gestor de secretos, logs sin datos financieros | gitleaks sobre todo el historial en cada PR y push a `main`, con hallazgos revisados solo por huella exacta en `.gitleaksignore` (T-043), y prueba del redactado de logs (T-019) |
 | AM-10 | Dependencia vulnerable o comprometida | Actualización automática, auditoría en CI, archivo de bloqueo y SBOM | osv-scanner en cada PR, push a `main` y cada lunes; falla con cualquier vulnerabilidad conocida salvo excepciones con motivo que caducan en 90 días o menos (T-043) |
 | AM-11 | Adjuntos maliciosos o excesivos | URL prefirmada con tipo y tamaño máximos, caducidad corta, bucket privado | Prueba de integración de subida |

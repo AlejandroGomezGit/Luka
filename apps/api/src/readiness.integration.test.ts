@@ -17,6 +17,7 @@ beforeAll(async () => {
   app = await createTestApp({
     DATABASE_URL: postgres.getConnectionUri(),
     REDIS_URL: redis.getConnectionUrl(),
+    RATE_LIMIT_KEY_SECRET: 'falso-solo-para-pruebas-0123456789',
   });
 });
 

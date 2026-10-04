@@ -70,6 +70,44 @@
             }
           }
         }
+      },
+      "TooManyRequests": {
+        "description": "Demasiados intentos de credenciales o demasiadas peticiones",
+        "headers": {
+          "Retry-After": {
+            "description": "Segundos que hay que esperar antes de reintentar",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/RateLimitProblem"
+            }
+          }
+        }
+      },
+      "ServiceUnavailable": {
+        "description": "No se pueden comprobar los intentos de credenciales; reintentar más tarde",
+        "headers": {
+          "Retry-After": {
+            "description": "Segundos que hay que esperar antes de reintentar",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/UnavailableProblem"
+            }
+          }
+        }
       }
     },
     "schemas": {
@@ -96,12 +134,57 @@
             "minLength": 1
           }
         },
-        "required": [
-          "type",
-          "title",
-          "status",
-          "code"
-        ],
+        "required": ["type", "title", "status", "code"],
+        "additionalProperties": {}
+      },
+      "RateLimitProblem": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "number",
+            "const": 429
+          },
+          "detail": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "enum": ["too_many_attempts", "rate_limited"]
+          }
+        },
+        "required": ["type", "title", "status", "code"],
+        "additionalProperties": {}
+      },
+      "UnavailableProblem": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "number",
+            "const": 503
+          },
+          "detail": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "const": "temporarily_unavailable"
+          }
+        },
+        "required": ["type", "title", "status", "code"],
         "additionalProperties": {}
       },
       "Health": {
@@ -112,9 +195,7 @@
             "const": "ok"
           }
         },
-        "required": [
-          "status"
-        ],
+        "required": ["status"],
         "additionalProperties": false
       },
       "Readiness": {
@@ -122,40 +203,25 @@
         "properties": {
           "status": {
             "type": "string",
-            "enum": [
-              "ok",
-              "error"
-            ]
+            "enum": ["ok", "error"]
           },
           "checks": {
             "type": "object",
             "properties": {
               "postgres": {
                 "type": "string",
-                "enum": [
-                  "ok",
-                  "error"
-                ]
+                "enum": ["ok", "error"]
               },
               "redis": {
                 "type": "string",
-                "enum": [
-                  "ok",
-                  "error"
-                ]
+                "enum": ["ok", "error"]
               }
             },
-            "required": [
-              "postgres",
-              "redis"
-            ],
+            "required": ["postgres", "redis"],
             "additionalProperties": false
           }
         },
-        "required": [
-          "status",
-          "checks"
-        ],
+        "required": ["status", "checks"],
         "additionalProperties": false
       }
     }

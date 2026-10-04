@@ -118,7 +118,8 @@ El MVP necesita 16 endpoints, y uno solo, `POST /v1/sync`, mueve todos los datos
 - **Errores.** Siempre `application/problem+json` (RFC 9457), con un campo `code` estable que la app interpreta.
 - **Trazabilidad.** Cada respuesta incluye `X-Request-Id`, el mismo id que aparece en los logs y las trazas.
 - **Paginación.** Por cursor opaco, nunca por número de página.
-- **Límites de tasa.** Por IP y por usuario; al excederlos, `429` con `Retry-After`. Los endpoints de autenticación tienen un límite más estricto.
+- **Límites de tasa.** Por IP y por usuario; al excederlos, `429 rate_limited` con `Retry-After` en segundos. Los endpoints de autenticación tienen un límite más estricto. Los intentos fallidos de credenciales tienen su propio límite, con espera creciente: `429 too_many_attempts`. Si Redis no responde, el límite de tasa deja pasar y los intentos de credenciales responden `503 temporarily_unavailable` con `Retry-After` (ADR-015).
+- **Cabeceras de seguridad.** Toda respuesta lleva `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`, `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'`, `Cross-Origin-Resource-Policy: same-origin` y `Cache-Control: no-store`.
 
 ## Errores, reintentos y límites
 
@@ -142,7 +143,9 @@ Cada operación recibe su propio resultado y cada error HTTP tiene una reacción
 | `410 cursor_expired` | El cursor es más viejo que la retención de 30 días | Descarga completa por `/v1/sync/snapshot` y reenvía su `outbox` |
 | `413` | Lote demasiado grande | Divide el lote y reintenta |
 | `426 upgrade_required` | La `schema_version` ya no se soporta | Pide actualizar la app sin tocar la cola |
-| `429` | Límite de tasa | Espera el tiempo de `Retry-After` |
+| `429 rate_limited` | Límite de tasa | Espera el tiempo de `Retry-After` |
+| `429 too_many_attempts` | Demasiados intentos fallidos de contraseña | Dice cuánto esperar, según `Retry-After` |
+| `503 temporarily_unavailable` | No se pueden comprobar los intentos de credenciales | Pide reintentar más tarde, según `Retry-After` |
 | `5xx` o sin red | Falla del servidor o de la conexión | Reintenta con espera exponencial y variación aleatoria, siempre con los mismos `opId` |
 
 ### Límites iniciales
@@ -157,6 +160,12 @@ Son valores de partida que se ajustan con las pruebas de carga.
 | Espera entre reintentos | De 1 s a 5 min, con variación aleatoria |
 | Sincronizaciones simultáneas por dispositivo | 1, con un candado local |
 | Espera antes de sincronizar tras un cambio | 2 s, para agrupar cambios seguidos |
+| Peticiones por IP | 300 por minuto (`RATE_LIMIT_PER_IP`, `RATE_LIMIT_WINDOW_MS`) |
+| Peticiones por IP a `/v1/auth/*` | 20 por minuto (`AUTH_RATE_LIMIT_PER_IP`) |
+| Peticiones por usuario | 300 por minuto (`RATE_LIMIT_PER_USER`) |
+| Intentos fallidos de credenciales | En 15 min (`LOGIN_ATTEMPTS_WINDOW_MS`): 5 por cuenta e IP, 20 por cuenta y 50 por IP (`LOGIN_ATTEMPTS_MAX`, `LOGIN_ACCOUNT_ATTEMPTS_MAX`, `LOGIN_IP_ATTEMPTS_MAX`) |
+| Bloqueo por intentos | 1 min que se duplica con cada fallo siguiente, hasta 1 h (`LOGIN_LOCK_BASE_MS`, `LOGIN_LOCK_MAX_MS`) |
+| Tiempo máximo de una petición | 30 s (`REQUEST_TIMEOUT_MS`) |
 
 ## Contrato OpenAPI de la sincronización
 

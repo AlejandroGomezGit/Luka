@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import versioned from '../openapi.json' with { type: 'json' };
-import { Problem, Readiness, buildOpenApi } from './index.js';
+import { Problem, RateLimitProblem, Readiness, UnavailableProblem, buildOpenApi } from './index.js';
 
 const problem: Record<string, unknown> = {
   type: 'about:blank',
@@ -50,5 +50,43 @@ describe('Problem con extensiones', () => {
   it('conserva los miembros de extensión que permite RFC 9457', () => {
     const withErrors = { ...problem, errors: [{ field: 'amountMinor' }] };
     expect(Problem.parse(withErrors)).toEqual(withErrors);
+  });
+});
+
+describe('429 y 503 de los límites (AM-01, AM-08)', () => {
+  const base = { type: 'about:blank', title: 'Too Many Requests', status: 429 };
+
+  it('el 429 lleva too_many_attempts (credenciales) o rate_limited (peticiones)', () => {
+    expect(RateLimitProblem.parse({ ...base, code: 'too_many_attempts' }).code).toBe(
+      'too_many_attempts',
+    );
+    expect(RateLimitProblem.parse({ ...base, code: 'rate_limited' }).code).toBe('rate_limited');
+    expect(RateLimitProblem.safeParse({ ...base, code: 'not_found' }).success).toBe(false);
+    expect(RateLimitProblem.safeParse({ ...base, status: 503, code: 'rate_limited' }).success).toBe(
+      false,
+    );
+  });
+
+  it('el 503 de los intentos de credenciales lleva temporarily_unavailable', () => {
+    const unavailable = { ...base, title: 'Service Unavailable', status: 503 };
+    expect(
+      UnavailableProblem.parse({ ...unavailable, code: 'temporarily_unavailable' }).status,
+    ).toBe(503);
+    expect(UnavailableProblem.safeParse({ ...unavailable, code: 'rate_limited' }).success).toBe(
+      false,
+    );
+  });
+
+  it('OpenAPI describe el 429 y el 503 con Retry-After en segundos', () => {
+    const { responses } = buildOpenApi().components;
+    for (const name of ['TooManyRequests', 'ServiceUnavailable'] as const) {
+      expect(responses[name].headers['Retry-After'].schema).toEqual({
+        type: 'integer',
+        minimum: 1,
+      });
+    }
+    expect(buildOpenApi().components.schemas.RateLimitProblem).toMatchObject({
+      properties: { code: { enum: ['too_many_attempts', 'rate_limited'] } },
+    });
   });
 });
