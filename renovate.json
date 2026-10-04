@@ -68,6 +68,11 @@
       ],
       "matchUpdateTypes": ["patch"],
       "groupName": "SDK de Expo (parches)"
+    },
+    {
+      "description": "Las actualizaciones mayores (por ejemplo Node 24) no abren PR solas: esperan la aprobación de la persona en el panel. Cada una es un issue planeado.",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
     }
   ]
 }
