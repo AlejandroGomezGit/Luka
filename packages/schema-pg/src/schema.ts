@@ -260,6 +260,9 @@ export const refreshTokens = pgTable(
       .references(() => users.id),
     deviceId: uuid('device_id').notNull(),
     familyId: uuid('family_id').notNull(),
+    // El token del que salió en la rotación; varios hijos de un mismo padre son reemisiones dentro del
+    // margen de 30 s (respuesta perdida o refrescos simultáneos), con un tope (ADR-016).
+    parentId: uuid('parent_id'),
     tokenHash: text('token_hash').notNull().unique(),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     expiresAt: timestamptz('expires_at').notNull(),
@@ -269,6 +272,14 @@ export const refreshTokens = pgTable(
   (t) => [
     index('refresh_tokens_user').on(t.userId),
     index('refresh_tokens_family').on(t.familyId),
+    index('refresh_tokens_parent').on(t.parentId),
+    // Destino de la clave foránea compuesta de parent_id: el padre es del mismo usuario (AM-03).
+    unique('refresh_tokens_user_id_id').on(t.userId, t.id),
+    foreignKey({
+      name: 'refresh_tokens_parent_same_user',
+      columns: [t.userId, t.parentId],
+      foreignColumns: [t.userId, t.id],
+    }),
     foreignKey({
       name: 'refresh_tokens_device_same_user',
       columns: [t.userId, t.deviceId],

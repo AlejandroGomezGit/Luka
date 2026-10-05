@@ -3,21 +3,25 @@ CREATE TABLE "refresh_tokens" (
 	"user_id" uuid NOT NULL,
 	"device_id" uuid NOT NULL,
 	"family_id" uuid NOT NULL,
+	"parent_id" uuid,
 	"token_hash" text NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"expires_at" timestamp with time zone NOT NULL,
 	"used_at" timestamp with time zone,
 	"revoked_at" timestamp with time zone,
-	CONSTRAINT "refresh_tokens_token_hash_unique" UNIQUE("token_hash")
+	CONSTRAINT "refresh_tokens_token_hash_unique" UNIQUE("token_hash"),
+	CONSTRAINT "refresh_tokens_user_id_id" UNIQUE("user_id","id")
 );
 --> statement-breakpoint
 ALTER TABLE "consents" DROP CONSTRAINT "consents_purpose";--> statement-breakpoint
 ALTER TABLE "consents" ADD CONSTRAINT "consents_purpose" CHECK ("consents"."purpose" in ('terms', 'privacy', 'adult', 'ai_external', 'bank_connection'));--> statement-breakpoint
 ALTER TABLE "devices" ADD CONSTRAINT "devices_user_id_id" UNIQUE("user_id","id");--> statement-breakpoint
 ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_parent_same_user" FOREIGN KEY ("user_id","parent_id") REFERENCES "public"."refresh_tokens"("user_id","id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_device_same_user" FOREIGN KEY ("user_id","device_id") REFERENCES "public"."devices"("user_id","id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "refresh_tokens_user" ON "refresh_tokens" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "refresh_tokens_family" ON "refresh_tokens" USING btree ("family_id");--> statement-breakpoint
+CREATE INDEX "refresh_tokens_parent" ON "refresh_tokens" USING btree ("parent_id");--> statement-breakpoint
 -- AM-03 (T-019): refresh_tokens, aislada como las demás tablas del usuario.
 GRANT SELECT, INSERT, UPDATE, DELETE ON "refresh_tokens" TO luka_app;--> statement-breakpoint
 ALTER TABLE "refresh_tokens" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint

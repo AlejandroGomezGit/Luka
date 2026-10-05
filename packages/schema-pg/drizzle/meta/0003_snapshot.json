@@ -1,5 +1,5 @@
 {
-  "id": "29efb1b7-ed31-45a1-91da-c66e25cf4cfd",
+  "id": "c96fdf70-9c7a-4fe4-b068-a79d1ded273e",
   "prevId": "a3b69212-d3ea-40cc-a605-eaec3e95dbf0",
   "version": "7",
   "dialect": "postgresql",
@@ -619,6 +619,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "token_hash": {
           "name": "token_hash",
           "type": "text",
@@ -681,6 +687,21 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "refresh_tokens_parent": {
+          "name": "refresh_tokens_parent",
+          "columns": [
+            {
+              "expression": "parent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -692,6 +713,21 @@
             "user_id"
           ],
           "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "refresh_tokens_parent_same_user": {
+          "name": "refresh_tokens_parent_same_user",
+          "tableFrom": "refresh_tokens",
+          "tableTo": "refresh_tokens",
+          "columnsFrom": [
+            "user_id",
+            "parent_id"
+          ],
+          "columnsTo": [
+            "user_id",
             "id"
           ],
           "onDelete": "no action",
@@ -720,6 +756,14 @@
           "nullsNotDistinct": false,
           "columns": [
             "token_hash"
+          ]
+        },
+        "refresh_tokens_user_id_id": {
+          "name": "refresh_tokens_user_id_id",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id",
+            "id"
           ]
         }
       },

@@ -311,6 +311,7 @@ describe('AM-03 referencias a filas de otro usuario', () => {
     ['categories', 'parent_id', 'categories', {}],
     ['attachments', 'transaction_id', 'transactions', {}],
     ['refresh_tokens', 'device_id', 'devices', {}],
+    ['refresh_tokens', 'parent_id', 'refresh_tokens', {}],
   ])(
     'AM-03 con el contexto de A, %s.%s no puede apuntar a una fila de B',
     async (table, column, target, extra) => {
