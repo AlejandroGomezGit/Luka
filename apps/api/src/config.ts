@@ -2,6 +2,9 @@ import { z } from 'zod';
 
 const ms = z.coerce.number().int().positive();
 const count = z.coerce.number().int().positive();
+/** Una variable vacía (como JWT_PRIVATE_KEY= en .env.example) cuenta como ausente. */
+const optionalSecret = (min: number) =>
+  z.preprocess((value) => (value === '' ? undefined : value), z.string().min(min).optional());
 
 /** APP_ENV o NODE_ENV en production. */
 function isProduction(env: { APP_ENV: string; NODE_ENV?: string | undefined }): boolean {
@@ -41,6 +44,14 @@ const Env = z
     LOGIN_IP_ATTEMPTS_MAX: count.default(50),
     LOGIN_LOCK_BASE_MS: ms.default(60_000),
     LOGIN_LOCK_MAX_MS: ms.default(60 * 60_000),
+    // Sesiones (T-019, AM-02). Fuera de APP_ENV=local las tres son obligatorias y salen del gestor de
+    // secretos; en local, si faltan, la API usa valores temporales (las sesiones no sobreviven un reinicio).
+    JWT_PRIVATE_KEY: optionalSecret(1),
+    JWT_PUBLIC_KEY: optionalSecret(1),
+    REFRESH_TOKEN_PEPPER: optionalSecret(16),
+    // Margen para reintentar un refresco ya usado (respuesta perdida o simultáneos), ADR-016.
+    REFRESH_REUSE_GRACE_MS: ms.default(30_000),
+    ARGON2_MAX_CONCURRENT: count.default(4),
   })
   .refine((env) => env.LOGIN_ACCOUNT_ATTEMPTS_MAX > env.LOGIN_ATTEMPTS_MAX, {
     path: ['LOGIN_ACCOUNT_ATTEMPTS_MAX'],
@@ -49,6 +60,18 @@ const Env = z
   .refine((env) => !(isProduction(env) && env.TRUST_PROXY === true), {
     path: ['TRUST_PROXY'],
     message: 'en producción usa las direcciones o rangos del balanceador, no true',
+  })
+  .superRefine((env, context) => {
+    if (env.APP_ENV === 'local') return;
+    for (const name of ['JWT_PRIVATE_KEY', 'JWT_PUBLIC_KEY', 'REFRESH_TOKEN_PEPPER'] as const) {
+      if (env[name] === undefined) {
+        context.addIssue({
+          code: 'custom',
+          path: [name],
+          message: 'obligatoria fuera de APP_ENV=local',
+        });
+      }
+    }
   });
 
 export type Env = z.infer<typeof Env>;

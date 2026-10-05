@@ -8,6 +8,12 @@ import { LoggerModule } from 'nestjs-pino';
 import type { DestinationStream } from 'pino';
 import type { Options } from 'pino-http';
 import { AttemptLimiter } from './attempts.js';
+import { registerAccess } from './auth/access.js';
+import { AuthController } from './auth/auth.controller.js';
+import { AuthService } from './auth/auth.service.js';
+import { BreachChecker } from './auth/breach.js';
+import { PasswordHasher } from './auth/passwords.js';
+import { AccessTokens } from './auth/tokens.js';
 import type { Env } from './config.js';
 import { Datastores } from './datastores.js';
 import { Database } from './db/database.js';
@@ -52,13 +58,17 @@ export class AppModule {
     return {
       module: AppModule,
       imports: [LoggerModule.forRoot({ pinoHttp: logStream ? [pinoHttp, logStream] : pinoHttp })],
-      controllers: [HealthController],
+      controllers: [HealthController, AuthController],
       providers: [
         { provide: ENV, useValue: env },
         Database,
         RedisClient,
         Datastores,
         AttemptLimiter,
+        PasswordHasher,
+        AuthService,
+        { provide: BreachChecker, useFactory: () => new BreachChecker() },
+        { provide: AccessTokens, useFactory: (e: Env) => AccessTokens.create(e), inject: [ENV] },
         { provide: APP_FILTER, useClass: ProblemFilter },
       ],
       exports: [AttemptLimiter],
@@ -94,10 +104,14 @@ export function createAdapter(env: Env): FastifyAdapter {
   return adapter;
 }
 
-/** Ajustes comunes a la API real y a las pruebas. */
-export async function configureApp(app: NestFastifyApplication): Promise<NestFastifyApplication> {
+/** Ajustes comunes a la API real y a las pruebas; `extraPublic` solo lo usan rutas de prueba. */
+export async function configureApp(
+  app: NestFastifyApplication,
+  extraPublic: readonly string[] = [],
+): Promise<NestFastifyApplication> {
   app.setGlobalPrefix('v1', { exclude: ['healthz', 'readyz'] });
   app.enableShutdownHooks();
   await registerRateLimit(app);
+  registerAccess(app, extraPublic);
   return app;
 }

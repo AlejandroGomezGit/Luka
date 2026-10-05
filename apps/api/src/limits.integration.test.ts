@@ -71,6 +71,8 @@ beforeAll(async () => {
   // Al final Redis está detenido: sin disconnectTimeout corto, ioredis retiene el proceso 2 s (DT-10).
   redis = new Redis(REDIS_URL, { disconnectTimeout: 200 });
   const controllers = [ProbeController];
+  // Hasta T-019c la prueba fija el usuario con una cabecera: sus rutas no piden token.
+  const publicRoutes = ['GET /v1/prueba/yo', 'POST /v1/prueba/login'];
   strict = await createTestApp(
     {
       ...base,
@@ -79,7 +81,7 @@ beforeAll(async () => {
       AUTH_RATE_LIMIT_PER_IP: '2',
       RATE_LIMIT_PER_USER: '3',
     },
-    { controllers, logStream, configure: testUser },
+    { controllers, logStream, configure: testUser, publicRoutes },
   );
   proxied = await createTestApp(
     {
@@ -92,7 +94,7 @@ beforeAll(async () => {
       LOGIN_LOCK_BASE_MS: '1000',
       LOGIN_LOCK_MAX_MS: '4000',
     },
-    { controllers, logStream },
+    { controllers, logStream, publicRoutes },
   );
 });
 

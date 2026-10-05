@@ -1,6 +1,15 @@
 import { describe, expect, it } from '@jest/globals';
 import versioned from '../openapi.json' with { type: 'json' };
-import { Problem, RateLimitProblem, Readiness, UnavailableProblem, buildOpenApi } from './index.js';
+import {
+  CONSENT_VERSION,
+  Problem,
+  RateLimitProblem,
+  Readiness,
+  RegisterRequest,
+  TokenPair,
+  UnavailableProblem,
+  buildOpenApi,
+} from './index.js';
 
 const problem: Record<string, unknown> = {
   type: 'about:blank',
@@ -88,5 +97,39 @@ describe('429 y 503 de los límites (AM-01, AM-08)', () => {
     expect(buildOpenApi().components.schemas.RateLimitProblem).toMatchObject({
       properties: { code: { enum: ['too_many_attempts', 'rate_limited'] } },
     });
+  });
+});
+
+describe('autenticación (T-019, HU-01)', () => {
+  const register = {
+    userId: '0190a3b4-0000-7000-8000-000000000001',
+    deviceId: '0190a3b4-0000-7000-8000-000000000002',
+    appVersion: '1.0.0',
+    email: 'ana@ejemplo.co',
+    password: 'una-contraseña-larga',
+    consents: { version: CONSENT_VERSION, terms: true, privacy: true, adult: true },
+  };
+
+  it('HU-01 el registro lleva el user_id local, el dispositivo y las tres casillas por separado', () => {
+    expect(RegisterRequest.parse(register).displayName).toBe('');
+    const { consents: _, ...withoutConsents } = register;
+    expect(RegisterRequest.safeParse(withoutConsents).success).toBe(false);
+    const { adult: _adult, ...twoBoxes } = register.consents;
+    expect(RegisterRequest.safeParse({ ...register, consents: twoBoxes }).success).toBe(false);
+    expect(RegisterRequest.safeParse({ ...register, userId: 'no-es-uuid' }).success).toBe(false);
+  });
+
+  it('OpenAPI describe los cuatro endpoints; solo logout pide sesión', () => {
+    const { paths } = buildOpenApi();
+    expect(Object.keys(paths).filter((path) => path.startsWith('/v1/auth/'))).toEqual([
+      '/v1/auth/register',
+      '/v1/auth/login',
+      '/v1/auth/refresh',
+      '/v1/auth/logout',
+    ]);
+    expect(paths['/v1/auth/logout'].post.security).toEqual([{ bearerAuth: [] }]);
+    expect(
+      TokenPair.safeParse({ accessToken: 'a', refreshToken: 'b', expiresIn: 900 }).success,
+    ).toBe(true);
   });
 });

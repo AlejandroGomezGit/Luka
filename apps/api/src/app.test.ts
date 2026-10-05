@@ -8,6 +8,13 @@ import { createTestApp } from './test-app.js';
 
 // Sin servidores: las comprobaciones de /readyz y Redis son falsos. El límite de tasa y los intentos
 // contra un Redis real se prueban en limits.integration.test.ts.
+// Fuera de local, la config exige las claves de sesión: aquí solo se comprueba que existan.
+const sessionKeys = {
+  JWT_PRIVATE_KEY: 'falsa-solo-para-pruebas',
+  JWT_PUBLIC_KEY: 'falsa-solo-para-pruebas',
+  REFRESH_TOKEN_PEPPER: 'falsa-solo-para-pruebas-0123',
+};
+
 const env = {
   DATABASE_URL: 'postgres://nadie:nada@127.0.0.1:9/nada',
   REDIS_URL: 'redis://127.0.0.1:9',
@@ -50,6 +57,7 @@ beforeAll(async () => {
     datastores: fakeDatastores,
     redis: new FakeRedis(),
     controllers: [EchoController],
+    publicRoutes: ['POST /v1/prueba/eco'],
   });
 });
 afterAll(() => app.close());
@@ -176,18 +184,24 @@ describe('configuración de los límites', () => {
 
   it('AM-08: en producción TRUST_PROXY=true no arranca: confiaría en cualquier X-Forwarded-*', () => {
     for (const production of [{ APP_ENV: 'production' }, { NODE_ENV: 'production' }]) {
-      expect(() => loadEnv({ ...env, ...production, TRUST_PROXY: 'true' })).toThrow(/TRUST_PROXY/);
-      expect(loadEnv({ ...env, ...production, TRUST_PROXY: '10.0.0.0/8' }).TRUST_PROXY).toBe(
-        '10.0.0.0/8',
+      expect(() => loadEnv({ ...env, ...sessionKeys, ...production, TRUST_PROXY: 'true' })).toThrow(
+        /TRUST_PROXY/,
       );
+      expect(
+        loadEnv({ ...env, ...sessionKeys, ...production, TRUST_PROXY: '10.0.0.0/8' }).TRUST_PROXY,
+      ).toBe('10.0.0.0/8');
     }
-    expect(loadEnv({ ...env, APP_ENV: 'staging', TRUST_PROXY: 'true' }).TRUST_PROXY).toBe(true);
+    expect(
+      loadEnv({ ...env, ...sessionKeys, APP_ENV: 'staging', TRUST_PROXY: 'true' }).TRUST_PROXY,
+    ).toBe(true);
   });
 
   it('con NODE_ENV=production y sin APP_ENV, el entorno es producción y no local', () => {
-    expect(loadEnv({ ...env, NODE_ENV: 'production' }).APP_ENV).toBe('production');
+    expect(loadEnv({ ...env, ...sessionKeys, NODE_ENV: 'production' }).APP_ENV).toBe('production');
     expect(loadEnv(env).APP_ENV).toBe('local');
-    expect(loadEnv({ ...env, NODE_ENV: 'production', APP_ENV: 'staging' }).APP_ENV).toBe('staging');
+    expect(
+      loadEnv({ ...env, ...sessionKeys, NODE_ENV: 'production', APP_ENV: 'staging' }).APP_ENV,
+    ).toBe('staging');
   });
 
   it('RATE_LIMIT_KEY_SECRET es obligatoria y el error no muestra valores', () => {
@@ -205,12 +219,16 @@ describe('configuración de los límites', () => {
   });
 
   it('avisa al arrancar si TRUST_PROXY es false en producción (el valor real se decide en T-040)', () => {
-    expect(startupWarnings(loadEnv({ ...env, APP_ENV: 'production' }))).toEqual([
+    expect(startupWarnings(loadEnv({ ...env, ...sessionKeys, APP_ENV: 'production' }))).toEqual([
       expect.stringContaining('TRUST_PROXY'),
     ]);
-    expect(startupWarnings(loadEnv({ ...env, NODE_ENV: 'production' }))).toHaveLength(1);
     expect(
-      startupWarnings(loadEnv({ ...env, APP_ENV: 'production', TRUST_PROXY: '10.0.0.0/8' })),
+      startupWarnings(loadEnv({ ...env, ...sessionKeys, NODE_ENV: 'production' })),
+    ).toHaveLength(1);
+    expect(
+      startupWarnings(
+        loadEnv({ ...env, ...sessionKeys, APP_ENV: 'production', TRUST_PROXY: '10.0.0.0/8' }),
+      ),
     ).toEqual([]);
     expect(startupWarnings(loadEnv(env))).toEqual([]);
   });
