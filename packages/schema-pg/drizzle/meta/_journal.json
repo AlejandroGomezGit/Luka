@@ -22,6 +22,13 @@
       "when": 1791084688615,
       "tag": "0002_aislamiento",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791208708226,
+      "tag": "0003_autenticacion",
+      "breakpoints": true
     }
   ]
 }

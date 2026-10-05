@@ -81,7 +81,11 @@ export const devices = pgTable(
     lastSeenAt: timestamptz('last_seen_at'),
     revokedAt: timestamptz('revoked_at'),
   },
-  (t) => [check('devices_platform', oneOf(t.platform, PLATFORMS))],
+  (t) => [
+    check('devices_platform', oneOf(t.platform, PLATFORMS)),
+    // Destino de la clave foránea compuesta de refresh_tokens (AM-03).
+    unique('devices_user_id_id').on(t.userId, t.id),
+  ],
 );
 
 export const consents = pgTable(
@@ -239,6 +243,47 @@ export const attachments = pgTable(
       name: 'attachments_transaction_same_user',
       columns: [t.userId, t.transactionId],
       foreignColumns: [transactions.userId, transactions.id],
+    }),
+  ],
+);
+
+/**
+ * Tokens de refresco (T-019, AM-02): solo su HMAC, de un solo uso, ligados a un dispositivo y a una
+ * familia (las rotaciones de una misma sesión). Solo existe en el servidor: no se sincroniza.
+ */
+export const refreshTokens = pgTable(
+  'refresh_tokens',
+  {
+    id: uuid('id').primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    deviceId: uuid('device_id').notNull(),
+    familyId: uuid('family_id').notNull(),
+    // El token del que salió en la rotación; varios hijos de un mismo padre son reemisiones dentro del
+    // margen de 30 s (respuesta perdida o refrescos simultáneos), con un tope (ADR-016).
+    parentId: uuid('parent_id'),
+    tokenHash: text('token_hash').notNull().unique(),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+    expiresAt: timestamptz('expires_at').notNull(),
+    usedAt: timestamptz('used_at'),
+    revokedAt: timestamptz('revoked_at'),
+  },
+  (t) => [
+    index('refresh_tokens_user').on(t.userId),
+    index('refresh_tokens_family').on(t.familyId),
+    index('refresh_tokens_parent').on(t.parentId),
+    // Destino de la clave foránea compuesta de parent_id: el padre es del mismo usuario (AM-03).
+    unique('refresh_tokens_user_id_id').on(t.userId, t.id),
+    foreignKey({
+      name: 'refresh_tokens_parent_same_user',
+      columns: [t.userId, t.parentId],
+      foreignColumns: [t.userId, t.id],
+    }),
+    foreignKey({
+      name: 'refresh_tokens_device_same_user',
+      columns: [t.userId, t.deviceId],
+      foreignColumns: [devices.userId, devices.id],
     }),
   ],
 );

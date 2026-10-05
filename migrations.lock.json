@@ -22,5 +22,9 @@
   "pg/0002_aislamiento": {
     "when": 1791084688615,
     "sha256": "0e702eeaef33fe53e096ff521570f6d297c50b3518b4cee31299939dd9893991"
+  },
+  "pg/0003_autenticacion": {
+    "when": 1791208708226,
+    "sha256": "8a9f735f3d1444e65e8bcc3f742e169544ebd82c68cc30ab275ad08f1b3a5de9"
   }
 }
