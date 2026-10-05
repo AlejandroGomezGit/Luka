@@ -148,6 +148,21 @@ Cada operación recibe su propio resultado y cada error HTTP tiene una reacción
 | `503 temporarily_unavailable` | No se pueden comprobar los intentos de credenciales | Pide reintentar más tarde, según `Retry-After` |
 | `5xx` o sin red | Falla del servidor o de la conexión | Reintenta con espera exponencial y variación aleatoria, siempre con los mismos `opId` |
 
+### Errores de `/v1/auth` (T-019)
+
+Toda ruta pide un token de acceso salvo las que se listan una por una: `/healthz`, `/readyz`, `register`, `login` y `refresh`. Sin token, o con uno inválido, responden `401 unauthorized`.
+
+| Respuesta | Cuándo |
+| --- | --- |
+| `400 consent_required` | Falta la casilla de términos o la de autorización de datos, o la versión de los textos no es la vigente |
+| `400 age_confirmation_required` | Falta la casilla de 18 años o más |
+| `400 password_too_short` y `400 password_compromised` | Menos de 10 caracteres, o la contraseña aparece en Have I Been Pwned |
+| `409 email_taken` | El correo ya tiene cuenta; la app ofrece iniciar sesión |
+| `409 user_id_unavailable` | El `user_id` local ya existe; no dice de quién es |
+| `409 device_unavailable` | El dispositivo está ligado a otra cuenta; la app genera otro id de dispositivo y reintenta |
+| `401 invalid_credentials` | Correo o contraseña incorrectos; la misma respuesta exista o no el correo |
+| `401 refresh_invalid` | Token de refresco vencido, revocado, desconocido o reutilizado fuera del margen (ADR-016) |
+
 ### Límites iniciales
 
 Son valores de partida que se ajustan con las pruebas de carga.
@@ -166,6 +181,9 @@ Son valores de partida que se ajustan con las pruebas de carga.
 | Intentos fallidos de credenciales | En 15 min (`LOGIN_ATTEMPTS_WINDOW_MS`): 5 por cuenta e IP, 20 por cuenta y 50 por IP (`LOGIN_ATTEMPTS_MAX`, `LOGIN_ACCOUNT_ATTEMPTS_MAX`, `LOGIN_IP_ATTEMPTS_MAX`) |
 | Bloqueo por intentos | 1 min que se duplica con cada fallo siguiente, hasta 1 h (`LOGIN_LOCK_BASE_MS`, `LOGIN_LOCK_MAX_MS`) |
 | Tiempo máximo de una petición | 30 s (`REQUEST_TIMEOUT_MS`) |
+| Token de acceso | 15 min; sigue valiendo tras cerrar sesión hasta vencer (ADR-016) |
+| Token de refresco | 30 días, un solo uso; margen de reemisión de 30 s con tope de 3 (`REFRESH_REUSE_GRACE_MS`) |
+| Hashes de Argon2 simultáneos | 4, con una cola de 32; con la cola llena, `503` (`ARGON2_MAX_CONCURRENT`) |
 
 ## Contrato OpenAPI de la sincronización
 

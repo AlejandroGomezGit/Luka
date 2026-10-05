@@ -1,16 +1,13 @@
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 import { randomUUID } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import postgres from 'postgres';
 import { loadEnv } from './config.js';
 import { Database, setUserContext } from './db/database.js';
+import { migrate, startDatabase, type TestDatabase } from './db/testing.js';
 
 // AM-03, INV-08: PostgreSQL real con todas las migraciones; las pruebas hablan como luka_app, el rol
 // de la API. El dueño de las tablas (superusuario aquí) solo migra: él se salta la RLS.
-const MIGRATIONS = fileURLToPath(new URL('../../../packages/schema-pg/drizzle', import.meta.url));
 const TABLES = [
   'users',
   'devices',
@@ -26,20 +23,7 @@ const B = randomUUID();
 type Rows = Record<string, string>;
 const rows: Record<string, Rows> = {};
 
-/** Aplica en orden las migraciones del journal entre `from` y `to`, como el migrador de Drizzle. */
-async function migrate(sql: postgres.Sql, from = 0, to = Infinity) {
-  const journal = JSON.parse(readFileSync(join(MIGRATIONS, 'meta/_journal.json'), 'utf8')) as {
-    entries: { tag: string }[];
-  };
-  for (const { tag } of journal.entries.slice(from, to)) {
-    for (const statement of readFileSync(join(MIGRATIONS, `${tag}.sql`), 'utf8').split(
-      '--> statement-breakpoint',
-    )) {
-      await sql.unsafe(statement);
-    }
-  }
-}
-
+let db: TestDatabase;
 let container: StartedPostgreSqlContainer;
 let owner: postgres.Sql;
 let app: postgres.Sql;
@@ -174,15 +158,8 @@ async function catalogProblems(sql: postgres.Sql | postgres.TransactionSql): Pro
 }
 
 beforeAll(async () => {
-  container = await new PostgreSqlContainer('postgres:18-alpine').start();
-  owner = postgres(container.getConnectionUri(), { max: 1, onnotice: () => undefined });
-  await migrate(owner);
-  const password = randomUUID();
-  await owner.unsafe(`alter role luka_app password '${password}'`);
-  const url = new URL(container.getConnectionUri());
-  url.username = 'luka_app';
-  url.password = password;
-  appUrl = url.toString();
+  db = await startDatabase();
+  ({ container, owner, appUrl } = db);
   app = await appConnection(appUrl);
   await seed(A);
   await seed(B);
@@ -193,8 +170,7 @@ afterAll(async () => {
   try {
     await app.end();
   } finally {
-    await owner.end();
-    await container.stop();
+    await db.stop();
   }
 });
 
@@ -421,6 +397,7 @@ describe('AM-03 contexto por transacción', () => {
         REDIS_URL: 'redis://localhost',
         DATABASE_POOL_SIZE: '1',
         RATE_LIMIT_KEY_SECRET: 'falso-solo-para-pruebas-0123456789',
+        APP_ENV: 'local',
       }),
     );
     const ownersOf = (user: string) =>

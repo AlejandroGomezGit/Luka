@@ -19,3 +19,4 @@ Autenticación propia: contraseñas con Argon2id, token de acceso JWT de 15 minu
 
 - El riesgo de escribir autenticación se reduce con bibliotecas probadas, pruebas de integración de la rotación y una revisión antes del lanzamiento.
 - Los tokens viven en el Keychain (`expo-secure-store`), nunca en SQLite ni en logs.
+- La reutilización de un token de refresco tiene un margen de 30 s para respuestas perdidas y refrescos simultáneos, y el token de acceso sigue valiendo hasta 15 minutos tras cerrar sesión: ADR-016.
