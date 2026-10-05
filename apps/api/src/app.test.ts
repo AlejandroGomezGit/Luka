@@ -16,6 +16,7 @@ const sessionKeys = {
 };
 
 const env = {
+  APP_ENV: 'local',
   DATABASE_URL: 'postgres://nadie:nada@127.0.0.1:9/nada',
   REDIS_URL: 'redis://127.0.0.1:9',
   RATE_LIMIT_KEY_SECRET: 'falso-solo-para-pruebas-0123456789',
@@ -197,10 +198,13 @@ describe('configuración de los límites', () => {
   });
 
   it('con NODE_ENV=production y sin APP_ENV, el entorno es producción y no local', () => {
-    expect(loadEnv({ ...env, ...sessionKeys, NODE_ENV: 'production' }).APP_ENV).toBe('production');
+    const { APP_ENV: _escrito, ...noAppEnv } = env;
+    expect(loadEnv({ ...noAppEnv, ...sessionKeys, NODE_ENV: 'production' }).APP_ENV).toBe(
+      'production',
+    );
     expect(loadEnv(env).APP_ENV).toBe('local');
     expect(
-      loadEnv({ ...env, ...sessionKeys, NODE_ENV: 'production', APP_ENV: 'staging' }).APP_ENV,
+      loadEnv({ ...noAppEnv, ...sessionKeys, NODE_ENV: 'production', APP_ENV: 'staging' }).APP_ENV,
     ).toBe('staging');
   });
 

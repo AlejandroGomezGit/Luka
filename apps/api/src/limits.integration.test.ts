@@ -56,6 +56,7 @@ const logStream = new Writable({
 
 // Solo Redis desechable: estas pruebas no usan PostgreSQL y su URL apunta a un puerto sin servidor.
 const base = {
+  APP_ENV: 'local',
   DATABASE_URL: 'postgres://nadie:nada@127.0.0.1:9/nada',
   RATE_LIMIT_KEY_SECRET: 'falso-solo-para-pruebas-0123456789',
 };

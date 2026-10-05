@@ -145,7 +145,7 @@ El paso de una etapa a la siguiente lo decide una métrica, no una fecha: latenc
 
 ## Registro de decisiones (ADRs)
 
-Son 14 decisiones de arquitectura, todas aceptadas por el dueño del proyecto. Esta tabla las resume; cada una tiene su archivo en [`docs/adr/`](adr/) con contexto, decisión, alternativas y consecuencias.
+Son 16 decisiones de arquitectura, todas aceptadas por el dueño del proyecto. Esta tabla las resume; cada una tiene su archivo en [`docs/adr/`](adr/) con contexto, decisión, alternativas y consecuencias. ADR-017, la opción C de «Este iPhone ya tiene datos», llega con T-019c.
 
 | ID | Decisión | Alternativas descartadas | Motivo principal | Estado |
 | --- | --- | --- | --- | --- |

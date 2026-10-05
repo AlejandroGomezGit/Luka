@@ -244,6 +244,29 @@ describe('registro (HU-01)', () => {
   });
 });
 
+describe('contexto del registro (HU-01, AM-03)', () => {
+  it('HU-01 si create_user no devuelve created, la transacción nunca tuvo el contexto de ese id', async () => {
+    const taken = signup();
+    await post('/v1/auth/register', taken);
+    const database = app.get(Database);
+    let ran = false;
+    for (const user of [
+      { id: taken.userId, email: `${randomUUID()}@ejemplo.co` },
+      { id: randomUUID(), email: taken.email },
+    ]) {
+      const result = await database.createUser(
+        { ...user, passwordHash: 'h', displayName: '' },
+        () => {
+          ran = true;
+          return Promise.resolve();
+        },
+      );
+      expect(result.status).not.toBe('created');
+    }
+    expect(ran).toBe(false);
+  });
+});
+
 describe('inicio de sesión (HU-01, AM-01)', () => {
   it('HU-01 inicia sesión con el correo y la contraseña de la cuenta', async () => {
     const input = signup();
@@ -303,6 +326,15 @@ describe('dispositivos (HU-01)', () => {
       appVersion: '1.0.0',
     });
     expect([res.statusCode, Problem.parse(res.json()).code]).toEqual([409, 'device_unavailable']);
+    // No revela de quién es el dispositivo: solo el problem+json genérico.
+    expect(res.json()).toEqual({
+      type: 'about:blank',
+      title: 'Conflict',
+      status: 409,
+      code: 'device_unavailable',
+    });
+    for (const owned of [owner.userId, owner.email, owner.deviceId])
+      expect(res.body).not.toContain(owned);
     expect(await rowsOf(other.userId)).toEqual({ users: 1, consents: 3, devices: 1, refresh: 1 });
     const taken = await post('/v1/auth/register', signup({ deviceId: owner.deviceId }));
     expect([taken.statusCode, Problem.parse(taken.json()).code]).toEqual([

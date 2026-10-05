@@ -397,6 +397,7 @@ describe('AM-03 contexto por transacción', () => {
         REDIS_URL: 'redis://localhost',
         DATABASE_POOL_SIZE: '1',
         RATE_LIMIT_KEY_SECRET: 'falso-solo-para-pruebas-0123456789',
+        APP_ENV: 'local',
       }),
     );
     const ownersOf = (user: string) =>

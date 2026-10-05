@@ -21,6 +21,21 @@ describe('claves de los tokens (AM-02)', () => {
     }
   });
 
+  it.each([
+    ['APP_ENV=production', { APP_ENV: 'production' }],
+    ['NODE_ENV=production sin APP_ENV', { NODE_ENV: 'production' }],
+    ['sin APP_ENV ni NODE_ENV', {}],
+  ])('AM-02 con %s, las claves JWT ausentes o vacías impiden arrancar', (_name, environment) => {
+    const keys = {
+      TRUST_PROXY: '10.0.0.0/8',
+      REFRESH_TOKEN_PEPPER: 'falsa-solo-para-pruebas-0123',
+    };
+    expect(() => loadEnv({ ...base, ...environment, ...keys })).toThrow(/JWT_PRIVATE_KEY/);
+    expect(() =>
+      loadEnv({ ...base, ...environment, ...keys, JWT_PRIVATE_KEY: '', JWT_PUBLIC_KEY: '' }),
+    ).toThrow(/JWT_PRIVATE_KEY/);
+  });
+
   it('AM-02 las claves vacías (como en .env.example) cuentan como ausentes', () => {
     const env = loadEnv({
       ...base,

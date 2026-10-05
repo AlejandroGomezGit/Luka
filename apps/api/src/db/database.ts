@@ -66,7 +66,13 @@ export class Database implements OnApplicationShutdown {
     return this.#sql.begin(async (tx) => {
       const [row] = await tx<{ status: 'created' | 'email_taken' | 'id_taken' }[]>`
         select auth.create_user(${user.id}, ${user.email}, ${user.passwordHash}, ${user.displayName}) as status`;
-      if (row?.status !== 'created') return { status: row?.status ?? 'id_taken' };
+      if (row?.status !== 'created') {
+        // Sin cuenta nueva, la transacción nunca debe haber tenido el contexto de ese id (AM-03).
+        const [current] = await tx<{ ctx: string | null }[]>`
+          select current_setting('app.user_id', true) as ctx`;
+        if (current?.ctx) throw new Error('createUser fijó el contexto sin una cuenta nueva');
+        return { status: row?.status ?? 'id_taken' };
+      }
       await setUserContext(tx, user.id);
       return { status: 'created', value: await work(tx) };
     });

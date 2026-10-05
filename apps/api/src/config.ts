@@ -44,8 +44,8 @@ const Env = z
     LOGIN_IP_ATTEMPTS_MAX: count.default(50),
     LOGIN_LOCK_BASE_MS: ms.default(60_000),
     LOGIN_LOCK_MAX_MS: ms.default(60 * 60_000),
-    // Sesiones (T-019, AM-02). Fuera de APP_ENV=local las tres son obligatorias y salen del gestor de
-    // secretos; en local, si faltan, la API usa valores temporales (las sesiones no sobreviven un reinicio).
+    // Sesiones (T-019, AM-02). Obligatorias salvo con APP_ENV=local escrito (loadEnv); salen del gestor
+    // de secretos. En local, si faltan, la API usa valores temporales (no sobreviven un reinicio).
     JWT_PRIVATE_KEY: optionalSecret(1),
     JWT_PUBLIC_KEY: optionalSecret(1),
     REFRESH_TOKEN_PEPPER: optionalSecret(16),
@@ -60,21 +60,11 @@ const Env = z
   .refine((env) => !(isProduction(env) && env.TRUST_PROXY === true), {
     path: ['TRUST_PROXY'],
     message: 'en producción usa las direcciones o rangos del balanceador, no true',
-  })
-  .superRefine((env, context) => {
-    if (env.APP_ENV === 'local') return;
-    for (const name of ['JWT_PRIVATE_KEY', 'JWT_PUBLIC_KEY', 'REFRESH_TOKEN_PEPPER'] as const) {
-      if (env[name] === undefined) {
-        context.addIssue({
-          code: 'custom',
-          path: [name],
-          message: 'obligatoria fuera de APP_ENV=local',
-        });
-      }
-    }
   });
 
 export type Env = z.infer<typeof Env>;
+
+const SESSION_SECRETS = ['JWT_PRIVATE_KEY', 'JWT_PUBLIC_KEY', 'REFRESH_TOKEN_PEPPER'] as const;
 
 /** Valida las variables de entorno al arrancar; el mensaje nombra las variables, nunca sus valores. */
 export function loadEnv(source: Record<string, string | undefined> = process.env): Env {
@@ -85,6 +75,14 @@ export function loadEnv(source: Record<string, string | undefined> = process.env
   });
   if (!result.success) {
     throw new Error(`Variables de entorno inválidas:\n${z.prettifyError(result.error)}`);
+  }
+  // Las claves de sesión solo pueden faltar con APP_ENV=local escrito: nunca por omisión (T-019).
+  const missing =
+    source['APP_ENV'] === 'local' ? [] : SESSION_SECRETS.filter((name) => !result.data[name]);
+  if (missing.length) {
+    throw new Error(
+      `Variables de entorno inválidas:\n${missing.map((name) => `✖ obligatoria salvo con APP_ENV=local escrito\n  → at ${name}`).join('\n')}`,
+    );
   }
   return result.data;
 }
