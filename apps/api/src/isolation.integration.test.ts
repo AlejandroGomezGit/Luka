@@ -19,6 +19,7 @@ const TABLES = [
   'categories',
   'transactions',
   'attachments',
+  'refresh_tokens',
 ];
 const A = randomUUID();
 const B = randomUUID();
@@ -104,6 +105,14 @@ function insert(
       size_bytes: 1,
       sha256: 'x',
     },
+    refresh_tokens: {
+      id,
+      user_id: user,
+      device_id: refs['devices'],
+      family_id: id,
+      token_hash: `hash-${id}`,
+      expires_at: new Date(Date.now() + 86_400_000),
+    },
   };
   return tx`insert into ${tx(table)} ${tx(values[table] ?? {})}`;
 }
@@ -132,8 +141,29 @@ async function catalogProblems(sql: postgres.Sql | postgres.TransactionSql): Pro
        and not exists (select 1 from pg_attribute a where a.attrelid = c.oid and a.attname = 'user_id' and not a.attisdropped)
     union all
     select tablename || '.' || policyname || ': política sin app.current_user_id()' from pg_policies
-     where schemaname = 'public'
+     where schemaname = 'public' and roles <> '{luka_auth}'::name[]
        and (coalesce(qual, '') not like '%app.current_user_id()%' or coalesce(with_check, '') not like '%app.current_user_id()%')
+    union all
+    -- Las de luka_auth solo ven lo que fija una función auth.* (un correo, un id o un hash), nunca todo.
+    select tablename || '.' || policyname || ': política de luka_auth sin app.auth_*' from pg_policies
+     where schemaname = 'public' and roles = '{luka_auth}'::name[]
+       and ((qual is not null and qual not like '%app.auth_%') or (with_check is not null and with_check not like '%app.auth_%'))
+    union all
+    select c.relname || ': luka_auth puede cambiar, borrar o vaciar la tabla' from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'public' and c.relkind = 'r'
+       and has_table_privilege('luka_auth', c.oid, 'UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER')
+    union all
+    select 'luka_auth: puede iniciar sesión o se salta la RLS' from pg_roles
+     where rolname = 'luka_auth' and (rolcanlogin or rolsuper or rolbypassrls)
+    union all
+    select 'auth.' || p.proname || ': sin SECURITY DEFINER, sin search_path fijo, con EXECUTE para PUBLIC o de otro dueño'
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'auth'
+       and (not p.prosecdef
+         or not exists (select 1 from unnest(coalesce(p.proconfig, '{}')) setting where setting like 'search_path=%')
+         or exists (select 1 from aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a where a.grantee = 0)
+         or pg_get_userbyid(p.proowner) <> 'luka_auth')
     union all
     select c.relname || ': luka_app es dueño o tiene TRUNCATE, REFERENCES o TRIGGER' from pg_class c
       join pg_namespace n on n.oid = c.relnamespace
@@ -181,6 +211,7 @@ describe('AM-03 catálogo', () => {
         await tx`alter table zz_abierta enable row level security`;
         await tx`alter table zz_abierta force row level security`;
         await tx`create policy abierta on zz_abierta using (true) with check (true)`;
+        await tx`create function auth.zz_abierta() returns int language sql as 'select 1'`;
         const found = await catalogProblems(tx);
         throw Object.assign(new Error('deshacer'), { found });
       })
@@ -189,6 +220,7 @@ describe('AM-03 catálogo', () => {
       expect.arrayContaining([
         'zz_sin_rls: sin RLS activa y forzada',
         'zz_abierta.abierta: política sin app.current_user_id()',
+        'auth.zz_abierta: sin SECURITY DEFINER, sin search_path fijo, con EXECUTE para PUBLIC o de otro dueño',
       ]),
     );
   });
@@ -278,6 +310,7 @@ describe('AM-03 referencias a filas de otro usuario', () => {
     ['transactions', 'category_id', 'categories', {}],
     ['categories', 'parent_id', 'categories', {}],
     ['attachments', 'transaction_id', 'transactions', {}],
+    ['refresh_tokens', 'device_id', 'devices', {}],
   ])(
     'AM-03 con el contexto de A, %s.%s no puede apuntar a una fila de B',
     async (table, column, target, extra) => {
@@ -288,6 +321,83 @@ describe('AM-03 referencias a filas de otro usuario', () => {
       ).rejects.toMatchObject({ code: '23503' });
     },
   );
+});
+
+describe('AM-03 funciones auth.* (login, registro y refresco sin contexto)', () => {
+  const emailOf = (user: string) => `${user}@ejemplo.co`;
+  const fn = <T extends object>(work: (tx: postgres.TransactionSql) => Promise<T[]>) =>
+    as(null, work);
+
+  it('AM-03 luka_app solo puede ejecutar las tres funciones de auth y no puede hacerse pasar por luka_auth', async () => {
+    const callable = await owner<{ name: string }[]>`
+      select p.proname as name from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'auth' and has_function_privilege('luka_app', p.oid, 'EXECUTE') order by 1`;
+    expect(callable.map((row) => row.name)).toEqual([
+      'create_user',
+      'login_lookup',
+      'refresh_lookup',
+    ]);
+    await expect(as(null, (tx) => tx`set local role luka_auth`)).rejects.toMatchObject({
+      code: '42501',
+    });
+  });
+
+  it('AM-03 login_lookup devuelve solo el id y el hash de ese correo, sin importar mayúsculas', async () => {
+    const found = await fn(
+      (tx) => tx`select * from auth.login_lookup(${emailOf(A).toUpperCase()})`,
+    );
+    expect(found).toEqual([{ user_id: A, password_hash: null }]);
+    expect(await fn((tx) => tx`select * from auth.login_lookup('nadie@ejemplo.co')`)).toEqual([]);
+  });
+
+  it('AM-03 las funciones no abren una puerta general: después, sin contexto, users sigue en 0 filas', async () => {
+    const seen = await as(null, async (tx) => {
+      await tx`select * from auth.login_lookup(${emailOf(A)})`;
+      await tx`select set_config('app.auth_email', ${emailOf(B)}, true)`;
+      await tx`select set_config('app.auth_token_hash', ${`hash-${rows[B]?.['refresh_tokens'] ?? ''}`}, true)`;
+      return [...(await tx`select id from users`), ...(await tx`select id from refresh_tokens`)];
+    });
+    expect(seen).toEqual([]);
+  });
+
+  it('AM-03 refresh_lookup devuelve solo el token de ese hash', async () => {
+    const token = rows[A]?.['refresh_tokens'] ?? '';
+    const [found] = await fn((tx) => tx`select * from auth.refresh_lookup(${`hash-${token}`})`);
+    expect(found).toMatchObject({
+      id: token,
+      user_id: A,
+      device_id: rows[A]?.['devices'],
+      family_id: token,
+      used_at: null,
+      revoked_at: null,
+    });
+    expect(Object.keys(found ?? {}).sort()).toEqual(
+      ['device_id', 'expires_at', 'family_id', 'id', 'revoked_at', 'used_at', 'user_id'].sort(),
+    );
+    expect(await fn((tx) => tx`select * from auth.refresh_lookup('hash-desconocido')`)).toEqual([]);
+  });
+
+  it('HU-01 create_user crea la cuenta sin fijar el contexto, y distingue email_taken de id_taken sin revelar de quién es', async () => {
+    const id = randomUUID();
+    const create = (userId: string, email: string) =>
+      fn<{ status: string }>(
+        (tx) => tx`select auth.create_user(${userId}, ${email}, 'hash-argon2', 'Carla') as status`,
+      ).then(([row]) => row?.status);
+    const context = await as(null, async (tx) => {
+      await tx`select auth.create_user(${id}, ${`carla-${id}@ejemplo.co`}, 'hash-argon2', 'Carla')`;
+      const [row] = await tx<
+        { ctx: string | null }[]
+      >`select current_setting('app.user_id', true) as ctx`;
+      return row?.ctx ?? '';
+    });
+    expect(context).toBe('');
+    expect(await as(id, (tx) => tx`select id, password_hash from users`)).toEqual([
+      { id, password_hash: 'hash-argon2' },
+    ]);
+    expect(await create(randomUUID(), emailOf(A).toUpperCase())).toBe('email_taken');
+    expect(await create(B, `otra-${id}@ejemplo.co`)).toBe('id_taken');
+    expect(await as(B, (tx) => tx`select email from users`)).toEqual([{ email: emailOf(B) }]);
+  });
 });
 
 describe('AM-03 contexto por transacción', () => {
@@ -333,8 +443,10 @@ describe('AM-03 migración desde la versión anterior', () => {
     const previa = postgres(url.toString(), { max: 1, onnotice: () => undefined });
     await migrate(previa, 0, 2);
     await previa`insert into users (id, email, display_name) values (${A}, 'previa@ejemplo.co', 'Ana')`;
+    await previa`insert into consents (id, user_id, purpose, version, granted_at) values (${B}, ${A}, 'terms', 'v1', now())`;
     await migrate(previa, 2);
     expect(await previa`select id from users`).toEqual([{ id: A }]);
+    expect(await previa`select purpose from consents`).toEqual([{ purpose: 'terms' }]);
     await previa.end();
   });
 });

@@ -63,6 +63,19 @@ Siete entidades cubren el MVP: usuarios, dispositivos, cuentas, categorías, mov
 | `last_seen_at` | timestamptz | Última sincronización |
 | `revoked_at` | timestamptz, nulo | Un dispositivo revocado ya no puede sincronizar |
 
+### refresh_tokens (solo servidor)
+
+Tokens de refresco de la sesión (T-019, AM-02). No se sincronizan.
+
+| Campo | Tipo | Notas |
+| --- | --- | --- |
+| `id` | uuid | Clave primaria |
+| `user_id`, `device_id` | uuid | Clave foránea compuesta a `devices` (`user_id`, `id`) |
+| `family_id` | uuid | Las rotaciones de una misma sesión; reutilizar un token ya rotado revoca la familia |
+| `token_hash` | text, único | Solo la huella del token, nunca el token |
+| `created_at`, `expires_at` | timestamptz | 30 días |
+| `used_at`, `revoked_at` | timestamptz, nulo | Un solo uso; revocado al cerrar sesión o al detectar reutilización |
+
 ### accounts
 
 | Campo | Tipo | Notas |
@@ -131,7 +144,7 @@ Ocho entidades más aparecen según la fase; solo `consents` es necesaria desde 
 
 | Entidad | Fase | Dónde vive | Campos clave | Notas |
 | --- | --- | --- | --- | --- |
-| `consents` | MVP | Servidor | `purpose` (`terms`, `privacy`, `ai_external`, `bank_connection`), `version`, `granted_at`, `revoked_at` | Sin una fila vigente no se activa la función asociada |
+| `consents` | MVP | Servidor | `purpose` (`terms`, `privacy`, `adult`, `ai_external`, `bank_connection`), `version`, `granted_at`, `revoked_at` | Sin una fila vigente no se activa la función asociada. Al crear la cuenta se guardan tres filas: términos, autorización de datos y la confirmación de 18 años o más (`adult`, T-019) |
 | `budgets` | V2 | Ambos, sincronizable | `category_id` (nulo = total del mes), `month` (primer día), `amount_minor`, `currency` | Un presupuesto por categoría y mes; el consumo se calcula, no se guarda |
 | `recurring_rules` | V2 | Ambos, sincronizable | Plantilla del movimiento, `rrule` (RFC 5545), `starts_on`, `ends_on`, `next_run_on`, `paused_at`, `origin` (`user` o `detected`) | El servidor genera las ocurrencias con un id determinista (regla más fecha) para que nunca se dupliquen |
 | `category_rules` | V2 | Ambos, sincronizable | `match_type` (`contains`, `equals`, `starts_with`), `pattern`, `category_id`, `priority` | Reglas del usuario; ganan sobre el modelo |
@@ -175,7 +188,7 @@ La base de datos rechaza los estados imposibles y la capa de dominio los valida 
 | INV-05 | `currency` del movimiento es la de su cuenta al crearlo, y la moneda de una cuenta con movimientos no cambia; cuentan también los borrados, porque «Deshacer» o la sincronización pueden devolverlos | Dominio, API |
 | INV-06 | Una cuenta archivada no acepta movimientos nuevos, pero conserva los existentes: un movimiento que ya estaba en ella sigue editable mientras no cambie de cuenta; pasarlo a otra cuenta archivada se rechaza | Dominio, API |
 | INV-07 | Las categorías con `system_key` no se eliminan: solo se renombran o se archivan | Dominio, API |
-| INV-08 | Ningún dato de otro `user_id` se lee ni se escribe | Filtros de la API y seguridad a nivel de fila (T-026): la API se conecta como `luka_app` (sin superusuario ni `BYPASSRLS`) y cada petición corre en una transacción con `app.user_id` fijado por `withUser`; cada tabla tiene RLS forzada con una política `USING` y `WITH CHECK` sobre `app.current_user_id()`, y las claves foráneas entre tablas del usuario son compuestas (`user_id`, `id`), porque PostgreSQL comprueba las claves por encima de la RLS. Una prueba de catálogo rechaza tablas sin RLS forzada, políticas abiertas y privilegios de más |
+| INV-08 | Ningún dato de otro `user_id` se lee ni se escribe | Filtros de la API y seguridad a nivel de fila (T-026): la API se conecta como `luka_app` (sin superusuario ni `BYPASSRLS`) y cada petición corre en una transacción con `app.user_id` fijado por `withUser`; cada tabla tiene RLS forzada con una política `USING` y `WITH CHECK` sobre `app.current_user_id()`, y las claves foráneas entre tablas del usuario son compuestas (`user_id`, `id`), porque PostgreSQL comprueba las claves por encima de la RLS. Una prueba de catálogo rechaza tablas sin RLS forzada, políticas abiertas y privilegios de más. El inicio de sesión, el registro y el refresco leen `users` y `refresh_tokens` antes de conocer al usuario solo a través de tres funciones `auth.*` (`login_lookup`, `create_user` y `refresh_lookup`, T-019). Corren como `luka_auth`, un rol sin inicio de sesión ni `BYPASSRLS` cuyas políticas solo dejan ver lo que la función fijó: un correo, un id o un hash. Son `SECURITY DEFINER` con `search_path` fijo, y solo `luka_app` puede ejecutarlas |
 | INV-09 | Un movimiento «por revisar» no entra en saldos, presupuestos ni reportes hasta que se confirma | Dominio, API |
 
 ### Saldo de una cuenta
