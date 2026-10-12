@@ -34,5 +34,6 @@ La copia oficial del diseño vive aquí; si un documento y el código se contrad
 | [013](adr/013-api-versionada-y-problem-json.md) | API versionada en `/v1` con errores problem+json |
 | [014](adr/014-tuberia-de-captura.md) | Tubería de captura con fuentes enchufables |
 | [015](adr/015-limites-de-intentos-y-de-tasa.md) | Límites de intentos de credenciales y de tasa en Redis |
+| [016](adr/016-refresco-con-margen-de-reemision.md) | Refresco de un solo uso con margen de reemisión |
 
-Un ADR nuevo toma el siguiente número (`016-titulo.md`) con contexto, decisión, alternativas descartadas y consecuencias.
+Un ADR nuevo toma el siguiente número (`017-titulo.md`) con contexto, decisión, alternativas descartadas y consecuencias.

@@ -14,6 +14,10 @@ interface TestAppOptions {
   datastores?: Pick<Datastores, 'pingPostgres' | 'pingRedis'>;
   /** Reemplaza la conexión a Redis (las pruebas unitarias usan uno falso, sin red). */
   redis?: object;
+  /** Otros proveedores reemplazados por dobles (por ejemplo, el de contraseñas filtradas). */
+  overrides?: { provide: Type | symbol; useValue: unknown }[];
+  /** Rutas de prueba que no piden sesión, como «GET /v1/prueba/yo» (toda ruta es privada por defecto). */
+  publicRoutes?: string[];
   /** Controladores solo de prueba, montados bajo /v1. */
   controllers?: Type[];
   /** Recibe los logs (JSON por línea) en vez de descartarlos. */
@@ -25,7 +29,15 @@ interface TestAppOptions {
 /** Levanta la API en memoria con las mismas piezas que main.ts. */
 export async function createTestApp(
   env: Record<string, string>,
-  { datastores, redis, controllers = [], logStream, configure }: TestAppOptions = {},
+  {
+    datastores,
+    redis,
+    overrides = [],
+    publicRoutes = [],
+    controllers = [],
+    logStream,
+    configure,
+  }: TestAppOptions = {},
 ): Promise<NestFastifyApplication> {
   const parsed = loadEnv(env);
   let builder = Test.createTestingModule({
@@ -34,13 +46,16 @@ export async function createTestApp(
   });
   if (datastores) builder = builder.overrideProvider(Datastores).useValue(datastores);
   if (redis) builder = builder.overrideProvider(RedisClient).useValue(redis);
+  for (const { provide, useValue } of overrides) {
+    builder = builder.overrideProvider(provide).useValue(useValue);
+  }
   const moduleRef = await builder.compile();
   const app = moduleRef.createNestApplication<NestFastifyApplication>(createAdapter(parsed), {
     logger: false,
   });
   if (logStream) app.useLogger(app.get(Logger));
   configure?.(app.getHttpAdapter().getInstance());
-  await configureApp(app);
+  await configureApp(app, publicRoutes);
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
   return app;
