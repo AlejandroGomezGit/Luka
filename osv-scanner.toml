@@ -1,6 +1,6 @@
 # Excepciones de osv-scanner (T-043). Cada una lleva su motivo y caduca en 90 días o menos: al vencer,
 # el job «Dependencias» vuelve a fallar y scripts/osv-ignores.mjs lo avisa. Se revisan con cada
-# cambio de versión del SDK de Expo. Aprobadas el 2026-10-04.
+# cambio de versión del SDK de Expo. Aprobadas el 2026-10-04; la de sprintf-js, el 2026-10-11.
 
 [[IgnoredVulns]]
 id = "GHSA-vcc3-ghjq-m6fr"
@@ -26,3 +26,8 @@ reason = "uuid 7.0.3 solo está en xcode, de los plugins de configuración de Ex
 id = "GHSA-67mh-4wv8-2f99"
 ignoreUntil = 2026-12-31T00:00:00Z
 reason = "esbuild 0.18.20 solo está en drizzle-kit (generar migraciones), que no levanta el servidor de desarrollo de esbuild afectado. La corrección (0.25) va dentro de un paquete abandonado de drizzle-kit; Renovate propondrá actualizar drizzle-kit."
+
+[[IgnoredVulns]]
+id = "GHSA-hp3w-g68c-fv3c"
+ignoreUntil = 2026-12-31T00:00:00Z
+reason = "sprintf-js 1.0.3 (denegación de servicio con especificadores de precisión sin tope). Verificado el 2026-10-11: el aviso no tiene versión corregida (afecta a <= 1.1.3); el bundle de iOS no lo contiene (0 módulos de sprintf-js, argparse ni js-yaml entre 1404); y no está en la API en ejecución (pnpm why --prod no lo encuentra en @luka/api). Llega por @istanbuljs/load-nyc-config -> js-yaml 3 -> argparse 1 (DT-12)."
