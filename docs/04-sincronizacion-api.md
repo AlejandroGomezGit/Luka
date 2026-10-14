@@ -105,7 +105,7 @@ El MVP necesita 16 endpoints, y uno solo, `POST /v1/sync`, mueve todos los datos
 | `GET /v1/sync/snapshot` | Descarga completa y paginada para un dispositivo nuevo o con cursor vencido | Sesión | MVP |
 | `POST /v1/attachments` | Registra un adjunto y devuelve la URL prefirmada de subida | Sesión | MVP |
 | `GET /v1/attachments/{id}/url` | Devuelve la URL prefirmada de lectura | Sesión | MVP |
-| `GET /healthz` y `GET /readyz` | Estado del proceso y de sus dependencias, para el balanceador | Red interna | MVP |
+| `GET /healthz` y `GET /readyz` (también con `HEAD`) | Estado del proceso y de sus dependencias, para el balanceador | Red interna | MVP |
 | `DELETE /v1/devices/{id}` | Revoca un dispositivo | Sesión | V2 |
 | `GET /v1/export` | Exporta todos los datos del usuario (RF-04) | Sesión | V2 |
 | `POST /v1/imports` | Sube un extracto CSV para importarlo (CU-26) | Sesión | V2 |
@@ -150,7 +150,7 @@ Cada operación recibe su propio resultado y cada error HTTP tiene una reacción
 
 ### Errores de `/v1/auth` (T-019)
 
-Toda ruta pide un token de acceso salvo las que se listan una por una: `/healthz`, `/readyz`, `register`, `login` y `refresh`. Sin token, o con uno inválido, responden `401 unauthorized`.
+Toda ruta pide un token de acceso salvo las que se listan una por una, con su método: `GET` y `HEAD` de `/healthz` y `/readyz`, y `POST` de `register`, `login` y `refresh`. `HEAD` de cualquier otra ruta es privada, como su `GET`. Sin token, o con uno inválido, responden `401 unauthorized`.
 
 | Respuesta | Cuándo |
 | --- | --- |

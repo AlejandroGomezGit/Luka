@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 import { Problem, Readiness } from '@luka/contracts';
-import { Controller, HttpCode, HttpException, NotFoundException, Post } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpException, NotFoundException, Post } from '@nestjs/common';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { loadEnv, startupWarnings } from './config.js';
 import { toProblem } from './problem.filter.js';
@@ -44,6 +44,12 @@ class EchoController {
   echo(): void {
     // Solo recibe el cuerpo.
   }
+
+  /** Ruta privada: no está en publicRoutes. */
+  @Get('privada')
+  secret(): { ok: true } {
+    return { ok: true };
+  }
 }
 
 const healthy = { ok: true };
@@ -85,6 +91,23 @@ describe('salud (RNF-10)', () => {
     const res = await app.inject({ method: 'GET', url: '/readyz' });
     expect(res.statusCode).toBe(503);
     expect(res.json()).toEqual({ status: 'error', checks: { postgres: 'ok', redis: 'error' } });
+  });
+
+  it('#109 HEAD /healthz y HEAD /readyz responden sin sesión, como GET: 200, y 503 si falla una dependencia', async () => {
+    healthy.ok = true;
+    const head = (url: string) => app.inject({ method: 'HEAD', url });
+    expect((await head('/healthz')).statusCode).toBe(200);
+    expect((await head('/readyz')).statusCode).toBe(200);
+    healthy.ok = false;
+    expect((await head('/readyz')).statusCode).toBe(503);
+  });
+
+  it('#109 HEAD de una ruta privada sigue pidiendo sesión: 401 unauthorized', async () => {
+    for (const method of ['HEAD', 'GET'] as const) {
+      const res = await app.inject({ method, url: '/v1/prueba/privada' });
+      expect(res.statusCode).toBe(401);
+      expect(res.headers['content-type']).toContain('application/problem+json');
+    }
   });
 });
 

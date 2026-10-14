@@ -11,11 +11,14 @@ declare module 'fastify' {
 
 /**
  * Rutas que no piden sesión, una por una: toda ruta nueva es privada mientras no se agregue aquí.
- * Una ruta inexistente sigue en 404.
+ * Una ruta inexistente sigue en 404. Fastify crea la ruta HEAD de cada GET y cuenta como otra ruta:
+ * las de salud van con las dos, porque hay balanceadores y monitores que comprueban con HEAD (#109).
  */
 export const PUBLIC_ROUTES: ReadonlySet<string> = new Set([
   'GET /healthz',
+  'HEAD /healthz',
   'GET /readyz',
+  'HEAD /readyz',
   'POST /v1/auth/register',
   'POST /v1/auth/login',
   'POST /v1/auth/refresh',
