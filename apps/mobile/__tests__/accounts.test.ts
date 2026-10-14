@@ -100,6 +100,28 @@ describe('HU-02 cuentas', () => {
     expect(balanceOf(ctx, id)).toBe(100_000_00);
   });
 
+  it('HU-02 INV-09 una transferencia recibida por revisar no suma al saldo de la cuenta destino', async () => {
+    const ctx = await context();
+    const bank = created(createAccount(ctx, cash));
+    const savings = created(
+      createAccount(ctx, { ...cash, name: 'Ahorros', openingAmountMinor: 0 }),
+    );
+    const transfer = {
+      accountId: bank,
+      kind: 'transfer',
+      amountMinor: -40_000_00,
+      toAccountId: savings,
+      toAmountMinor: 40_000_00,
+    } as const;
+    movement(ctx, { ...transfer, reviewStatus: 'pending_review' });
+    expect(balanceOf(ctx, savings)).toBe(0);
+    expect(balanceOf(ctx, bank)).toBe(100_000_00);
+    // La misma transferencia, confirmada, sí cuenta en las dos cuentas.
+    movement(ctx, transfer);
+    expect(balanceOf(ctx, savings)).toBe(40_000_00);
+    expect(balanceOf(ctx, bank)).toBe(60_000_00);
+  });
+
   it('HU-02 el saldo inicial es cero o positivo, pero el saldo calculado puede ser negativo y se muestra bien', async () => {
     const ctx = await context();
     const id = created(createAccount(ctx, { ...cash, openingAmountMinor: 0 }));
