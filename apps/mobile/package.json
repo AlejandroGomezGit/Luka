@@ -9,7 +9,7 @@
     "build": "expo export --platform ios && if grep -rqs LUKA_DEV_SEED dist; then echo 'El cargador de datos de prueba quedó en el bundle de producción' >&2; exit 1; fi",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "jest --verbose"
+    "test": "jest"
   },
   "dependencies": {
     "@luka/domain": "workspace:*",
