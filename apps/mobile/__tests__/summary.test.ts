@@ -4,7 +4,7 @@ import { sql } from 'drizzle-orm';
 import { createAccount } from '../src/db/accounts';
 import { seedPredefinedCategories } from '../src/db/categories';
 import { monthlySummary, summaryCurrencies, summaryQuery } from '../src/db/summary';
-import { createTestDb, testClock, testRandom } from '../src/db/testing';
+import { bestTimeMs, createTestDb, testClock, testRandom } from '../src/db/testing';
 import { createTransaction } from '../src/db/transactions';
 import { insertRow, softDelete, type WriteContext } from '../src/db/write';
 
@@ -165,10 +165,9 @@ describe('HU-08 resumen mensual (CU-18)', () => {
       /SEARCH transactions USING INDEX \S+ \(user_id=\? AND occurred_on>\? AND occurred_on<\?\)/,
     );
     expect(plan).not.toContain('SCAN transactions');
-    const start = performance.now();
     const summary = monthlySummary(ctx.db, userId, '2026-09', 'COP');
     // Margen generoso para el CI; la medición en el simulador queda en el documento 02.
-    expect(performance.now() - start).toBeLessThan(200);
+    expect(bestTimeMs(() => monthlySummary(ctx.db, userId, '2026-09', 'COP'))).toBeLessThan(200);
     expect(summary.expenseCount).toBeGreaterThan(1_000);
   });
 });

@@ -32,3 +32,18 @@ export function testRandom(): () => Uint8Array {
   let seed = 0;
   return () => Uint8Array.from({ length: 16 }, (_, i) => (seed++ * 31 + i) % 256);
 }
+
+/**
+ * Milisegundos de la corrida más rápida de varias. Una sola medida de reloj incluye las pausas del
+ * sistema (otras tareas, memoria), que no son el costo de la consulta: con todo el monorepo en
+ * paralelo una consulta de 1 ms llegó a medir 1288 ms (#108).
+ */
+export function bestTimeMs(run: () => unknown, attempts = 3): number {
+  let best = Infinity;
+  for (let i = 0; i < attempts; i++) {
+    const start = performance.now();
+    run();
+    best = Math.min(best, performance.now() - start);
+  }
+  return best;
+}
