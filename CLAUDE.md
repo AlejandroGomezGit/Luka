@@ -75,6 +75,8 @@ TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con ex
 - Si un mensaje mío trae algo entre corchetes sin llenar (por ejemplo «[todo bien / vi esto: ___]»), no ejecutes la acción que depende de eso (mergear, push a main) y pregúntame.
 - Push a ramas de feature y abrir el PR no necesitan confirmación. Mergear y cualquier push a main requieren mi OK explícito.
 - Si mi confirmación para mergear es ambigua (por ejemplo «Si suba el #79», que puede ser subir o mergear) o no dice el número del PR, pregúntame antes de mergear.
+- Antes de mergear un PR cuyo último CI tenga más de 24 horas, o cuando main haya avanzado desde ese CI, vuelve a correr el CI y mergea solo si pasa.
+- Después de cada merge, comprueba el CI de main y avísame de inmediato si está rojo. Si main queda rojo, no empieces otra tarea ni mergees nada, tampoco documentación, sin mi OK.
 - Trabaja siempre en un git worktree aparte (por ejemplo ../Luka-dev). Mi Metro sirve la carpeta principal y solo debe ver lo que ya está en un commit; así un estado intermedio (por ejemplo, una migración a medio generar) nunca llega a mi simulador.
 - Para experimentos en la app (código temporal, pruebas de diseño) usa el simulador iPhone 17 con tu worktree y un Metro propio en otro puerto (por ejemplo 8082). No toques el iPhone 17 Pro ni el Metro que yo tenga corriendo.
 
