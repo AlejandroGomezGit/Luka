@@ -32,9 +32,14 @@ jobs:
       - run: pnpm turbo run lint typecheck test build --cache-dir=.turbo/cache
       # Integración de la API contra PostgreSQL y Redis reales con Testcontainers.
       - run: pnpm test:api
-      # build de @luka/mobile empaqueta iOS con Metro (valida R-06); expo-doctor revisa versiones del SDK.
+      # build de @luka/mobile empaqueta iOS con Metro (valida R-06). expo-doctor hace sus demás chequeos;
+      # el de versiones va aparte, porque exige el último parche aunque pnpm aún no deje instalarlo.
       - run: pnpm dlx expo-doctor
         working-directory: apps/mobile
+        env:
+          EXPO_DOCTOR_SKIP_DEPENDENCY_VERSION_CHECK: '1'
+      # Falla con un desfase real; un parche con menos tiempo que minimumReleaseAge solo se avisa (T-048).
+      - run: node scripts/expo-versions.mjs
 
   infra:
     name: Arranque limpio de Docker Compose

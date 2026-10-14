@@ -1,6 +1,9 @@
 packages:
   - apps/*
   - packages/*
+# Espera antes de instalar una versión recién publicada (defensa contra paquetes comprometidos). Es el
+# valor por defecto de pnpm (24 h), escrito aquí para que scripts/expo-versions.mjs lea el mismo (T-048).
+minimumReleaseAge: 1440
 allowBuilds:
   '@parcel/watcher': false
   '@swc/core': false
