@@ -3,7 +3,7 @@
   "description": "Actualizaciones automáticas (T-043, documento 06): los lunes, agrupadas y por el mismo CI.",
   "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
   "timezone": "America/Bogota",
-  "schedule": ["before 6am on monday"],
+  "schedule": ["on monday"],
   "dependencyDashboard": true,
   "dependencyDashboardTitle": "Panel de dependencias (Renovate)",
   "semanticCommits": "enabled",
