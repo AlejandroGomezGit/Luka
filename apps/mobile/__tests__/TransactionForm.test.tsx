@@ -50,6 +50,14 @@ function setup(
   );
 }
 
+// El primer montaje carga y transforma los módulos del formulario: 1,8 s a solas con la caché de Jest
+// fría y hasta 31 s con todo el monorepo en paralelo, frente a 35 ms de la prueba en sí (#108). Se
+// paga aquí, con su propio límite, para que los 20 s de cada prueba midan solo el comportamiento.
+beforeAll(async () => {
+  const view = await setup();
+  await view.unmount();
+}, 120_000);
+
 test('HU-03 al cambiar a una cuenta de otra moneda se conserva el número escrito y se ve el código de moneda', async () => {
   await setup();
   // El campo se vuelve a montar al cambiar de moneda: se busca de nuevo cada vez.
