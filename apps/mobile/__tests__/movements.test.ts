@@ -4,7 +4,7 @@ import { sql } from 'drizzle-orm';
 import { createAccount, listActiveAccounts } from '../src/db/accounts';
 import { seedPredefinedCategories } from '../src/db/categories';
 import { prepareLocalData } from '../src/db/prepare';
-import { createTestDb, testClock, testRandom } from '../src/db/testing';
+import { bestTimeMs, createTestDb, testClock, testRandom } from '../src/db/testing';
 import {
   backfillTransactionSearch,
   countTransactions,
@@ -325,11 +325,7 @@ describe('HU-05 lista de movimientos (CU-10)', () => {
     expect(plan({})).toContain('transactions_list');
     expect(plan({ kind: 'expense', text: 'cafe' })).toContain('transactions_list');
 
-    const time = (run: () => unknown) => {
-      const start = performance.now();
-      run();
-      return performance.now() - start;
-    };
+    const time = bestTimeMs;
     // Márgenes generosos para el CI; en el iPhone 17 la primera página tarda menos de 1 ms.
     expect(time(() => listTransactions(ctx.db, userId, {}, null, 50))).toBeLessThan(200);
     expect(

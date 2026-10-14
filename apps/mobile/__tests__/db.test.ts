@@ -19,7 +19,7 @@ import {
   type WriteContext,
 } from '../src/db/write';
 
-import { migrationsFolder } from '../src/db/testing';
+import { bestTimeMs, migrationsFolder } from '../src/db/testing';
 
 let time = Date.UTC(2026, 9, 2, 12);
 const clock: Clock = { now: () => time };
@@ -173,4 +173,14 @@ describe('ruta única de escritura', () => {
         .all(),
     ).toHaveLength(1);
   });
+});
+
+test('#108 bestTimeMs mide la corrida más rápida: una pausa del sistema en una sola no la cambia', () => {
+  let runs = 0;
+  const best = bestTimeMs(() => {
+    // Solo la primera corrida es lenta, como cuando el sistema la interrumpe.
+    if (runs++ === 0) for (const end = performance.now() + 50; performance.now() < end;);
+  });
+  expect(runs).toBe(3);
+  expect(best).toBeLessThan(25);
 });
