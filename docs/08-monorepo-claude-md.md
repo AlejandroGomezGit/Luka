@@ -40,7 +40,10 @@ El repositorio incluye un `.env.example` con valores falsos y nunca un `.env` re
 | --- | --- | --- | --- |
 | `APP_ENV` | Entorno de ejecución | API y app | `local` |
 | `DATABASE_URL` | Conexión a PostgreSQL | API y worker | `postgres://luka_app:luka-app-local@localhost:15432/luka` |
-| `REDIS_URL` | Cola de trabajos | API y worker | `redis://localhost:6379` |
+| `MIGRATION_DATABASE_URL` | Conexión del dueño de las tablas (`luka`) para `pnpm db:migrate`; sin ella, el valor por defecto solo vale con `APP_ENV=local` escrito | Migraciones | `postgres://luka:luka@localhost:15432/luka` |
+| `REDIS_URL` | Límite de tasa e intentos de credenciales; desde T-021, también la cola de trabajos | API y worker | `redis://localhost:6379` |
+| `RATE_LIMIT_KEY_SECRET` | Clave del HMAC que esconde correos e IP en las claves de Redis (ADR-015); la API no arranca sin ella | API | `falso-solo-local-cambiar-en-produccion` |
+| `TRUST_PROXY` | Proxies de confianza para leer la IP de `X-Forwarded-For`: `false`, o sus direcciones y rangos separados por comas; `true` no vale en producción y un número de saltos se rechaza siempre | API | `false` |
 | `JWT_PRIVATE_KEY` y `JWT_PUBLIC_KEY` | Firma y verificación de tokens de acceso | API | Se generan en local y no se versionan |
 | `REFRESH_TOKEN_PEPPER` | Secreto para el hash de los tokens de refresco | API | `cambia-esto-en-local` |
 | `APPLE_CLIENT_ID` | Audiencia esperada del token de Sign in with Apple | API | `com.ejemplo.luka` |

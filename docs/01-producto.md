@@ -189,30 +189,31 @@ Se detallan los cinco casos de uso que más condicionan la arquitectura: iniciar
 ### CU-01 Registrarse e iniciar sesión
 
 - **Actor:** Usuario. **Requisitos:** RF-01, RNF-07.
-- **Precondiciones:** app instalada y con conexión. Es el único paso del MVP que exige red, y solo la primera vez.
-- **Disparador:** el usuario abre la app por primera vez o su sesión expiró.
+- **Precondiciones:** app instalada y con conexión. La cuenta es opcional: Luka funciona completa sin ella y con los datos solo en el iPhone. Crear cuenta o iniciar sesión es lo único del MVP que exige red.
+- **Disparador:** el usuario toca «Cuenta y privacidad», bajo «Administrar» en Inicio, o su sesión expiró.
 
 **Flujo principal**
 
-1. El usuario elige «Continuar con Apple» o «Correo».
-2. Con correo, escribe correo y contraseña; el servidor valida el formato y que el correo no exista.
+1. El usuario elige «Crear cuenta» o «Iniciar sesión» con su correo («Continuar con Apple» llega con T-020).
+2. Para crear la cuenta escribe correo y contraseña y marca, por separado, las tres casillas: términos, autorización de datos y 18 años o más. El servidor valida el formato y que el correo no exista.
 3. El servidor crea el usuario, guarda el hash Argon2id y devuelve un token de acceso de vida corta y un token de refresco.
-4. La app guarda los tokens en el Keychain de iOS y crea la base de datos local.
-5. La app carga las categorías predefinidas y lleva al usuario a crear su primera cuenta (CU-05).
+4. La app guarda los tokens en el Keychain de iOS. La base local ya existía y sus datos se conservan.
+5. «Cuenta y privacidad» muestra el correo de la sesión.
 
 **Flujos alternativos**
 
 - Con Apple, el servidor valida el token de identidad de Apple y crea o reconoce al usuario.
-- Si el correo ya existe, la app ofrece iniciar sesión o recuperar la contraseña.
-- Si el usuario ya tiene datos y entra desde un dispositivo nuevo, se ejecuta una sincronización completa (CU-21).
+- Si el correo ya existe, la app ofrece iniciar sesión; recuperar la contraseña llega con T-021.
+- Si el iPhone ya tiene datos, sin cuenta o de otra cuenta, la app pregunta qué hacer con ellos antes de usar la sesión («Este iPhone ya tiene datos», T-019c).
+- Desde el H3, si el usuario ya tiene datos en el servidor y entra desde un dispositivo nuevo, se ejecuta una sincronización completa (CU-21).
 
 **Errores**
 
-- Sin conexión en el primer inicio: la app explica que necesita red solo esta vez.
+- Sin conexión: la app explica que crear cuenta o iniciar sesión necesita red; el resto de la app sigue funcionando.
 - Credenciales inválidas: mensaje genérico que no revela si el correo existe, con espera creciente tras varios intentos.
 - Token de refresco vencido o revocado: la app pide iniciar sesión de nuevo sin borrar los cambios locales pendientes.
 
-**Postcondiciones:** sesión activa, tokens en el Keychain y base local lista.
+**Postcondiciones:** sesión activa y tokens en el Keychain; los datos locales siguen en el iPhone.
 
 ### CU-06 Registrar una transferencia entre cuentas
 
