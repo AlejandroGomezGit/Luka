@@ -1,6 +1,6 @@
 /**
  * Foto del recibo en el dispositivo (HU-06, CU-11): se reduce, se guarda dentro de la app sin metadatos
- * de ubicación (la reducción vuelve a codificar la imagen; verificado en la prueba de concepto de T-018)
+ * de ubicación (la reducción vuelve a codificar la imagen, y si aun así quedara el GPS no se guarda, #18)
  * y se borra cuando su foto deja de estar vigente. Las operaciones de archivo llegan en `ReceiptIO`
  * (expoReceiptIO.ts en la app, uno en memoria en las pruebas).
  */
@@ -9,6 +9,7 @@ import { and, eq, isNotNull } from 'drizzle-orm';
 import type { ReceiptFile } from '../db/attachments';
 import { liveReceiptIds } from '../db/attachments';
 import type { LocalDb } from '../db/types';
+import { jpegHasLocation } from './jpeg';
 
 /** Lado largo de la foto guardada: un recibo sigue legible y pesa unos 100 KB. */
 export const RECEIPT_MAX_SIDE = 1600;
@@ -17,13 +18,15 @@ export const MIN_FREE_BYTES = 20 * 1024 * 1024;
 
 export type ReceiptSource = 'camera' | 'library';
 export type ReceiptError =
-  'cancelled' | 'camera_denied' | 'no_space' | 'resize_failed' | 'save_failed';
+  'cancelled' | 'camera_denied' | 'no_space' | 'resize_failed' | 'location_kept' | 'save_failed';
 
 export interface ReceiptIO {
   /** Abre la cámara o la galería; el archivo elegido queda en la caché del selector. */
   pick: (source: ReceiptSource) => Promise<{ uri: string } | 'cancelled' | 'camera_denied'>;
   /** Reduce la imagen a `maxSide` en su lado largo y la guarda como JPEG temporal; devuelve su ruta. */
   shrink: (uri: string, maxSide: number) => Promise<string>;
+  /** Los bytes de un archivo, para revisar la foto reducida antes de guardarla. */
+  bytes: (uri: string) => Promise<Uint8Array>;
   freeBytes: () => number;
   /** Mueve el temporal a la carpeta de la app con el id de la foto; devuelve tamaño y sha256. */
   save: (tempUri: string, id: string) => Promise<Pick<ReceiptFile, 'sizeBytes' | 'sha256'>>;
@@ -49,6 +52,11 @@ export async function captureReceipt(
     if (io.freeBytes() < MIN_FREE_BYTES) return { ok: false, error: 'no_space' };
     try {
       temp = await io.shrink(picked.uri, RECEIPT_MAX_SIDE);
+      // Falla cerrado: con ubicación no se guarda, y si no es un JPEG legible no se puede asegurar que
+      // no la traiga; como la reducción siempre produce un JPEG, eso es una reducción fallida (#18).
+      const location = jpegHasLocation(await io.bytes(temp));
+      if (location !== false)
+        return { ok: false, error: location ? 'location_kept' : 'resize_failed' };
     } catch {
       return { ok: false, error: 'resize_failed' };
     }

@@ -29,13 +29,15 @@ export const expoReceiptIO: ReceiptIO = {
   shrink: async (uri, maxSide) => {
     const original = await ImageManipulator.manipulate(uri).renderAsync();
     const scale = Math.min(1, maxSide / Math.max(original.width, original.height));
-    // Volver a codificar la imagen deja fuera el GPS y los demás metadatos (prueba de concepto de T-018).
+    // Volver a codificar la imagen deja fuera el GPS y los demás metadatos (verificado en el simulador, #18);
+    // captureReceipt lo comprueba antes de guardar.
     const resized = await ImageManipulator.manipulate(uri)
       .resize({ width: Math.round(original.width * scale) })
       .renderAsync();
     const saved = await resized.saveAsync({ compress: 0.7, format: SaveFormat.JPEG });
     return saved.uri;
   },
+  bytes: (uri) => new File(uri).bytes(),
   freeBytes: () => Paths.availableDiskSpace,
   save: async (tempUri, id) => {
     const dir = folder();

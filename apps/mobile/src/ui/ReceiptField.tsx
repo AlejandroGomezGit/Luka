@@ -12,6 +12,8 @@ const MESSAGES: Record<ReceiptError, string> = {
   camera_denied: 'Luka no tiene permiso para usar la cámara. Puedes darlo en Ajustes.',
   no_space: 'No hay espacio suficiente en el iPhone para guardar la foto.',
   resize_failed: 'No se pudo procesar la foto. Prueba con otra.',
+  location_kept:
+    'No se pudo quitar la ubicación de la foto, así que no se guardó. Prueba con otra.',
   save_failed: 'No se pudo guardar la foto. Inténtalo de nuevo.',
 };
 

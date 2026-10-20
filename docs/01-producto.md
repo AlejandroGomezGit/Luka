@@ -349,7 +349,8 @@ Se detallan los cinco casos de uso que más condicionan la arquitectura: iniciar
 **Errores**
 
 - Sin espacio: «No hay espacio suficiente en el iPhone para guardar la foto.».
-- La foto no se puede reducir: «No se pudo procesar la foto. Prueba con otra.»; no se puede guardar: «No se pudo guardar la foto. Inténtalo de nuevo.».
+- La foto no se puede reducir, o lo reducido no es un JPEG legible: «No se pudo procesar la foto. Prueba con otra.»; no se puede guardar: «No se pudo guardar la foto. Inténtalo de nuevo.».
+- La foto reducida aún trae ubicación: no se guarda y se avisa «No se pudo quitar la ubicación de la foto, así que no se guardó. Prueba con otra.»; no queda ningún archivo.
 - Más de 10 etiquetas o una de más de 30 caracteres: «Puedes poner hasta 10 etiquetas.» o «Cada etiqueta puede tener hasta 30 caracteres.».
 - Si el movimiento no se guarda, la foto recién elegida se borra: «No se pudo guardar el movimiento. Vuelve a intentarlo.». Nunca quedan archivos sin fila ni filas sin archivo.
 
