@@ -16,7 +16,7 @@ El diagrama no se exporta a Markdown, así que esta tabla lleva los mismos nombr
 | ---- | --------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ | ---------------------------- |
 | H0   | Cimientos                   | Monorepo, CI, Docker Compose y esqueletos              | Pipeline en verde con una prueba por paquete; docker compose up funciona                                     | T-001 a T-009                |
 | H1   | Núcleo local                | App sin servidor: cuentas, movimientos y resumen       | HU-02 a HU-08 con sus pruebas; la app funciona completa sin red                                              | T-010 a T-018, T-044 y T-046 |
-| H2   | API y autenticación         | Registro, sesión, perfil, dispositivos y borrado       | HU-01 y HU-10 en verde; aislamiento entre usuarios probado (AM-03)                                           | T-019 a T-026, T-043 y T-047 |
+| H2   | API y autenticación         | Registro, sesión, perfil, dispositivos y borrado       | HU-01 y HU-10 en verde; aislamiento entre usuarios probado (AM-03)                                           | T-019 a T-026, T-043, T-047, T-048 y T-049 |
 | H3   | Sincronización              | Motor propio, reloj híbrido, conflictos y simulador    | Simulación de 1 000 semillas sin divergencia (RNF-05) y E2E sin red                                          | T-027 a T-034                |
 | H4   | Endurecimiento y TestFlight | Adjuntos, observabilidad, seguridad y staging          | RNF-01 a RNF-14 verificados; MVP estable en TestFlight para uso propio                                       | T-035 a T-042 y T-045        |
 | H5   | V2                          | Captura de mensajes, presupuestos, CSV y categorizador | Requisitos V2 de prioridad Must en verde y panel de operación activo                                         | Por definir                  |
@@ -25,7 +25,7 @@ El diagrama no se exporta a Markdown, así que esta tabla lleva los mismos nombr
 
 ## Backlog inicial
 
-Son 47 issues para los hitos 0 a 4, es decir, todo el MVP (T-043 se agregó al cerrar el H0; T-044 y T-045, con las maquetas de `docs/diseno/`, y T-046 durante el H1, y T-047 durante el H2); V2 y V3 se mantienen como épicas hasta que se acerquen. Cada issue apunta a la historia, el caso de uso o el requisito que lo justifica, y Claude Code puede crearlos en GitHub con `gh issue create` a partir de esta tabla.
+Son 49 issues para los hitos 0 a 4, es decir, todo el MVP (T-043 se agregó al cerrar el H0; T-044 y T-045, con las maquetas de `docs/diseno/`, y T-046 durante el H1, y T-047, T-048 y T-049 durante el H2). T-019 se dividió en T-019a (#95), T-019b (#96) y T-019c (#97), y T-019c en sus maquetas (T-019c0, #105), c1a (#123), c1b (#124) y las pantallas, que siguen en #97; V2 y V3 se mantienen como épicas hasta que se acerquen. Cada issue apunta a la historia, el caso de uso o el requisito que lo justifica, y Claude Code puede crearlos en GitHub con `gh issue create` a partir de esta tabla.
 
 | ID    | Issue                                                                                                  | Hito | Etiquetas                          | Referencias            |
 | ----- | ------------------------------------------------------------------------------------------------------ | ---- | ---------------------------------- | ---------------------- |
@@ -59,6 +59,8 @@ Son 47 issues para los hitos 0 a 4, es decir, todo el MVP (T-043 se agregó al c
 | T-026 | Seguridad a nivel de fila y pruebas de aislamiento entre usuarios                                      | H2   | `feature` `db` `security`          | INV-08, AM-03          |
 | T-043 | Tubería de seguridad en CI: gitleaks, osv-scanner y Renovate; CodeQL cuando el repositorio sea público | H2   | `ci` `security`                    | AM-09, AM-10           |
 | T-047 | El lockfile vuelve a resolver la app al agregar una dependencia a la API                               | H2   | `chore` `infra`                    | Documento 3            |
+| T-048 | expo-doctor no bloquea el CI por parches más nuevos que la espera de pnpm | H2 | `chore` `infra` | Documento 6 |
+| T-049 | Renovate: ampliar el horario a todo el lunes | H2 | `chore` `infra` | Documento 6 |
 | T-027 | Reloj lógico híbrido con pruebas de propiedades                                                        | H3   | `feature` `domain` `sync`          | ADR-006                |
 | T-028 | Fusión de operaciones por campo y por grupo de campos                                                  | H3   | `feature` `domain` `sync`          | Documento 4            |
 | T-029 | Outbox y estado de sincronización en el dispositivo                                                    | H3   | `feature` `mobile` `sync`          | RF-23, RF-26           |

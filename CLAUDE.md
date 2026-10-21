@@ -16,11 +16,11 @@ Si el código y un documento se contradicen, no lo resuelvas en silencio: avísa
 
 ## Stack y estructura
 
-TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con expo-sqlite y Drizzle. API: NestJS con Fastify, PostgreSQL con Drizzle, Redis y BullMQ. Contratos con Zod y OpenAPI. Monorepo con pnpm y Turborepo.
+TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con expo-sqlite y Drizzle. API: NestJS con Fastify, PostgreSQL con SQL directo (postgres.js; el esquema y las migraciones, con Drizzle en `@luka/schema-pg`) y Redis; BullMQ llega con T-021. Contratos con Zod y OpenAPI. Monorepo con pnpm y Turborepo.
 
 - apps/mobile y apps/api
 - packages/domain, contracts, schema-pg, schema-sqlite y config
-- infra/ (Terraform y Docker Compose) y docs/
+- infra/ (Docker Compose; Terraform llega con T-040) y docs/
 
 ## Comandos
 
@@ -77,6 +77,7 @@ TypeScript en todo el repositorio. App: Expo, React Native y Expo Router, con ex
 - Si mi confirmación para mergear es ambigua (por ejemplo «Si suba el #79», que puede ser subir o mergear) o no dice el número del PR, pregúntame antes de mergear.
 - Antes de mergear un PR cuyo último CI tenga más de 24 horas, o cuando main haya avanzado desde ese CI, vuelve a correr el CI y mergea solo si pasa.
 - Después de cada merge, comprueba el CI de main y avísame de inmediato si está rojo. Si main queda rojo, no empieces otra tarea ni mergees nada, tampoco documentación, sin mi OK.
+- Nunca uses `gh pr merge --admin`, ni `--no-verify`, ni saltes un check requerido. Si algo bloquea un merge o un commit, dímelo.
 - Trabaja siempre en un git worktree aparte (por ejemplo ../Luka-dev). Mi Metro sirve la carpeta principal y solo debe ver lo que ya está en un commit; así un estado intermedio (por ejemplo, una migración a medio generar) nunca llega a mi simulador.
 - Para experimentos en la app (código temporal, pruebas de diseño) usa el simulador iPhone 17 con tu worktree y un Metro propio en otro puerto (por ejemplo 8082). No toques el iPhone 17 Pro ni el Metro que yo tenga corriendo.
 
