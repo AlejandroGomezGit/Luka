@@ -17,6 +17,9 @@ import {
 } from '../src/db/transactions';
 import { insertRow, softDelete, type WriteContext } from '../src/db/write';
 
+/** Keychain vacío: estas pruebas no tratan de la sesión. */
+const noTokens = { clear: () => Promise.resolve() };
+
 const userId = '0199a6f0-0000-7000-8000-000000000001';
 const BOGOTA = 'America/Bogota';
 const cat = (key: string) => predefinedCategoryId(userId, key);
@@ -286,7 +289,7 @@ describe('HU-05 lista de movimientos (CU-10)', () => {
       reviewStatus: 'confirmed',
     });
     // El relleno corre después del primer render (DatabaseProvider), lote a lote.
-    prepareLocalData(ctx.db, ctx.clock, ctx.random);
+    await prepareLocalData(ctx.db, ctx.clock, ctx.random, noTokens);
     expect(countTransactions(ctx.db, userId, { text: 'panaderia' })).toBe(0);
     fillSearchInBackground(ctx.db, (task) => task());
     expect(countTransactions(ctx.db, userId, { text: 'panaderia' })).toBe(1);

@@ -6,6 +6,9 @@ import { prepareLocalData } from '../src/db/prepare';
 import { createTestDb, testClock, testRandom } from '../src/db/testing';
 import { updateRow, type WriteContext } from '../src/db/write';
 
+/** Keychain vacío: estas pruebas no tratan de la sesión. */
+const noTokens = { clear: () => Promise.resolve() };
+
 const userId = '0199a6f0-0000-7000-8000-000000000001';
 
 async function context(): Promise<WriteContext> {
@@ -23,7 +26,7 @@ const ids = (ctx: WriteContext) =>
 describe('HU-07 categorías predefinidas', () => {
   it('HU-07 al empezar ya hay categorías: el primer arranque siembra las 75', async () => {
     const db = await createTestDb();
-    const { userId: localUser } = prepareLocalData(db, testClock(), testRandom());
+    const { userId: localUser } = await prepareLocalData(db, testClock(), testRandom(), noTokens);
     const rows = db.select().from(categories).all();
     expect(rows).toHaveLength(PREDEFINED_CATEGORIES.length);
     const groceries = rows.find((row) => row.systemKey === 'food.groceries');
@@ -41,7 +44,7 @@ describe('HU-07 categorías predefinidas', () => {
 
   it('HU-07 la siembra escribe un emoji en cada categoría, nunca un token antiguo como «cart»', async () => {
     const db = await createTestDb();
-    prepareLocalData(db, testClock(), testRandom());
+    await prepareLocalData(db, testClock(), testRandom(), noTokens);
     const icons = db
       .select({ icon: categories.icon })
       .from(categories)
