@@ -12,6 +12,7 @@ import {
   RECEIPT_MAX_SIDE,
   removeDeletedReceiptFiles,
 } from '../src/files/receipts';
+import { testJpeg } from '../src/files/testing';
 
 const userId = '0199a6f0-0000-7000-8000-000000000001';
 const BOGOTA = 'America/Bogota';
@@ -30,6 +31,8 @@ function fakeIO(overrides: Partial<ReceiptIO> = {}) {
       files.add('cache/ImageManipulator/out.jpg');
       return Promise.resolve('cache/ImageManipulator/out.jpg');
     },
+    // Lo normal: la reducción vuelve a codificar la foto y deja un Exif sin ubicación.
+    bytes: () => Promise.resolve(testJpeg({ exif: 'plain' })),
     freeBytes: () => 10 * MIN_FREE_BYTES,
     save: (temp, id) => {
       files.delete(temp);
@@ -96,6 +99,30 @@ describe('HU-06 tomar o elegir la foto del recibo', () => {
       error: 'save_failed',
     });
     expect([...half.files]).toEqual([]);
+  });
+
+  it('HU-06 #18 si la foto reducida conserva la ubicación, no se guarda y no queda ningún archivo', async () => {
+    const { io, files } = fakeIO({ bytes: () => Promise.resolve(testJpeg({ exif: 'gps' })) });
+    expect(await captureReceipt(io, 'library', 'foto-1')).toEqual({
+      ok: false,
+      error: 'location_kept',
+    });
+    expect([...files]).toEqual([]);
+  });
+
+  it('HU-06 #18 si la foto reducida no es un JPEG legible o no se puede leer, falla como la reducción y no deja archivos', async () => {
+    const outcomes = [
+      () => Promise.resolve(Uint8Array.from([0x89, 0x50, 0x4e, 0x47])),
+      () => Promise.reject(new Error('no se pudo leer')),
+    ];
+    for (const bytes of outcomes) {
+      const { io, files } = fakeIO({ bytes });
+      expect(await captureReceipt(io, 'library', 'foto-1')).toEqual({
+        ok: false,
+        error: 'resize_failed',
+      });
+      expect([...files]).toEqual([]);
+    }
   });
 });
 

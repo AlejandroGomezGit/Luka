@@ -14,6 +14,7 @@ import { seedPredefinedCategories } from '../src/db/categories';
 import { LocalSessionProvider, type LocalSession } from '../src/db/session';
 import { createTestDb, testClock, testRandom } from '../src/db/testing';
 import * as transactionsModule from '../src/db/transactions';
+import { testJpeg } from '../src/files/testing';
 import { blockNetwork } from '../src/testing';
 import { UNDO_SECONDS } from '../src/ui/UndoBar';
 import { UndoProvider } from '../src/undo';
@@ -30,7 +31,14 @@ const mockIO: {
   freeBytes: number;
   failShrink: boolean;
   pickCalls: number;
-} = { pick: { uri: 'cache/ImagePicker/IMG.jpg' }, freeBytes: 1e9, failShrink: false, pickCalls: 0 };
+  bytes: Uint8Array;
+} = {
+  pick: { uri: 'cache/ImagePicker/IMG.jpg' },
+  freeBytes: 1e9,
+  failShrink: false,
+  pickCalls: 0,
+  bytes: new Uint8Array(),
+};
 
 // Hoja inferior como en iOS: al cerrarse, `onDismiss` llega después, cuando termina la animación.
 // `finishClosing` la termina; mientras tanto iOS no presenta otra pantalla (el selector de fotos).
@@ -69,6 +77,7 @@ jest.mock('../src/files/expoReceiptIO', () => ({
       mockFiles.add('cache/ImageManipulator/out.jpg');
       return Promise.resolve('cache/ImageManipulator/out.jpg');
     },
+    bytes: () => Promise.resolve(mockIO.bytes),
     freeBytes: () => mockIO.freeBytes,
     save: (temp: string, id: string) => {
       mockFiles.delete(temp);
@@ -93,6 +102,7 @@ beforeEach(() => {
   mockIO.freeBytes = 1e9;
   mockIO.failShrink = false;
   mockIO.pickCalls = 0;
+  mockIO.bytes = testJpeg({ exif: 'plain' });
   mockDismissals.length = 0;
 });
 afterEach(() => {
@@ -230,6 +240,21 @@ test('HU-06 cancelar, cámara sin permiso, falta de espacio y fallo al reducir m
     await screen.findByText('No se pudo procesar la foto. Prueba con otra.'),
   ).toBeOnTheScreen();
 
+  expect(screen.queryByRole('image', { name: 'Foto del recibo' })).toBeNull();
+  expect([...mockFiles]).toEqual([]);
+  expect(session.db.select().from(attachments).all()).toEqual([]);
+});
+
+test('HU-06 #18 si la foto reducida conserva la ubicación, se avisa en español y no quedan archivos ni filas', async () => {
+  const session = await app();
+  await fireEvent.press(screen.getByRole('button', { name: 'Agregar' }));
+  mockIO.bytes = testJpeg({ exif: 'gps' });
+  await addPhoto();
+  expect(
+    await screen.findByText(
+      'No se pudo quitar la ubicación de la foto, así que no se guardó. Prueba con otra.',
+    ),
+  ).toBeOnTheScreen();
   expect(screen.queryByRole('image', { name: 'Foto del recibo' })).toBeNull();
   expect([...mockFiles]).toEqual([]);
   expect(session.db.select().from(attachments).all()).toEqual([]);
