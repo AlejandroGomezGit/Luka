@@ -29,7 +29,7 @@
     "@luka/config": "workspace:*",
     "@swc/core": "^1.16.13",
     "@swc/jest": "^0.2.39",
-    "@types/node": "^22.20.4",
+    "@types/node": "^24.0.0",
     "drizzle-kit": "^0.31.11",
     "jest": "^30.5.2"
   }

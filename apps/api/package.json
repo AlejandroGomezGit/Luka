@@ -39,7 +39,7 @@
     "@swc/jest": "^0.2.39",
     "@testcontainers/postgresql": "^12.2.0",
     "@testcontainers/redis": "^12.2.0",
-    "@types/node": "^22.20.4",
+    "@types/node": "^24.0.0",
     "jest": "^30.5.2",
     "testcontainers": "^12.2.0"
   }
