@@ -71,18 +71,33 @@ function memoryTokens(initial: StoredSession | null = null) {
   return { store, stored: () => stored };
 }
 
+/** Dispositivo falso: renew() entrega otro id, como renewDeviceId en device_profile. */
+function fakeDevice() {
+  const ids = ['0199a6f0-0000-7000-8000-0000000000d1', '0199a6f0-0000-7000-8000-0000000000d2'];
+  let renewals = 0;
+  return {
+    id: () => ids[Math.min(renewals, 1)] ?? '',
+    renew: () => {
+      renewals++;
+      return ids[1] ?? '';
+    },
+    renewals: () => renewals,
+  };
+}
+
 function setup(reply: Parameters<typeof fakeApi>[0], initial: StoredSession | null = null) {
   const api = fakeApi(reply);
   const tokens = memoryTokens(initial);
+  const device = fakeDevice();
   const session = createAuthSession({
     baseUrl: 'https://api.ejemplo.co',
     fetch: api.fetch,
     tokens: tokens.store,
     clock: { now: () => NOW },
-    device: { id: () => '0199a6f0-0000-7000-8000-0000000000d1' },
+    device,
     appVersion: '0.1.0',
   });
-  return { session, calls: api.calls, tokens };
+  return { session, calls: api.calls, tokens, device };
 }
 
 const registerInput = {
@@ -125,6 +140,38 @@ describe('HU-01 cliente de /v1/auth: registro e inicio de sesión', () => {
       error: 'validation_failed',
     });
     expect(calls).toEqual([]);
+  });
+});
+
+describe('HU-01 device_unavailable: id de dispositivo nuevo y un solo reintento', () => {
+  it('HU-01 el primer device_unavailable cambia el id del dispositivo y reintenta con él', async () => {
+    let attempt = 0;
+    const { session, calls, device } = setup(() =>
+      ++attempt === 1
+        ? { status: 409, body: problem(409, 'device_unavailable') }
+        : { status: 201, body: pair(6) },
+    );
+    expect(await session.register(registerInput)).toEqual({ ok: true });
+    expect(device.renewals()).toBe(1);
+    const sent = calls.map((call) => RegisterRequest.parse(call.body).deviceId);
+    expect(sent).toEqual([
+      '0199a6f0-0000-7000-8000-0000000000d1',
+      '0199a6f0-0000-7000-8000-0000000000d2',
+    ]);
+  });
+
+  it('HU-01 un segundo device_unavailable termina en error, sin bucle', async () => {
+    const { session, calls, device, tokens } = setup(() => ({
+      status: 409,
+      body: problem(409, 'device_unavailable'),
+    }));
+    expect(await session.login({ email, password })).toEqual({
+      ok: false,
+      error: 'device_unavailable',
+    });
+    expect(device.renewals()).toBe(1);
+    expect(calls).toHaveLength(2);
+    expect(tokens.stored()).toBeNull();
   });
 });
 
@@ -311,7 +358,7 @@ describe('HU-01 cierre de sesión', () => {
         fetch: jest.fn(hanging) as typeof globalThis.fetch,
         tokens: tokens.store,
         clock: { now: () => NOW },
-        device: { id: () => '0199a6f0-0000-7000-8000-0000000000d1' },
+        device: fakeDevice(),
         appVersion: '0.1.0',
         logoutTimeoutMs: 5_000,
       });

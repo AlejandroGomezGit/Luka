@@ -30,6 +30,8 @@ export type AuthResult = { ok: true } | { ok: false; error: AuthError; retryAfte
 export interface AuthDevice {
   /** Id de dispositivo vigente (device_profile). */
   id: () => string;
+  /** Cambia el id en device_profile (renewDeviceId) y devuelve el nuevo. */
+  renew: () => string;
 }
 
 export interface AuthSessionDeps {
@@ -89,10 +91,24 @@ export function createAuthSession(deps: AuthSessionDeps) {
     }
   };
 
-  /** Envía el cuerpo y, si el servidor entrega un par, lo guarda con su vencimiento. */
-  const signIn = async (path: string, body: unknown): Promise<AuthResult> => {
-    const res = await post(path, body);
-    if (!res?.ok) return failure(res);
+  /**
+   * Envía el cuerpo y, si el servidor entrega un par, lo guarda con su vencimiento. Ante el primer
+   * `device_unavailable` (el dispositivo está ligado a otra cuenta), cambia el id y reintenta una sola vez.
+   */
+  const signIn = async (
+    path: string,
+    body: (deviceId: string) => unknown,
+    renewed = false,
+  ): Promise<AuthResult> => {
+    const res = await post(path, body(deps.device.id()));
+    if (!res?.ok) {
+      const result = await failure(res);
+      if (!result.ok && result.error === 'device_unavailable' && !renewed) {
+        deps.device.renew();
+        return signIn(path, body, true);
+      }
+      return result;
+    }
     const pair = TokenPair.safeParse(await res.json().catch(() => null));
     if (!pair.success) return { ok: false, error: 'unknown' };
     const accessExpiresAt = deps.clock.now() + pair.data.expiresIn * 1000;
@@ -122,23 +138,17 @@ export function createAuthSession(deps: AuthSessionDeps) {
 
   return {
     register: async (input: RegisterInput): Promise<AuthResult> => {
-      const body = RegisterRequest.safeParse({
-        ...input,
-        deviceId: deps.device.id(),
-        appVersion: deps.appVersion,
-      });
-      if (!body.success) return { ok: false, error: 'validation_failed' };
-      return signIn('/v1/auth/register', body.data);
+      const body = (deviceId: string) =>
+        RegisterRequest.safeParse({ ...input, deviceId, appVersion: deps.appVersion });
+      if (!body(deps.device.id()).success) return { ok: false, error: 'validation_failed' };
+      return signIn('/v1/auth/register', (deviceId) => body(deviceId).data);
     },
 
     login: async (input: LoginInput): Promise<AuthResult> => {
-      const body = LoginRequest.safeParse({
-        ...input,
-        deviceId: deps.device.id(),
-        appVersion: deps.appVersion,
-      });
-      if (!body.success) return { ok: false, error: 'validation_failed' };
-      return signIn('/v1/auth/login', body.data);
+      const body = (deviceId: string) =>
+        LoginRequest.safeParse({ ...input, deviceId, appVersion: deps.appVersion });
+      if (!body(deps.device.id()).success) return { ok: false, error: 'validation_failed' };
+      return signIn('/v1/auth/login', (deviceId) => body(deviceId).data);
     },
 
     /**
