@@ -2,6 +2,7 @@ import { deviceProfile } from '@luka/schema-sqlite';
 import { sql } from 'drizzle-orm';
 import type { StoredSession, TokenStore } from '../src/auth/tokenStore';
 import { prepareLocalData } from '../src/db/prepare';
+import { renewDeviceId } from '../src/db/profile';
 import { createTestDb, testClock, testRandom } from '../src/db/testing';
 import type { LocalDb } from '../src/db/types';
 
@@ -91,5 +92,20 @@ describe('T-019c1a limpieza del Keychain en el primer arranque', () => {
     );
     expect(dump).not.toContain(session.accessToken);
     expect(dump).not.toContain(session.refreshToken);
+  });
+});
+
+describe('HU-01 renewDeviceId', () => {
+  it('HU-01 cambia el id de dispositivo en device_profile y conserva el user_id', async () => {
+    const db = await createTestDb();
+    const clock = testClock();
+    const random = testRandom();
+    const tokens = fakeTokens(db);
+    const before = await prepareLocalData(db, clock, random, tokens.store);
+    const renewed = renewDeviceId(db, clock, random);
+    expect(renewed).not.toBe(before.deviceId);
+    expect(db.select().from(deviceProfile).all()).toEqual([
+      expect.objectContaining({ deviceId: renewed, userId: before.userId }),
+    ]);
   });
 });

@@ -17,3 +17,14 @@ export function ensureDeviceProfile(db: LocalDb, clock: Clock, random: RandomByt
     .run();
   return profile;
 }
+
+/**
+ * Id de dispositivo nuevo, cuando el servidor dice que el actual está ligado a otra cuenta
+ * (`device_unavailable`, T-019c). Conserva el user_id. Hoy ninguna tabla guarda el id del dispositivo;
+ * con el outbox de H3 habrá que revisar este cambio (#97).
+ */
+export function renewDeviceId(db: LocalDb, clock: Clock, random: RandomBytes): string {
+  const deviceId = newId(clock, random);
+  db.update(deviceProfile).set({ deviceId }).run();
+  return deviceId;
+}

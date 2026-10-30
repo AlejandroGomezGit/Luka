@@ -12,6 +12,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@luka/contracts": "workspace:*",
     "@luka/domain": "workspace:*",
     "@luka/schema-sqlite": "workspace:*",
     "@react-native-community/datetimepicker": "9.1.0",
