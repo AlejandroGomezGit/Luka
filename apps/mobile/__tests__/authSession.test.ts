@@ -382,6 +382,37 @@ describe('HU-01 cierre de sesión', () => {
     ]);
   });
 
+  it('HU-01 si el Keychain falla al borrar, revoca igual con el token leído antes, vacía la memoria y devuelve el error', async () => {
+    const api = fakeApi((call) =>
+      call.path === '/v1/auth/login' ? { status: 200, body: pair(6) } : { status: 204 },
+    );
+    const tokens = memoryTokens();
+    // Keychain que guarda pero no deja leer ni borrar: isSignedIn solo puede responder desde memoria.
+    const failing: TokenStore = {
+      ...tokens.store,
+      read: () => Promise.reject(new Error('keychain')),
+      clear: () => Promise.reject(new Error('keychain')),
+    };
+    const session = createAuthSession({
+      baseUrl: 'https://api.ejemplo.co',
+      fetch: api.fetch,
+      tokens: failing,
+      clock: { now: () => NOW },
+      device: fakeDevice(),
+      appVersion: '0.1.0',
+    });
+    await session.login({ email, password });
+    await expect(session.logout()).rejects.toThrow('keychain');
+    expect(await session.isSignedIn()).toBe(false);
+    // El token sigue en el Keychain: por eso el error llega a quien llama.
+    expect(tokens.stored()).not.toBeNull();
+    expect(api.calls.at(-1)).toEqual({
+      path: '/v1/auth/logout',
+      body: null,
+      authorization: 'Bearer acceso-6',
+    });
+  });
+
   it('HU-01 sin sesión, cerrar sesión no llama a la red', async () => {
     const { session, calls } = setup(() => ({ status: 204 }));
     await (

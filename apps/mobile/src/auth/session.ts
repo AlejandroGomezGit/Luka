@@ -154,12 +154,19 @@ export function createAuthSession(deps: AuthSessionDeps) {
     /**
      * Cierre inmediato: se toma el token de acceso (de memoria o, tras un reinicio, del Keychain), se
      * vacían memoria y Keychain, y recién entonces se revoca en el servidor. `revocation` no se espera.
+     * Si el Keychain falla al borrar, se revoca igual con el token leído y el error llega a quien
+     * llama, porque el token sigue guardado.
      */
     logout: async (): Promise<{ revocation: Promise<void> }> => {
       const token = access?.token ?? (await deps.tokens.read().catch(() => null))?.accessToken;
       access = null;
-      await deps.tokens.clear();
-      return { revocation: token === undefined ? Promise.resolve() : revoke(token) };
+      let revocation = Promise.resolve();
+      try {
+        await deps.tokens.clear();
+      } finally {
+        if (token !== undefined) revocation = revoke(token);
+      }
+      return { revocation };
     },
 
     isSignedIn: async (): Promise<boolean> =>
