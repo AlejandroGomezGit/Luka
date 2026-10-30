@@ -311,6 +311,9 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@luka/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@luka/domain':
         specifier: workspace:*
         version: link:../../packages/domain
