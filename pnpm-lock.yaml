@@ -322,7 +322,7 @@ importers:
         version: 9.1.0(expo@57.0.31)(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/jest-preset@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)
       drizzle-orm:
         specifier: ^0.45.3
-        version: 0.45.3(@electric-sql/pglite@0.5.8)(@types/sql.js@1.4.11)(expo-sqlite@57.0.4)(postgres@3.4.9)(sql.js@1.14.2)
+        version: 0.45.3(@electric-sql/pglite@0.5.15)(@types/sql.js@1.4.11)(expo-sqlite@57.0.4)(postgres@3.4.9)(sql.js@1.14.2)
       expo:
         specifier: ~57.0.31
         version: 57.0.31(4963e549f30a4866f0f6094548623622)
@@ -473,11 +473,11 @@ importers:
         version: link:../domain
       drizzle-orm:
         specifier: ^0.45.3
-        version: 0.45.3(@electric-sql/pglite@0.5.8)(@types/sql.js@1.4.11)(expo-sqlite@57.0.4)(postgres@3.4.9)(sql.js@1.14.2)
+        version: 0.45.3(@electric-sql/pglite@0.5.15)(@types/sql.js@1.4.11)(expo-sqlite@57.0.4)(postgres@3.4.9)(sql.js@1.14.2)
     devDependencies:
       '@electric-sql/pglite':
         specifier: ^0.5.8
-        version: 0.5.8
+        version: 0.5.15
       '@jest/globals':
         specifier: ^30.5.2
         version: 30.5.2(supports-color@8.1.1)
@@ -510,7 +510,7 @@ importers:
         version: link:../domain
       drizzle-orm:
         specifier: ^0.45.3
-        version: 0.45.3(@electric-sql/pglite@0.5.8)(@types/sql.js@1.4.11)(expo-sqlite@57.0.4)(postgres@3.4.9)(sql.js@1.14.2)
+        version: 0.45.3(@electric-sql/pglite@0.5.15)(@types/sql.js@1.4.11)(expo-sqlite@57.0.4)(postgres@3.4.9)(sql.js@1.14.2)
     devDependencies:
       '@jest/globals':
         specifier: ^30.5.2
@@ -1030,8 +1030,8 @@ packages:
   '@drizzle-team/brocli@0.10.2':
     resolution: {integrity: sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w==}
 
-  '@electric-sql/pglite@0.5.8':
-    resolution: {integrity: sha512-n9tsbUOhwx2epK1V0ZG9Ar4SHWUju04dhmzZXiSBXwBoleOvIfals33NAaWgagQVAL4Rbvx/Ptsu3P+pA09f6Q==}
+  '@electric-sql/pglite@0.5.15':
+    resolution: {integrity: sha512-ERZWgaRTxueGV4cvL1tfpAOzFCWTXoUtbCBqnf2FhHDVs/so9eAKaanvrwWF9Dntx7BYsmFQujVQ0/B4S8Mmiw==}
 
   '@emnapi/core@1.10.0':
     resolution: {integrity: sha512-yq6OkJ4p82CAfPl0u9mQebQHKPJkY7WrIuk205cTYnYe+k2Z8YBh11FrbRG/H6ihirqcacOgl2BIO8oyMQLeXw==}
@@ -7617,7 +7617,7 @@ snapshots:
 
   '@drizzle-team/brocli@0.10.2': {}
 
-  '@electric-sql/pglite@0.5.8': {}
+  '@electric-sql/pglite@0.5.15': {}
 
   '@emnapi/core@1.10.0':
     dependencies:
@@ -10750,9 +10750,9 @@ snapshots:
       esbuild: 0.25.12
       tsx: 4.23.15
 
-  drizzle-orm@0.45.3(@electric-sql/pglite@0.5.8)(@types/sql.js@1.4.11)(expo-sqlite@57.0.4)(postgres@3.4.9)(sql.js@1.14.2):
+  drizzle-orm@0.45.3(@electric-sql/pglite@0.5.15)(@types/sql.js@1.4.11)(expo-sqlite@57.0.4)(postgres@3.4.9)(sql.js@1.14.2):
     optionalDependencies:
-      '@electric-sql/pglite': 0.5.8
+      '@electric-sql/pglite': 0.5.15
       '@types/sql.js': 1.4.11
       expo-sqlite: 57.0.4(expo@57.0.31)(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/jest-preset@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)
       postgres: 3.4.9
